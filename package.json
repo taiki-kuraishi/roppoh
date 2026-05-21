@@ -40,7 +40,7 @@
     "oxfmt": "0.41.0",
     "oxlint": "1.62.0",
     "oxlint-tsgolint": "0.22.1",
-    "turbo": "2.9.9"
+    "turbo": "2.9.14"
   },
   "peerDependencies": {
     "typescript": "catalog:"
