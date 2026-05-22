@@ -46,7 +46,7 @@
     "tailwindcss": "catalog:",
     "vite": "catalog:",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.5",
+    "vitest": "4.1.7",
     "wrangler": "catalog:"
   },
   "peerDependencies": {
