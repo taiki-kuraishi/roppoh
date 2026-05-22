@@ -39,7 +39,7 @@
     "@tailwindcss/vite": "4.3.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitejs/plugin-react": "5.2.0",
+    "@vitejs/plugin-react": "6.0.2",
     "cloudflare": "6.1.0",
     "msw": "2.14.3",
     "playwright-msw": "3.0.1",

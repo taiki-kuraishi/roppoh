@@ -35,7 +35,7 @@
     "@tailwindcss/vite": "4.3.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@vitejs/plugin-react": "5.2.0",
+    "@vitejs/plugin-react": "6.0.2",
     "@vitest/browser-playwright": "4.1.5",
     "tailwindcss": "catalog:",
     "vite": "catalog:",
