@@ -35,7 +35,7 @@
     "knip": "knip --config='knip.config.ts'"
   },
   "devDependencies": {
-    "@types/node": "25.6.0",
+    "@types/node": "25.9.1",
     "knip": "latest",
     "oxfmt": "0.41.0",
     "oxlint": "1.62.0",
