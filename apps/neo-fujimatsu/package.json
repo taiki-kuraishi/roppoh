@@ -24,7 +24,7 @@
     "drizzle-orm": "0.45.2",
     "hono": "4.12.18",
     "jotai": "2.20.0",
-    "lucide-react": "1.14.0",
+    "lucide-react": "1.16.0",
     "nuqs": "2.8.9",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -46,7 +46,7 @@
     "tailwindcss": "catalog:",
     "vite": "catalog:",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.5",
+    "vitest": "4.1.7",
     "wrangler": "catalog:"
   },
   "peerDependencies": {
