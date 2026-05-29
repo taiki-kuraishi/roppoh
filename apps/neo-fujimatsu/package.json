@@ -30,7 +30,7 @@
     "react-dom": "catalog:",
     "react-router": "7.14.0",
     "sonner": "catalog:",
-    "valibot": "1.4.0"
+    "valibot": "1.4.1"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
