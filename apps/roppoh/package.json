@@ -25,7 +25,7 @@
     "oauth4webapi": "3.8.6",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "7.14.0",
+    "react-router": "7.15.1",
     "sonner": "catalog:",
     "valibot": "1.4.0",
     "workbox-window": "7.4.0"

@@ -52,7 +52,7 @@
         "nuqs": "2.8.9",
         "react": "catalog:",
         "react-dom": "catalog:",
-        "react-router": "7.14.0",
+        "react-router": "7.15.1",
         "sonner": "catalog:",
         "valibot": "1.4.0",
       },
@@ -93,7 +93,7 @@
         "oauth4webapi": "3.8.6",
         "react": "catalog:",
         "react-dom": "catalog:",
-        "react-router": "7.14.0",
+        "react-router": "7.15.1",
         "sonner": "catalog:",
         "valibot": "1.4.0",
         "workbox-window": "7.4.0",
@@ -139,7 +139,7 @@
         "oauth4webapi": "3.8.6",
         "react": "catalog:",
         "react-dom": "catalog:",
-        "react-router": "7.14.0",
+        "react-router": "7.15.1",
         "sonner": "catalog:",
         "valibot": "1.4.0",
       },
@@ -2521,7 +2521,7 @@
 
     "react-refresh": ["react-refresh@0.18.0", "", {}, "sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw=="],
 
-    "react-router": ["react-router@7.14.0", "", { "dependencies": { "cookie": "^1.0.1", "set-cookie-parser": "^2.6.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" }, "optionalPeers": ["react-dom"] }, "sha512-m/xR9N4LQLmAS0ZhkY2nkPA1N7gQ5TUVa5n8TgANuDTARbn1gt+zLPXEm7W0XDTbrQ2AJSJKhoa6yx1D8BcpxQ=="],
+    "react-router": ["react-router@7.15.1", "", { "dependencies": { "cookie": "^1.0.1", "set-cookie-parser": "^2.6.0" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" }, "optionalPeers": ["react-dom"] }, "sha512-R8rl9HhgikFYoPJymnUtPXWbnDb3oget6lQnfIoupbt61aT9aOhRkDsY2XRhZRyX1Z/8a5sL74fXmFNm3NRK5A=="],
 
     "readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 
