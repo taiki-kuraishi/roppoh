@@ -19,7 +19,6 @@ COPY packages/domain/package.json      ./packages/domain/
 COPY packages/shadcn/package.json      ./packages/shadcn/
 COPY packages/better-auth/package.json ./packages/better-auth/
 
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 COPY . .

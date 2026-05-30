@@ -11,6 +11,12 @@ export default defineConfig({
     projects: [
       {
         plugins: [react(), tailwindcss(), tsconfigPaths()],
+        resolve: {
+          dedupe: ["react", "react-dom"],
+        },
+        optimizeDeps: {
+          include: ["react", "react-dom"],
+        },
         test: {
           browser: {
             enabled: true,
