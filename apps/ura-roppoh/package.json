@@ -17,7 +17,7 @@
     "@roppoh/shadcn": "workspace:*",
     "@ssgoi/react": "catalog:",
     "@tanstack/react-form": "1.32.0",
-    "@tanstack/react-query": "5.90.20",
+    "@tanstack/react-query": "5.100.14",
     "babel-plugin-react-compiler": "1.0.0",
     "better-auth": "catalog:",
     "jotai": "2.20.0",
@@ -26,9 +26,9 @@
     "oauth4webapi": "3.8.6",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "7.14.0",
+    "react-router": "7.15.1",
     "sonner": "catalog:",
-    "valibot": "1.4.0"
+    "valibot": "1.4.1"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
