@@ -37,6 +37,7 @@ export default defineConfig({
     "oxc/no-rest-spread-properties": "off",
     "typescript/explicit-function-return-type": "off",
     "typescript/explicit-module-boundary-types": "off",
+    "unicorn/consistent-function-scoping": "off",
     "unicorn/no-anonymous-default-export": "off",
     "unicorn/no-null": "off",
     "sort-keys": "off",

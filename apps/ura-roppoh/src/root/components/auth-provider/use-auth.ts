@@ -33,7 +33,7 @@ export const useAuth = () => {
       const [firstUri] = client.redirect_uris;
       redirectUri = typeof firstUri === "string" ? firstUri : undefined;
     }
-    redirectUri = redirectUri || `${globalThis.location.origin}/callback`;
+    redirectUri ||= `${globalThis.location.origin}/callback`;
 
     const code_verifier = oauth.generateRandomCodeVerifier();
     const code_challenge = await oauth.calculatePKCECodeChallenge(code_verifier);
