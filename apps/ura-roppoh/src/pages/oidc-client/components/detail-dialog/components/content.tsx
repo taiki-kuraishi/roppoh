@@ -17,7 +17,7 @@ interface Props {
 
 type FieldKey = keyof OidcClientData;
 
-const FIELD_ORDER: readonly FieldKey[] = [
+const FIELD_ORDER = [
   "id",
   "client_id",
   "client_secret",
