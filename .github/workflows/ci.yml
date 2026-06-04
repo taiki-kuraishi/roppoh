@@ -23,6 +23,7 @@ jobs:
       - run: bun run type-check
       - run: bun turbo type-check
       - run: bun run knip
+      - run: bunx lefthook validate
       - run: bun turbo build
 
   visual-regression-test:
