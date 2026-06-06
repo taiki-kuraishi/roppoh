@@ -45,7 +45,11 @@ export const config = {
     updateAge: 86_400, // 1 day
   },
   socialProviders: {
-    discord: { clientId: "DISCORD_CLIENT_ID", clientSecret: "DISCORD_CLIENT_SECRET" },
+    discord: {
+      clientId: "DISCORD_CLIENT_ID",
+      clientSecret: "DISCORD_CLIENT_SECRET",
+      disableSignUp: true,
+    },
   },
   telemetry: { enabled: true },
   trustedOrigins: ["*"],
