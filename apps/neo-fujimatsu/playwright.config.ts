@@ -7,7 +7,7 @@ export default defineConfig({
 
   expect: {
     timeout: 5000,
-    toHaveScreenshot: { maxDiffPixelRatio: 0.001 },
+    toHaveScreenshot: { maxDiffPixelRatio: 0.0001 },
   },
 
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
