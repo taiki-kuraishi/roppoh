@@ -14,5 +14,6 @@ fi
 
 docker run --rm \
   -v "$PWD/apps/neo-fujimatsu/test/vrt":/app/apps/neo-fujimatsu/test/vrt \
+  -v "$PWD/apps/neo-fujimatsu/test-results":/app/apps/neo-fujimatsu/test-results \
   "$IMAGE" \
   bash -c "$CMD"
