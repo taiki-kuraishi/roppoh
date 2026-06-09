@@ -26,6 +26,9 @@ const UpdateClientDialog = lazy(async () =>
 const DeleteClientDialog = lazy(async () =>
   import("./components/delete-dialog").then((m) => ({ default: m.DeleteClientDialog })),
 );
+const DetailClientDialog = lazy(async () =>
+  import("./components/detail-dialog").then((m) => ({ default: m.DetailDialog })),
+);
 
 export default function () {
   const { data, isPending } = useOidcClients();
@@ -72,6 +75,11 @@ export default function () {
         {dialog === "delete" && client_id && (
           <Suspense fallback={null}>
             <DeleteClientDialog />
+          </Suspense>
+        )}
+        {dialog === "view" && client_id && (
+          <Suspense fallback={null}>
+            <DetailClientDialog />
           </Suspense>
         )}
       </div>

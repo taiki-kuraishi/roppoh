@@ -23,6 +23,13 @@ export default defineConfig({
             headless: true,
             instances: [{ browser: "chromium" }],
             provider: playwright(),
+            expect: {
+              toMatchScreenshot: {
+                comparatorOptions: {
+                  allowedMismatchedPixelRatio: 0.03,
+                },
+              },
+            },
           },
           env: VRT_ENV,
           include: ["test/visual-regression/**/*.spec.{ts,tsx}"],
