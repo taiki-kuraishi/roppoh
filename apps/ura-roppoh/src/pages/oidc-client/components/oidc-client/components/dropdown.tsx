@@ -27,6 +27,12 @@ export const DropDown = (props: Props) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem
+          onClick={() => void setParams({ client_id: props.client.client_id, dialog: "view" })}
+        >
+          Details
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
           onClick={() => void setParams({ client_id: props.client.client_id, dialog: "edit" })}
         >
           Update

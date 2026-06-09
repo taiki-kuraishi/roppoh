@@ -33,7 +33,11 @@ export const injectDependenciesMiddleware: MiddlewareHandler<HonoEnv> = async (c
     }),
     secret: c.env.BETTER_AUTH_SECRET,
     socialProviders: {
-      discord: { clientId: c.env.DISCORD_CLIENT_ID, clientSecret: c.env.DISCORD_CLIENT_SECRET },
+      discord: {
+        ...config.socialProviders.discord,
+        clientId: c.env.DISCORD_CLIENT_ID,
+        clientSecret: c.env.DISCORD_CLIENT_SECRET,
+      },
     },
   });
 

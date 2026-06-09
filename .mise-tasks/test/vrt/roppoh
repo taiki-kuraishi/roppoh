@@ -14,5 +14,6 @@ fi
 
 docker run --rm \
   -v "$PWD/apps/roppoh/test/visual-regression":/app/apps/roppoh/test/visual-regression \
+  -v "$PWD/apps/roppoh/test-results":/app/apps/roppoh/test-results \
   "$IMAGE" \
   bash -c "$CMD"
