@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^13.5.5",
-    "@astrojs/react": "^5.0.5",
+    "@astrojs/react": "^5.0.7",
     "@emdash-cms/cloudflare": "^0.14.0",
     "@emdash-cms/plugin-forms": "^0.2.2",
     "@emdash-cms/plugin-webhook-notifier": "^0.1.2",
