@@ -15,7 +15,7 @@ pre-commit:
     type-check:root:
       run: bun run type-check
     type-check:turbo:
-      run: bun run type-check
+      run: turbo type-check
     cf-typegen:
       stage_fixed: true
       run: turbo cf-typegen
