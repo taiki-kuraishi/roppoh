@@ -1,3 +1,5 @@
+// oxlint-disable max-lines-per-function
+// TODO: フィールド群を components/ に分割して max-lines-per-function(100)を満たす
 import type { useOidcClient } from "@roppoh/better-auth-query/query";
 
 import { useUpdateOidcClient } from "@roppoh/better-auth-query/mutation";

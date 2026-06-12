@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "lib": ["ESNext"],
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "extends": "../../tsconfig.json",
+  "include": ["src", "test"]
+}

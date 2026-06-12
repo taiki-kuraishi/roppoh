@@ -1,4 +1,5 @@
-// oxlint-disable max-statements
+// oxlint-disable max-statements, max-lines, max-lines-per-function
+// TODO: アクション別のフックに分割して max-lines(150)/ max-lines-per-function(100)を満たす
 // This code is based on: https://github.com/better-auth/better-auth/tree/main/demo/oidc-client
 
 import { RESET } from "jotai/utils";

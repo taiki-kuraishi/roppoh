@@ -14,10 +14,23 @@ export default defineConfig({
     "**/worker-configuration.d.ts",
     "packages/domain/src",
   ],
+  jsPlugins: ["@roppoh/oxlint-plugins"],
   options: {
     typeAware: true,
     typeCheck: true,
   },
+  overrides: [
+    {
+      files: ["apps/roppoh/src/**", "apps/ura-roppoh/src/**", "apps/neo-fujimatsu/src/client/**"],
+      rules: {
+        "max-lines": ["error", { max: 150 }],
+        "max-lines-per-function": ["error", { max: 100 }],
+        "roppoh/file-structure": "error",
+        "roppoh/no-cross-feature-import": "error",
+        "roppoh/prefer-alias-import": "error",
+      },
+    },
+  ],
   rules: {
     "eslint/no-unused-vars": "error",
     "eslint/sort-imports": "off",
@@ -38,6 +51,7 @@ export default defineConfig({
     "typescript/explicit-function-return-type": "off",
     "typescript/explicit-module-boundary-types": "off",
     "unicorn/consistent-function-scoping": "off",
+    "unicorn/filename-case": ["error", { case: "kebabCase" }],
     "unicorn/no-anonymous-default-export": "off",
     "unicorn/no-null": "off",
     "sort-keys": "off",

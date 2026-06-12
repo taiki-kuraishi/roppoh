@@ -1,3 +1,5 @@
+// oxlint-disable max-lines, max-lines-per-function
+// TODO: フィールド群を components/ に分割して max-lines(150)/ max-lines-per-function(100)を満たす
 import { useCreateUser } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
