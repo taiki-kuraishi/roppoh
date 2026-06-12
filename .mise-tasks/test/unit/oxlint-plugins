@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Run unit tests for @roppoh/oxlint-plugins"
+#MISE dir="{{config_root}}/packages/oxlint-plugins"
+
+set -euo pipefail
+
+bun run test

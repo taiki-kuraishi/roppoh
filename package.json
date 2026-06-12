@@ -17,6 +17,7 @@
       "@types/react": "19.2.14",
       "@types/react-dom": "19.2.3",
       "drizzle-kit": "0.31.8",
+      "oxlint": "1.67.0",
       "react": "19.2.4",
       "react-dom": "19.2.4",
       "sonner": "2.0.7",
@@ -37,10 +38,11 @@
     "knip": "knip --config='knip.config.ts'"
   },
   "devDependencies": {
+    "@roppoh/oxlint-plugins": "workspace:*",
     "@types/node": "25.9.1",
     "knip": "latest",
     "oxfmt": "0.51.0",
-    "oxlint": "1.67.0",
+    "oxlint": "catalog:",
     "oxlint-tsgolint": "0.23.0",
     "turbo": "2.9.16"
   },
