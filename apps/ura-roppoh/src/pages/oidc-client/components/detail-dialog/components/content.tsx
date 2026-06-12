@@ -1,3 +1,5 @@
+import type { useOidcClient } from "@roppoh/better-auth-query/query";
+
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -6,8 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@roppoh/shadcn/components/ui/dialog";
-
-import type { useOidcClient } from "@/hooks/better-auth";
 
 type OidcClientData = NonNullable<ReturnType<typeof useOidcClient>["data"]>;
 

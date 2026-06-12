@@ -1,3 +1,4 @@
+import { useOidcClient } from "@roppoh/better-auth-query/query";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   Card,
@@ -10,7 +11,6 @@ import {
 import { GalleryVerticalEnd } from "lucide-react";
 import { useSearchParams } from "react-router";
 
-import { useOidcClient } from "@/hooks/better-auth/oidc/use-client";
 import { auth } from "@/libs/better-auth";
 
 export default function () {

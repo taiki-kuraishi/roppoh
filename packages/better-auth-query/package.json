@@ -1,0 +1,24 @@
+{
+  "name": "@roppoh/better-auth-query",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./query": "./src/query/index.ts",
+    "./infinite": "./src/infinite/index.ts",
+    "./mutation": "./src/mutation/index.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@better-auth/oauth-provider": "catalog:",
+    "@better-auth/passkey": "catalog:",
+    "@tanstack/react-query": "catalog:",
+    "@types/react": "catalog:",
+    "better-auth": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

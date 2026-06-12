@@ -1,3 +1,4 @@
+import { useOidcClient } from "@roppoh/better-auth-query/query";
 import { Avatar, AvatarFallback, AvatarImage } from "@roppoh/shadcn/components/ui/avatar";
 import { Card, CardContent } from "@roppoh/shadcn/components/ui/card";
 import { ArrowLeftRight, ArrowUpRight, Mail, User } from "lucide-react";
@@ -5,7 +6,6 @@ import { useQueryStates } from "nuqs";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 
-import { useOidcClient } from "@/client/hooks/better-auth";
 import { authClient } from "@/client/libs/better-auth";
 
 import { ConsentBtns } from "./components/consent-buttons";

@@ -1,3 +1,6 @@
+import type { useUser } from "@roppoh/better-auth-query/query";
+
+import { useSetUserRole } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -20,7 +23,6 @@ import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { type useUser, useSetRoleMutation } from "@/hooks/better-auth";
 import { ROLES, type Role } from "@/pages/user/constant";
 import { dialogSearchParams } from "@/pages/user/params";
 
@@ -32,7 +34,7 @@ export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
   const [role, setRole] = useState<Role>(ROLES.find((r) => r === props.user.role) ?? "user");
 
-  const { mutateAsync, isPending } = useSetRoleMutation({
+  const { mutateAsync, isPending } = useSetUserRole({
     onError: () => void toast.error("Failed to set role."),
     onSuccess: () => {
       toast.success("Role updated.");

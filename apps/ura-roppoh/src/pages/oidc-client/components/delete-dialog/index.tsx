@@ -1,8 +1,7 @@
+import { useOidcClient } from "@roppoh/better-auth-query/query";
 import { Dialog, DialogContent } from "@roppoh/shadcn/components/ui/dialog";
 import { Skeleton } from "@roppoh/shadcn/components/ui/skeleton";
 import { useQueryStates } from "nuqs";
-
-import { useOidcClient } from "@/hooks/better-auth";
 
 import { dialogSearchParams } from "../../params";
 import { Content } from "./components/content";

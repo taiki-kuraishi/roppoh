@@ -1,3 +1,6 @@
+import type { useOidcClient } from "@roppoh/better-auth-query/query";
+
+import { useDeleteOidcClient } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -10,7 +13,6 @@ import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { useDeleteClientMutation, type useOidcClient } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/oidc-client/params";
 
 interface Props {
@@ -20,7 +22,7 @@ interface Props {
 export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const { mutateAsync, isPending } = useDeleteClientMutation({
+  const { mutateAsync, isPending } = useDeleteOidcClient({
     onError: () => void toast.error("Failed delete OIDC client mutation."),
     onSuccess: () => void setParams({ client_id: null, dialog: null }),
   });

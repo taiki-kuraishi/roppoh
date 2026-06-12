@@ -15,9 +15,10 @@ COPY apps/roppoh/package.json        ./apps/roppoh/
 COPY apps/ura-roppoh/package.json    ./apps/ura-roppoh/
 COPY apps/neo-fujimatsu/package.json ./apps/neo-fujimatsu/
 
-COPY packages/domain/package.json      ./packages/domain/
-COPY packages/shadcn/package.json      ./packages/shadcn/
-COPY packages/better-auth/package.json ./packages/better-auth/
+COPY packages/domain/package.json            ./packages/domain/
+COPY packages/shadcn/package.json            ./packages/shadcn/
+COPY packages/better-auth/package.json       ./packages/better-auth/
+COPY packages/better-auth-query/package.json ./packages/better-auth-query/
 
 RUN bun install --frozen-lockfile
 

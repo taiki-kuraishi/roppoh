@@ -1,3 +1,6 @@
+import type { useUser } from "@roppoh/better-auth-query/query";
+
+import { useSetUserPassword } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -14,7 +17,6 @@ import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { type useUser, useSetUserPasswordMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/user/params";
 
 import { defaultValues, schema } from "../form-field";
@@ -26,7 +28,7 @@ interface Props {
 export const Form = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const mutate = useSetUserPasswordMutation({
+  const mutate = useSetUserPassword({
     onError: () => void toast.error("Failed to set password."),
     onSuccess: () => {
       toast.success("Password updated.");

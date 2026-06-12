@@ -1,3 +1,4 @@
+import { useAddPasskey } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -21,7 +22,6 @@ import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { useAddPasskeyMutation } from "@/client/hooks/better-auth";
 import { dialogSearchParams } from "@/client/pages/account/params";
 
 const ATTACHMENT_OPTIONS = ["platform", "cross-platform"] as const;
@@ -32,8 +32,8 @@ export const Form = () => {
   const [name, setName] = useState("");
   const [attachment, setAttachment] = useState<Attachment>("platform");
 
-  const { mutateAsync, isPending } = useAddPasskeyMutation({
-    onError: ({ error }) => void toast.error(error.message || "Failed to register passkey"),
+  const { mutateAsync, isPending } = useAddPasskey({
+    onError: (error) => void toast.error(error.message || "Failed to register passkey"),
     onSuccess: () => {
       toast.success("Passkey registered");
       void setParams({ dialog: null, passkey_id: null });

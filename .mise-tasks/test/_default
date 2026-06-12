@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Run all tests"
+#MISE depends=["test:e2e", "test:vrt"]

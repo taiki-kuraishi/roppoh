@@ -1,3 +1,6 @@
+import type { useUser } from "@roppoh/better-auth-query/query";
+
+import { useImpersonateUser } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -10,7 +13,6 @@ import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { type useUser, useImpersonateUserMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/user/params";
 
 interface Props {
@@ -20,9 +22,9 @@ interface Props {
 export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const { mutateAsync, isPending } = useImpersonateUserMutation({
+  const { mutateAsync, isPending } = useImpersonateUser({
     onError: () => void toast.error("Failed to impersonate user."),
-    onSuccess: ({ data }) => {
+    onSuccess: (data) => {
       toast.success(`Now impersonating ${data.user.name}.`);
       void setParams({ user_id: null, dialog: null });
     },

@@ -1,3 +1,6 @@
+import type { useUserSessions } from "@roppoh/better-auth-query/query";
+
+import { useRevokeUserSessions } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -17,7 +20,6 @@ import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { type useUserSessions, useRevokeUserSessionsMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/user/params";
 
 type Sessions = NonNullable<ReturnType<typeof useUserSessions>["data"]>["sessions"];
@@ -30,7 +32,7 @@ interface Props {
 export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const { mutateAsync, isPending } = useRevokeUserSessionsMutation({
+  const { mutateAsync, isPending } = useRevokeUserSessions({
     onError: () => void toast.error("Failed to revoke sessions."),
     onSuccess: () => {
       toast.success("All sessions revoked.");

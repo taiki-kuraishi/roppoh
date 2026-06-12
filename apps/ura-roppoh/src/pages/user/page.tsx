@@ -1,3 +1,4 @@
+import { useUsers } from "@roppoh/better-auth-query/infinite";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   InputGroup,
@@ -12,7 +13,6 @@ import { useQueryStates } from "nuqs";
 import { Suspense, lazy } from "react";
 
 import { SiteHeader } from "@/components/header";
-import { useUsers } from "@/hooks/better-auth";
 
 import { UserItem } from "./components/user";
 import { dialogSearchParams } from "./params";
@@ -46,7 +46,7 @@ const DeleteUserDialog = lazy(async () =>
 );
 
 export default function () {
-  const { data, isPending } = useUsers();
+  const { data, isPending } = useUsers({ size: 100 });
   const [{ dialog, user_id }, setParams] = useQueryStates(dialogSearchParams);
 
   return (
@@ -72,7 +72,9 @@ export default function () {
           {isPending ? (
             <Skeleton className="h-16 w-full" />
           ) : (
-            data?.users.map((user) => <UserItem key={user.id} user={user} />)
+            data?.pages
+              .flatMap((page) => page.users)
+              .map((user) => <UserItem key={user.id} user={user} />)
           )}
         </ItemGroup>
 

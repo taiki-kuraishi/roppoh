@@ -1,3 +1,4 @@
+import { useCreateUser } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -21,7 +22,6 @@ import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { useCreateUserMutation } from "@/hooks/better-auth";
 import { ROLES } from "@/pages/user/constant";
 import { dialogSearchParams } from "@/pages/user/params";
 
@@ -30,7 +30,7 @@ import { defaultValues, schema } from "../form-field";
 export const Form = () => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const mutate = useCreateUserMutation({
+  const mutate = useCreateUser({
     onError: () => void toast.error("Failed to create user."),
     onSuccess: () => {
       toast.success("User created.");
