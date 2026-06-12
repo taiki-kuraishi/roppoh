@@ -1,7 +1,6 @@
+import { useUserPasskeys } from "@roppoh/better-auth-query/query";
 import { Dialog, DialogContent } from "@roppoh/shadcn/components/ui/dialog";
 import { useQueryStates } from "nuqs";
-
-import { useUserPasskeys } from "@/client/hooks/better-auth";
 
 import { dialogSearchParams } from "../../params";
 import { Content } from "./components/content";

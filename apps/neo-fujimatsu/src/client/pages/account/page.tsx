@@ -1,3 +1,4 @@
+import { useUserPasskeys } from "@roppoh/better-auth-query/query";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   Card,
@@ -11,8 +12,6 @@ import { ItemGroup } from "@roppoh/shadcn/components/ui/item";
 import { Plus } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { Suspense, lazy } from "react";
-
-import { useUserPasskeys } from "@/client/hooks/better-auth";
 
 import { PasskeyListView } from "./components/passkey-list-view";
 import { dialogSearchParams } from "./params";

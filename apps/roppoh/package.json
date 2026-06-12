@@ -14,9 +14,11 @@
   },
   "dependencies": {
     "@better-auth/oauth-provider": "catalog:",
+    "@better-auth/passkey": "catalog:",
+    "@roppoh/better-auth-query": "workspace:*",
     "@roppoh/shadcn": "workspace:*",
     "@ssgoi/react": "catalog:",
-    "@tanstack/react-query": "5.101.0",
+    "@tanstack/react-query": "catalog:",
     "babel-plugin-react-compiler": "1.0.0",
     "better-auth": "catalog:",
     "jotai": "2.20.0",

@@ -1,3 +1,6 @@
+import type { useUser } from "@roppoh/better-auth-query/query";
+
+import { useUpdateUser } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -14,7 +17,6 @@ import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { type useUser, useUpdateUserMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/user/params";
 
 import { schema } from "../form-field";
@@ -26,7 +28,7 @@ interface Props {
 export const Form = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const mutate = useUpdateUserMutation({
+  const mutate = useUpdateUser({
     onError: () => void toast.error("Failed to update user."),
     onSuccess: () => {
       toast.success("User updated.");

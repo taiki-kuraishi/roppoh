@@ -1,3 +1,4 @@
+import { useDeletePasskey } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -10,7 +11,6 @@ import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { useDeletePasskeyMutation } from "@/client/hooks/better-auth";
 import { dialogSearchParams } from "@/client/pages/account/params";
 
 interface Props {
@@ -20,8 +20,8 @@ interface Props {
 export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const { mutateAsync, isPending } = useDeletePasskeyMutation({
-    onError: ({ error }) => void toast.error(error.message || "Failed to delete passkey"),
+  const { mutateAsync, isPending } = useDeletePasskey({
+    onError: (error) => void toast.error(error.message || "Failed to delete passkey"),
     onSuccess: () => {
       toast.success("Passkey deleted");
       void setParams({ dialog: null, passkey_id: null });

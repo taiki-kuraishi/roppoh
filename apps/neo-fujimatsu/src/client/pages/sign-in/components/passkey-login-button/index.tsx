@@ -1,3 +1,4 @@
+import { extractErrorMessage } from "@roppoh/better-auth-query";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { Fingerprint } from "lucide-react";
@@ -5,7 +6,6 @@ import { useTransition } from "react";
 import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { extractErrorMessage } from "@/client/hooks/better-auth";
 import { authClient } from "@/client/libs/better-auth";
 
 import { resolveRedirectUrl } from "../../utils/resolve-redirect";

@@ -1,3 +1,6 @@
+import type { useUser } from "@roppoh/better-auth-query/query";
+
+import { useRemoveUser } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -10,7 +13,6 @@ import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { type useUser, useRemoveUserMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/user/params";
 
 interface Props {
@@ -20,7 +22,7 @@ interface Props {
 export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const { mutateAsync, isPending } = useRemoveUserMutation({
+  const { mutateAsync, isPending } = useRemoveUser({
     onError: () => void toast.error("Failed to delete user."),
     onSuccess: () => {
       toast.success("User deleted.");

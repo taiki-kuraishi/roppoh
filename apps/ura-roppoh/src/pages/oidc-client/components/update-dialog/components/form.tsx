@@ -1,3 +1,6 @@
+import type { useOidcClient } from "@roppoh/better-auth-query/query";
+
+import { useUpdateOidcClient } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -15,7 +18,6 @@ import { Plus, X } from "lucide-react";
 import { useQueryStates } from "nuqs";
 import { toast } from "sonner";
 
-import { type useOidcClient, useUpdateClientMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/oidc-client/params";
 
 import { schema } from "./form-field";
@@ -27,7 +29,7 @@ interface Props {
 export const Form = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const mutate = useUpdateClientMutation({
+  const mutate = useUpdateOidcClient({
     onError: () => void toast.error("Failed update OIDC client mutation."),
     onSuccess: () => void setParams({ client_id: null, dialog: null }),
   });

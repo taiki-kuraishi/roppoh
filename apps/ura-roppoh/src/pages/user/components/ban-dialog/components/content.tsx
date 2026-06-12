@@ -1,3 +1,6 @@
+import type { useUser } from "@roppoh/better-auth-query/query";
+
+import { useBanUser, useUnbanUser } from "@roppoh/better-auth-query/mutation";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   DialogClose,
@@ -14,7 +17,6 @@ import { useQueryStates } from "nuqs";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { type useUser, useBanUserMutation, useUnbanUserMutation } from "@/hooks/better-auth";
 import { dialogSearchParams } from "@/pages/user/params";
 
 const SECONDS_PER_DAY = 60 * 60 * 24;
@@ -28,7 +30,7 @@ interface Props {
 const UnbanContent = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
 
-  const { mutateAsync, isPending } = useUnbanUserMutation({
+  const { mutateAsync, isPending } = useUnbanUser({
     onError: () => void toast.error("Failed to unban user."),
     onSuccess: () => {
       toast.success("User unbanned.");
@@ -59,7 +61,7 @@ const BanContent = (props: Props) => {
   const [reason, setReason] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("");
 
-  const { mutateAsync, isPending } = useBanUserMutation({
+  const { mutateAsync, isPending } = useBanUser({
     onError: () => void toast.error("Failed to ban user."),
     onSuccess: () => {
       toast.success("User banned.");

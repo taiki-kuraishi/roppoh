@@ -1,6 +1,6 @@
-import { Skeleton } from "@roppoh/shadcn/components/ui/skeleton";
+import type { useUserPasskeys } from "@roppoh/better-auth-query/query";
 
-import type { useUserPasskeys } from "@/client/hooks/better-auth";
+import { Skeleton } from "@roppoh/shadcn/components/ui/skeleton";
 
 import { PasskeyItem } from "./passkey-item";
 

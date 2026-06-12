@@ -1,3 +1,4 @@
+import { useOidcClients } from "@roppoh/better-auth-query/query";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import {
   InputGroup,
@@ -12,7 +13,6 @@ import { useQueryStates } from "nuqs";
 import { Suspense, lazy } from "react";
 
 import { SiteHeader } from "@/components/header";
-import { useOidcClients } from "@/hooks/better-auth";
 
 import { OidcClient } from "./components/oidc-client";
 import { dialogSearchParams } from "./params";
