@@ -59,3 +59,11 @@ lefthook-local.yml
 # emdash
 uploads
 data.db
+
+# terraform
+**/.terraform/*
+*.tfstate
+*.tfvars
+
+# direnv
+.envrc

@@ -1,15 +1,9 @@
 #\!/usr/bin/env bash
 #MISE description="Setup project environment"
-#MISE depends=["clear-cache"]
+#MISE depends_post=["install:bun", "env-decrypt", "install:terraform"]
 
 set -euo pipefail
 
 mise install
 
-bun install --frozen-lockfile
-
-mise run env-decrypt
-
 lefthook install
-
-bunx playwright install

@@ -1,6 +1,8 @@
 [tools]
 bun = "1.3.12"
 lefthook = "latest"
+terraform = "latest"
+tflint = "latest"
 "npm:turbo" = "latest"
 "npm:@dotenvx/dotenvx" = "latest"
 "npm:dev3000" = "latest"

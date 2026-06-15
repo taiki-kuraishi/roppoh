@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Setup terraform prod environment"
+#MISE dir="{{config_root}}/infra/env/prod"
+
+set -euo pipefail
+
+dotenvx run -- terraform init
+
+tflint --init

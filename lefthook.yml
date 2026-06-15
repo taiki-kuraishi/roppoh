@@ -2,7 +2,7 @@ pre-commit:
   parallel: true
   commands:
     install:
-      run: bun install --frozen-lockfile
+      run: bun install --frozen-lockfile --dry-run
     oxfmt:
       stage_fixed: true
       exclude: "**/*.png"
@@ -21,3 +21,16 @@ pre-commit:
       run: turbo cf-typegen
     knip:
       run: bun run knip
+    terraform-fmt:
+      root: infra
+      glob: "infra/**/*.tf"
+      run: terraform fmt -recursive
+      stage_fixed: true
+    terraform-validate:
+      root: infra/env/prod
+      glob: "infra/**/*.tf"
+      run: terraform validate
+    tflint:
+      root: infra
+      glob: "infra/**/*.tf"
+      run: tflint

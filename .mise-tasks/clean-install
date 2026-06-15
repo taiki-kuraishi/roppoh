@@ -1,0 +1,4 @@
+#\!/usr/bin/env bash
+#MISE description="Setup project environment"
+#MISE depends=["clear-cache"]
+#MISE depends_post=["install"]
