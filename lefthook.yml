@@ -24,13 +24,13 @@ pre-commit:
     terraform-fmt:
       root: infra
       glob: "infra/**/*.tf"
-      run: terraform fmt -recursive
+      run: mise exec -- terraform fmt -recursive
       stage_fixed: true
     terraform-validate:
       root: infra/env/prod
       glob: "infra/**/*.tf"
-      run: terraform validate
+      run: mise exec -- terraform validate
     tflint:
       root: infra
       glob: "infra/**/*.tf"
-      run: tflint
+      run: mise exec -- tflint
