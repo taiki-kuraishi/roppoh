@@ -28,6 +28,10 @@ export const config = {
     oauthProvider({
       consentPage: "/consent",
       loginPage: "/sign-in",
+      silenceWarnings: {
+        oauthAuthServerConfig: true,
+        openidConfig: true,
+      },
     }),
     passkey({
       rpName: "Fujimatsu",
