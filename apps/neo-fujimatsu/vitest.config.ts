@@ -13,7 +13,7 @@ export default defineConfig({
         ],
         test: {
           env: {
-            BETTER_AUTH_SECRET: "test-secret",
+            BETTER_AUTH_SECRET: "TestS3cr3t!ForBetterAuth_V1t3st9",
           },
           include: ["./test/e2e/**/*.spec.ts"],
           name: "e2e",
