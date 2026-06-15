@@ -1,0 +1,8 @@
+#\!/usr/bin/env bash
+#MISE description="Setup bun.sh environment"
+
+set -euo pipefail
+
+bun install --frozen-lockfile
+
+bunx playwright install
