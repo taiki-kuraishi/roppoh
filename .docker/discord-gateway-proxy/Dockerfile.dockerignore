@@ -1,0 +1,8 @@
+# BuildKit reads this per-Dockerfile ignore (<Dockerfile path>.dockerignore) in
+# preference to a root .dockerignore, so it scopes the build context to the Go
+# module only without affecting other image builds (e.g. .docker/playwright).
+*
+!go.mod
+!go.sum
+!cmd
+!internal

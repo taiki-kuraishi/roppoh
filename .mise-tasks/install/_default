@@ -1,6 +1,6 @@
 #\!/usr/bin/env bash
 #MISE description="Setup project environment"
-#MISE depends_post=["install:bun", "env-decrypt", "install:terraform"]
+#MISE depends_post=["install:bun", "install:go", "env-decrypt", "install:terraform"]
 
 set -euo pipefail
 

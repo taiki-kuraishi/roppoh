@@ -67,3 +67,8 @@ data.db
 
 # direnv
 .envrc
+
+# go
+/bin/
+*.test
+coverage.out

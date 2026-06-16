@@ -34,3 +34,7 @@ pre-commit:
       root: infra
       glob: "infra/**/*.tf"
       run: mise exec -- tflint
+    go-lint:
+      glob: "**/*.go"
+      run: mise exec -- golangci-lint run --fix
+      stage_fixed: true

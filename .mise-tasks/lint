@@ -10,3 +10,7 @@ turbo type-check
 turbo build
 
 bun knip
+
+golangci-lint run
+
+go build ./...
