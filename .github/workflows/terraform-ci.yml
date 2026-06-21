@@ -24,7 +24,7 @@ jobs:
         with:
           terraform_wrapper: false
           terraform_version: "latest"
-      - uses: terraform-linters/setup-tflint@v4
+      - uses: terraform-linters/setup-tflint@v6
         with:
           tflint_version: latest
       - name: terraform fmt
