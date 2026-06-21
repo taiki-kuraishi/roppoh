@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
-    "@cloudflare/vitest-pool-workers": "0.14.1",
+    "@cloudflare/vitest-pool-workers": "0.16.16",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "4.3.0",
     "@types/react": "catalog:",
@@ -47,7 +47,7 @@
     "tailwindcss": "catalog:",
     "vite": "catalog:",
     "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.8",
+    "vitest": "4.1.9",
     "wrangler": "catalog:"
   },
   "peerDependencies": {

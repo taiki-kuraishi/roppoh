@@ -1,0 +1,93 @@
+name: bun-ci
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "./*.ts"
+      - ".docker/playwright/Dockerfile"
+      - ".github/actions/setup-bun/**"
+      - ".github/actions/setup-playwright/**"
+      - ".github/actions/setup-turbo/**"
+      - ".github/workflows/bun-ci.yml"
+      - ".npmrc"
+      - "apps/**"
+      - "bun.lock"
+      - "bunfig.toml"
+      - "lefthook.yml"
+      - "mise.toml"
+      - "package.json"
+      - "packages/**"
+      - "tsconfig.json"
+      - "turbo.json"
+  workflow_dispatch:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/setup-bun
+      - uses: ./.github/actions/setup-turbo
+      - run: bun --bun oxlint --deny-warnings --format=github
+      - run: bun run type-check
+      - run: bun turbo type-check
+      - run: bun run knip
+      - run: bunx lefthook validate
+      - run: bun turbo build
+
+  visual-regression-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: lint-and-build
+    strategy:
+      matrix:
+        include:
+          - app: neo-fujimatsu
+            package: "@roppoh/neo-fujimatsu"
+            test_script: test:vrt
+            vrt_dir: apps/neo-fujimatsu/test/vrt
+          - app: roppoh
+            package: "@roppoh/roppoh"
+            test_script: test:visual
+            vrt_dir: apps/roppoh/test/visual-regression
+          - app: ura-roppoh
+            package: "@roppoh/ura-roppoh"
+            test_script: test:visual
+            vrt_dir: apps/ura-roppoh/test/visual-regression
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build playwright image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .docker/playwright/Dockerfile
+          push: false
+          load: true
+          tags: roppoh-playwright:latest
+          cache-from: type=gha,scope=playwright
+          cache-to: type=gha,mode=max,scope=playwright
+      - name: Run ${{ matrix.app }} VRT
+        run: |
+          docker run --rm \
+            -v "$PWD/${{ matrix.vrt_dir }}":/app/${{ matrix.vrt_dir }} \
+            roppoh-playwright:latest \
+            bun run --filter ${{ matrix.package }} ${{ matrix.test_script }}
+
+  unit-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: lint-and-build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - name: Test apps/neo-fujimatsu
+        run: bun run test:e2e
+        working-directory: apps/neo-fujimatsu

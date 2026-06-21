@@ -10,9 +10,10 @@ tflint = "latest"
 "npm:turbo" = "latest"
 "npm:@dotenvx/dotenvx" = "latest"
 "npm:dev3000" = "latest"
+"npm:oxfmt" = "latest"
 
 [settings]
 npm.bun = true
 
 [tasks.format]
-run = ["bun run oxfmt", "golangci-lint fmt"]
+run = "oxfmt"
