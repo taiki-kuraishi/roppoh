@@ -10,3 +10,7 @@ turbo type-check
 turbo build
 
 bun knip
+
+kubeconform -summary -ignore-missing-schemas k8s
+
+kube-linter lint k8s --config .kube-linter.yaml
