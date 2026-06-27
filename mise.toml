@@ -1,5 +1,7 @@
 [tools]
 bun = "1.3.12"
+kube-linter = "latest"
+kubeconform = "latest"
 lefthook = "latest"
 terraform = "latest"
 tflint = "latest"
