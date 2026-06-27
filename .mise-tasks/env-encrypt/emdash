@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Encrypt env files for apps/emdash"
+
+dotenvx encrypt --stdout -f apps/emdash/.env -fk .env.keys > apps/emdash/.env.enc
