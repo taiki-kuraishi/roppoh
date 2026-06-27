@@ -1,3 +1,7 @@
 checks:
   ignorePaths:
-    - "k8s/argocd/install.yaml"
+    # k8s/argocd is a kustomize overlay wrapping the vendored ArgoCD install
+    # manifest. kube-linter renders the kustomization, so the resources from
+    # install.yaml can no longer be excluded by the install.yaml path alone;
+    # ignore the whole overlay dir (its only workload content is install.yaml).
+    - "k8s/argocd/**"
