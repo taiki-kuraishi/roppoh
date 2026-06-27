@@ -11,5 +11,8 @@ export default defineConfig({
     tailwindcss(),
     cloudflare({ configPath: "./wrangler.jsonc" }),
   ],
+  resolve: {
+    dedupe: ["react", "react-dom"],
+  },
   server: { cors: false, port: 3002 },
 });
