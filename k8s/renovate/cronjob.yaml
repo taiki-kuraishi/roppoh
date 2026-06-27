@@ -76,6 +76,8 @@ spec:
                   value: /scripts/config.js
                 - name: LOG_LEVEL
                   value: info
+                - name: NODE_OPTIONS
+                  value: "--max-old-space-size=1800"
               securityContext:
                 allowPrivilegeEscalation: false
                 capabilities:
@@ -83,10 +85,10 @@ spec:
               resources:
                 requests:
                   cpu: 100m
-                  memory: 256Mi
+                  memory: 512Mi
                 limits:
                   cpu: 500m
-                  memory: 1Gi
+                  memory: 2Gi
               volumeMounts:
                 - name: scripts
                   mountPath: /scripts
