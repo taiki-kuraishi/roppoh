@@ -38,3 +38,9 @@ pre-commit:
       glob: "**/*.go"
       run: mise exec -- golangci-lint run --fix
       stage_fixed: true
+    kubeconform:
+      glob: "k8s/**/*.{yml,yaml}"
+      run: mise exec -- kubeconform -summary -ignore-missing-schemas k8s
+    kube-linter:
+      glob: "k8s/**/*.{yml,yaml}"
+      run: mise exec -- kube-linter lint k8s --config .kube-linter.yaml
