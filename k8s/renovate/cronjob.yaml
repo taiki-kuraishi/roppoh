@@ -29,6 +29,7 @@ spec:
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
+            fsGroup: 1000
             seccompProfile:
               type: RuntimeDefault
           initContainers:
@@ -104,7 +105,7 @@ spec:
                 items:
                   - key: private-key.pem
                     path: private-key.pem
-                defaultMode: 0400
+                defaultMode: 0440
             - name: shared
               emptyDir: {}
             - name: work
