@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "ignorePaths": ["k8s/argocd/install.yaml"],
+  "schedule": ["before 4am on monday"],
+  "commitMessagePrefix": "⬆️ ",
+  "labels": ["dependencies"],
+  "kubernetes": {
+    "fileMatch": ["(^|/)k8s/.+\\.ya?ml$"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "addLabels": ["github-actions"]
+    },
+    {
+      "matchManagers": ["npm", "bun"],
+      "addLabels": ["bun"],
+      "minimumReleaseAge": "1 day"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "addLabels": ["docker"]
+    },
+    {
+      "matchManagers": ["docker-compose"],
+      "addLabels": ["docker-compose"]
+    },
+    {
+      "matchManagers": ["kubernetes"],
+      "addLabels": ["kubernetes"]
+    },
+    {
+      "matchManagers": ["npm", "bun"],
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "react"
+    },
+    {
+      "matchManagers": ["npm", "bun"],
+      "matchPackageNames": [
+        "vitest",
+        "vitest-browser-react",
+        "@vitest/ui",
+        "@vitest/browser-playwright"
+      ],
+      "groupName": "vitest"
+    }
+  ]
+}
