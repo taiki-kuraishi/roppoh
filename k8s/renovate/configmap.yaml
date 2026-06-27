@@ -128,8 +128,4 @@ data:
       // GitHub App として PR / commit を作成するときの git author。
       // APP_USER_ID を実際の数値に置き換えること。
       gitAuthor: 'renovate-tsar[bot] <297387044+renovate-tsar[bot]@users.noreply.github.com>',
-
-      // 初回確認用の dry-run。PR は作成されず、ログに予定 PR が出力される。
-      // 動作確認後にこの行を削除すること。
-      dryRun: 'full',
     };
