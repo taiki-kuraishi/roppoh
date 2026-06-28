@@ -8,7 +8,7 @@ data:
     installationID: 143049164
     privateKey: $github-privateKey
   trigger.on-app-deployed: |
-    - when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+    - when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy' and app.spec.source.repoURL contains 'github.com'
       send: [app-deployed]
   template.app-deployed: |
     message: |
