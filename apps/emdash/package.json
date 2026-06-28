@@ -13,7 +13,7 @@
     "cf-typegen": "wrangler types  --strict-vars=false"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "13.7.0",
+    "@astrojs/cloudflare": "14.0.1",
     "@astrojs/react": "5.0.5",
     "@emdash-cms/cloudflare": "0.23.0",
     "@emdash-cms/plugin-forms": "0.2.4",
