@@ -1,3 +1,9 @@
+data "cloudflare_zone" "this" {
+  filter = {
+    name = var.zone_name
+  }
+}
+
 # ----- Cloudflare Tunnel: n100-k3s -----
 # import: terraform import module.zero_trust.cloudflare_zero_trust_tunnel_cloudflared.n100_k3s <account_id>/<tunnel_id>
 resource "cloudflare_zero_trust_tunnel_cloudflared" "n100_k3s" {
@@ -34,4 +40,25 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
       },
     ]
   }
+}
+
+# ----- DNS CNAME records -----
+locals {
+  tunnel_cname = "${cloudflare_zero_trust_tunnel_cloudflared.n100_k3s.id}.cfargotunnel.com"
+  tunnel_hostnames = [
+    "grafana",
+    "argocd",
+    "otel",
+  ]
+}
+
+resource "cloudflare_dns_record" "tunnel" {
+  for_each = toset(local.tunnel_hostnames)
+
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "${each.key}.${var.zone_name}"
+  type    = "CNAME"
+  content = local.tunnel_cname
+  proxied = true
+  ttl     = 1
 }

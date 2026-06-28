@@ -26,4 +26,5 @@ module "secrets_store" {
 module "zero_trust" {
   source     = "../../modules/zero-trust"
   account_id = var.cloudflare_account_id
+  zone_name  = "tsar-bmb.org"
 }
