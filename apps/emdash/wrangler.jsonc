@@ -28,6 +28,13 @@
       "binding": "LOADER",
     },
   ],
+  "secrets_store_secrets": [
+    {
+      "binding": "EMDASH_ENCRYPTION_KEY",
+      "store_id": "9a2d7bd458234f29b84bff50f66669d0",
+      "secret_name": "roppoh-emdash-encryption-key",
+    },
+  ],
   "preview_urls": false,
   "workers_dev": false,
   "routes": [
@@ -37,6 +44,9 @@
       "zone_name": "tsar-bmb.org",
     },
   ],
+  "triggers": {
+    "crons": ["* * * * *"],
+  },
   "observability": {
     "logs": {
       "enabled": true,
