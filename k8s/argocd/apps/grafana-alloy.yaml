@@ -1,0 +1,264 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-alloy
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: alloy
+    targetRevision: 1.10.0
+    helm:
+      valuesObject:
+        # -----------------------------------------------------------------------
+        # DaemonSet モード: 全ノードでログ収集 + ノード別メトリクス収集
+        # -----------------------------------------------------------------------
+        controller:
+          type: daemonset
+
+        alloy:
+          # ホストの /var/log をマウント（Pod ログファイルのテール用）
+          mounts:
+            varlog: true
+            dockercontainers: true # Docker ランタイムのシンボリックリンク追従用
+
+          # ノード名を env として注入（DaemonSet でノード別にスクレイプ対象を絞るため）
+          extraEnv:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+          # -----------------------------------------------------------------------
+          # Alloy (River) 設定
+          # -----------------------------------------------------------------------
+          configMap:
+            create: true
+            content: |
+              // =================================================================
+              // LOG COLLECTION: Pod ログをホスト filesystem (/var/log/pods) からテール
+              // =================================================================
+
+              // クラスタ内の全 Pod を検出
+              discovery.kubernetes "pods" {
+                role = "pod"
+              }
+
+              // Pod → ログファイルパスのマッピングと Loki ラベル付与
+              discovery.relabel "pod_logs" {
+                targets = discovery.kubernetes.pods.targets
+
+                // このノード上の Pod のみ対象（DaemonSet でのファイルテール漏れ防止）
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+
+                // 終了済みコンテナはスキップ
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_phase"]
+                  regex         = "Pending|Succeeded|Failed|Completed"
+                  action        = "drop"
+                }
+
+                // ログファイルパスを生成: /var/log/pods/*<uid>/<container>/*.log
+                rule {
+                  source_labels = [
+                    "__meta_kubernetes_pod_uid",
+                    "__meta_kubernetes_pod_container_name",
+                  ]
+                  separator    = "/"
+                  regex        = "(.+)"
+                  target_label = "__path__"
+                  replacement  = "/var/log/pods/*$1/*.log"
+                }
+
+                // Loki ラベル
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+                  separator    = "/"
+                  target_label = "job"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              // ログファイルをテールして Loki gateway に送信
+              loki.source.file "pod_logs" {
+                targets    = discovery.relabel.pod_logs.output
+                forward_to = [loki.write.grafana.receiver]
+              }
+
+              loki.write "grafana" {
+                endpoint {
+                  url = "http://grafana-loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+                }
+              }
+
+              // =================================================================
+              // METRICS COLLECTION: kubelet + cAdvisor (API server proxy 経由)
+              // 各 DaemonSet Pod は自身のノードのみスクレイプする
+              // =================================================================
+
+              // クラスタ内のノードを検出
+              discovery.kubernetes "nodes" {
+                role = "node"
+              }
+
+              // kubelet /metrics (自ノードのみ)
+              discovery.relabel "kubelet" {
+                targets = discovery.kubernetes.nodes.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  target_label = "__address__"
+                  replacement  = "kubernetes.default.svc.cluster.local:443"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  regex         = "(.+)"
+                  target_label  = "__metrics_path__"
+                  replacement   = "/api/v1/nodes/$1/proxy/metrics"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "kubelet"
+                }
+              }
+
+              prometheus.scrape "kubelet" {
+                targets           = discovery.relabel.kubelet.output
+                scheme            = "https"
+                scrape_interval   = "60s"
+                bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                tls_config {
+                  ca_file              = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                  insecure_skip_verify = true
+                }
+                forward_to = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // cAdvisor /metrics/cadvisor (自ノードのみ)
+              discovery.relabel "cadvisor" {
+                targets = discovery.kubernetes.nodes.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  target_label = "__address__"
+                  replacement  = "kubernetes.default.svc.cluster.local:443"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  regex         = "(.+)"
+                  target_label  = "__metrics_path__"
+                  replacement   = "/api/v1/nodes/$1/proxy/metrics/cadvisor"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "kubernetes-cadvisor"
+                }
+              }
+
+              prometheus.scrape "cadvisor" {
+                targets           = discovery.relabel.cadvisor.output
+                scheme            = "https"
+                scrape_interval   = "60s"
+                bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                tls_config {
+                  ca_file              = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+                  insecure_skip_verify = true
+                }
+                forward_to = [prometheus.remote_write.mimir.receiver]
+              }
+
+              prometheus.remote_write "mimir" {
+                endpoint {
+                  url = "http://grafana-mimir-gateway.monitoring.svc.cluster.local/prometheus/api/v1/remote_write"
+                }
+              }
+
+              // =================================================================
+              // OTLP RECEIVER: 将来の Cloudflare Workers トレース向け
+              // =================================================================
+
+              otelcol.receiver.otlp "default" {
+                grpc {
+                  endpoint = "0.0.0.0:4317"
+                }
+                http {
+                  endpoint = "0.0.0.0:4318"
+                }
+                output {
+                  traces = [otelcol.exporter.otlp.tempo.input]
+                }
+              }
+
+              otelcol.exporter.otlp "tempo" {
+                client {
+                  endpoint = "grafana-tempo.monitoring.svc.cluster.local:4317"
+                  tls {
+                    insecure = true
+                  }
+                }
+              }
+
+        # -----------------------------------------------------------------------
+        # RBAC: kubelet/cAdvisor スクレイプに必要なルールを追加
+        # -----------------------------------------------------------------------
+        rbac:
+          clusterRules:
+            # discovery.kubernetes (Nodes)
+            - apiGroups: [""]
+              resources: ["nodes"]
+              verbs: ["get", "list", "watch"]
+            # discovery.kubelet
+            - apiGroups: [""]
+              resources: ["nodes/pods"]
+              verbs: ["get", "list", "watch"]
+            # kubelet /metrics (直接アクセス)
+            - apiGroups: [""]
+              resources: ["nodes/metrics"]
+              verbs: ["get", "list", "watch"]
+            # API server proxy 経由の kubelet/cAdvisor アクセスに必要
+            - apiGroups: [""]
+              resources: ["nodes/proxy"]
+              verbs: ["get"]
+            # /metrics と /metrics/cadvisor の非リソース URL
+            - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+              verbs: ["get"]
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

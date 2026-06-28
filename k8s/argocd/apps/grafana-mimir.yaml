@@ -1,0 +1,121 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-mimir
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    # mimir-distributed のソースは grafana/mimir リポジトリに移動したが
+    # リリース先は引き続き https://grafana.github.io/helm-charts
+    repoURL: https://grafana.github.io/helm-charts
+    chart: mimir-distributed
+    targetRevision: 6.0.6
+    helm:
+      valuesObject:
+        # -------------------------------------------------------------------------
+        # 付属 MinIO 無効化（ストレージは Cloudflare R2 を使用）
+        # -------------------------------------------------------------------------
+        minio:
+          enabled: false
+
+        # -------------------------------------------------------------------------
+        # キャッシュ (memcached) 無効化 — Pod 数を最小化
+        # -------------------------------------------------------------------------
+        chunks-cache:
+          enabled: false
+        index-cache:
+          enabled: false
+        metadata-cache:
+          enabled: false
+        results-cache:
+          enabled: false
+
+        # -------------------------------------------------------------------------
+        # 全コンポーネント共通: grafana-object-storage Secret から env を注入
+        # mimir.structuredConfig 内の ${AWS_*} は Mimir が env 展開して解決する
+        # -------------------------------------------------------------------------
+        global:
+          extraEnvFrom:
+            - secretRef:
+                name: grafana-object-storage
+
+        # -------------------------------------------------------------------------
+        # 最小フットプリント: 各コンポーネント 1 レプリカ
+        # PVC 不要（ストレージは R2, WAL は emptyDir で許容）
+        # -------------------------------------------------------------------------
+        ingester:
+          replicas: 1
+          persistentVolume:
+            enabled: false
+          zoneAwareReplication:
+            enabled: false # 単一レプリカなので無効化
+
+        store_gateway:
+          replicas: 1
+          persistentVolume:
+            enabled: false
+          zoneAwareReplication:
+            enabled: false # 単一レプリカなので無効化
+
+        distributor:
+          replicas: 1
+
+        querier:
+          replicas: 1
+
+        query_frontend:
+          replicas: 1
+
+        compactor:
+          replicas: 1
+          persistentVolume:
+            enabled: false
+
+        alertmanager:
+          replicas: 1
+          persistentVolume:
+            enabled: false
+
+        ruler:
+          replicas: 1
+
+        # -------------------------------------------------------------------------
+        # Mimir 設定本体 (structuredConfig)
+        # -------------------------------------------------------------------------
+        mimir:
+          structuredConfig:
+            # common.storage で全コンポーネントの S3 バックエンドを一括設定
+            # Cloudflare R2 エンドポイント: <アカウントID>.r2.cloudflarestorage.com に変更すること
+            common:
+              storage:
+                backend: s3
+                s3:
+                  endpoint: bd1a33a9922e50b3afff5a2f21ad52d0.r2.cloudflarestorage.com
+                  region: auto
+                  # 認証情報は grafana-object-storage Secret から env 展開で注入
+                  access_key_id: "${AWS_ACCESS_KEY_ID}"
+                  secret_access_key: "${AWS_SECRET_ACCESS_KEY}"
+
+            # 各コンポーネントのバケット名 (R2 で事前作成すること)
+            blocks_storage:
+              s3:
+                bucket_name: roppoh-grafana-mimir-blocks
+            ruler_storage:
+              s3:
+                bucket_name: roppoh-grafana-mimir-ruler
+            alertmanager_storage:
+              s3:
+                bucket_name: roppoh-grafana-mimir-alertmanager
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

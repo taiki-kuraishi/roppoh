@@ -1,0 +1,107 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-loki
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    # 2026-03-16 以降 OSS Loki Helm chart は grafana-community に移行済み
+    repoURL: https://grafana-community.github.io/helm-charts
+    chart: loki
+    targetRevision: 18.1.1
+    helm:
+      valuesObject:
+        # -------------------------------------------------------------------------
+        # デプロイモード: Monolithic (SingleBinary の後継)
+        # -------------------------------------------------------------------------
+        deploymentMode: Monolithic
+
+        # 他デプロイモードのレプリカを 0 に（Monolithic 以外は不要）
+        backend:
+          replicas: 0
+        read:
+          replicas: 0
+        write:
+          replicas: 0
+
+        # キャッシュ無効化（memcached Pod を立てない）
+        chunksCache:
+          enabled: false
+        resultsCache:
+          enabled: false
+
+        # 付属 MinIO 無効化（ストレージは Cloudflare R2 を使用）
+        minio:
+          enabled: false
+
+        # -------------------------------------------------------------------------
+        # 全コンポーネント共通: Secret から env を注入 + config の env 展開を有効化
+        # -------------------------------------------------------------------------
+        defaults:
+          extraArgs:
+            - -config.expand-env=true
+          extraEnvFrom:
+            - secretRef:
+                name: grafana-object-storage
+
+        # -------------------------------------------------------------------------
+        # SingleBinary (Monolithic) コンポーネント設定
+        # -------------------------------------------------------------------------
+        singleBinary:
+          replicas: 1
+          # WAL は emptyDir 利用（PVC 不要。再起動時の未フラッシュ分は消失、homelab では許容）
+          persistence:
+            enabled: false
+
+        # -------------------------------------------------------------------------
+        # Loki 設定本体
+        # -------------------------------------------------------------------------
+        loki:
+          auth_enabled: false # シングルテナント（homelab）
+
+          commonConfig:
+            replication_factor: 1 # 単一レプリカのため RF=1
+
+          schemaConfig:
+            configs:
+              - from: "2024-04-01"
+                store: tsdb
+                object_store: s3
+                schema: v13
+                index:
+                  prefix: loki_index_
+                  period: 24h
+
+          limits_config:
+            allow_structured_metadata: true
+            retention_period: 744h # 31日間
+
+          # Cloudflare R2 (S3 互換) ストレージ設定
+          # 事前準備: R2 バケット `roppoh-grafana-loki` を作成すること
+          storage:
+            type: s3
+            bucketNames:
+              chunks: roppoh-grafana-loki
+              ruler: roppoh-grafana-loki
+              admin: roppoh-grafana-loki
+            s3:
+              # R2 エンドポイント: <アカウントID>.r2.cloudflarestorage.com に変更すること
+              endpoint: bd1a33a9922e50b3afff5a2f21ad52d0.r2.cloudflarestorage.com
+              region: auto
+              # 認証情報は grafana-object-storage Secret から env 展開で注入
+              accessKeyId: "${AWS_ACCESS_KEY_ID}"
+              secretAccessKey: "${AWS_SECRET_ACCESS_KEY}"
+              s3ForcePathStyle: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

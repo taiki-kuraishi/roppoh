@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    # 2026-01-30 以降 Grafana Helm chart は grafana-community に移行済み
+    repoURL: https://grafana-community.github.io/helm-charts
+    chart: grafana
+    targetRevision: 12.7.1
+    helm:
+      valuesObject:
+        # -----------------------------------------------------------------------
+        # ストレージ無効化: Grafana DB は emptyDir (揮発)
+        # ダッシュボード/データソースはコード provisioning で管理するため問題なし
+        # -----------------------------------------------------------------------
+        persistence:
+          enabled: false
+
+        # -----------------------------------------------------------------------
+        # 管理者認証: 事前作成した Secret `grafana-admin` を参照
+        # kubectl -n monitoring create secret generic grafana-admin \
+        #   --from-literal=admin-user=admin \
+        #   --from-literal=admin-password=<STRONG_PASSWORD>
+        # -----------------------------------------------------------------------
+        admin:
+          existingSecret: grafana-admin
+          userKey: admin-user
+          passwordKey: admin-password
+
+        # -----------------------------------------------------------------------
+        # データソース provisioning (コード管理)
+        # Service 名は各 ArgoCD Application 名 (= Helm release 名) から決まる
+        # -----------------------------------------------------------------------
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+              - name: Loki
+                type: loki
+                uid: loki
+                # grafana-loki chart が作成する nginx gateway Service
+                url: http://grafana-loki-gateway.monitoring.svc.cluster.local
+                access: proxy
+                isDefault: false
+
+              - name: Mimir
+                type: prometheus
+                uid: mimir
+                # grafana-mimir chart が作成する nginx gateway Service
+                url: http://grafana-mimir-gateway.monitoring.svc.cluster.local/prometheus
+                access: proxy
+                isDefault: true
+
+              - name: Tempo
+                type: tempo
+                uid: tempo
+                # grafana-tempo Service (HTTP クエリ: ポート 3200)
+                url: http://grafana-tempo.monitoring.svc.cluster.local:3200
+                access: proxy
+                isDefault: false
+                jsonData:
+                  tracesToLogsV2:
+                    datasourceUid: loki
+                  tracesToMetrics:
+                    datasourceUid: mimir
+                  serviceMap:
+                    datasourceUid: mimir
+
+        # -----------------------------------------------------------------------
+        # Service: ClusterIP のみ (外部公開は Cloudflare Tunnel で別途対応)
+        # アクセス: kubectl -n monitoring port-forward svc/grafana 3000:80
+        # -----------------------------------------------------------------------
+        service:
+          type: ClusterIP
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
