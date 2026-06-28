@@ -3,6 +3,13 @@ kind: ConfigMap
 metadata:
   name: argocd-notifications-cm
 data:
+  service.github: |
+    appID: 4159060
+    installationID: 143049164
+    privateKey: $github-privateKey
+  trigger.on-app-deployed: |
+    - when: app.status.operationState.phase in ['Succeeded'] and app.status.health.status == 'Healthy'
+      send: [app-deployed]
   template.app-deployed: |
     message: |
       Application {{.app.metadata.name}} is now running new version of deployments manifests.
