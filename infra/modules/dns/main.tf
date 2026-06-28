@@ -30,3 +30,12 @@ resource "cloudflare_dns_record" "otel" {
   proxied = true
   ttl     = 1
 }
+
+resource "cloudflare_dns_record" "alloy" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "alloy.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
