@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: argocd-cm
 data:
+  kustomize.buildOptions: "--enable-exec-plugin"
   resource.customizations.ignoreResourceUpdates.ConfigMap: |
     jqPathExpressions:
       # Ignore the cluster-autoscaler status
