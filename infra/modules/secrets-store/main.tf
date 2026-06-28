@@ -26,3 +26,15 @@ resource "cloudflare_secrets_store_secret" "roppoh_discord_client_secret" {
     ignore_changes = [value]
   }
 }
+
+resource "cloudflare_secrets_store_secret" "roppoh_emdash_encryption_key" {
+  account_id = var.account_id
+  store_id   = cloudflare_secrets_store.this.id
+  name       = "roppoh-emdash-encryption-key"
+  value      = "placeholder"
+  scopes     = ["workers"]
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
