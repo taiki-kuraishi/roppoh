@@ -9,7 +9,7 @@ export default defineConfig({
     suspicious: "error",
   },
   ignorePatterns: [
-    "apps/emdash/src",
+    "apps/emdash",
     "packages/shadcn/src",
     "**/worker-configuration.d.ts",
     "packages/domain/src",

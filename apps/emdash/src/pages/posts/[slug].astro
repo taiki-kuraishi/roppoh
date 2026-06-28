@@ -1,18 +1,17 @@
 ---
 import {
-	decodeSlug,
-	getEmDashCollection,
 	getEmDashEntry,
-	getEntryTerms,
-	getSeoMeta,
-	getSiteSettings,
+	getEmDashCollection,
 	getTermsForEntries,
+	getSeoMeta,
+	decodeSlug,
+	getSiteSettings,
 } from "emdash";
 import {
-	CommentForm,
-	Comments,
 	Image,
 	PortableText,
+	Comments,
+	CommentForm,
 	WidgetArea,
 } from "emdash/ui";
 import Base from "../../layouts/Base.astro";
@@ -32,12 +31,12 @@ if (!post) {
 	return Astro.redirect("/404");
 }
 
-Astro.cache.set(cacheHint);
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Get featured image URL for OG fallback
 // The image may have src (external) or meta.storageKey (local)
 function getImageUrl(img: unknown): string | undefined {
-	if (!img || typeof img !== "object") {return undefined;}
+	if (!img || typeof img !== "object") return undefined;
 	const image = img as Record<string, unknown>;
 	// Check for direct src
 	if (typeof image.src === "string" && image.src) {
@@ -60,10 +59,10 @@ const { siteTitle } = resolveBlogSiteIdentity(await getSiteSettings());
 
 // Generate SEO meta from content
 const seo = getSeoMeta(post, {
-	defaultOgImage: featuredImageUrl,
-	path: `/posts/${slug}`,
 	siteTitle,
 	siteUrl: Astro.url.origin,
+	path: `/posts/${slug}`,
+	defaultOgImage: featuredImageUrl,
 });
 
 // Bylines are already hydrated by getEmDashEntry
@@ -72,38 +71,35 @@ const bylines = post.data.bylines ?? [];
 // Get reading time
 const readingTime = getReadingTime(post.data.content);
 
-// Fetch this post's tags and the related-posts list in parallel — they're
-// Independent queries, so running them concurrently halves the round-trip
-// Cost on remote databases.
-// Note: post.id is the slug, post.data.id is the database ULID.
-const [tags, { entries: recentPosts }] = await Promise.all([
-	getEntryTerms("posts", post.data.id, "tag"),
-	// Fetch a few extra in case the current post is among them
-	getEmDashCollection("posts", {
-		limit: 4,
-		orderBy: { published_at: "desc" },
-	}),
-]);
+// This post's tags are already hydrated onto the entry by getEmDashEntry —
+// no extra query needed.
+const tags = post.data.terms?.tag ?? [];
+
+// Fetch a few extra recent posts in case the current post is among them.
+const { entries: recentPosts } = await getEmDashCollection("posts", {
+	orderBy: { published_at: "desc" },
+	limit: 4,
+});
 const otherPosts = recentPosts.filter((p) => p.id !== post.id).slice(0, 3);
 
 // Single batched query for related-posts tags, rather than one
-// GetEntryTerms() call per related post.
+// getEntryTerms() call per related post.
 const otherTagsByEntry = await getTermsForEntries(
 	"posts",
 	otherPosts.map((p) => p.data.id),
 	"tag",
 );
 const otherPostsWithTags = otherPosts.map((p) => ({
-	bylines: p.data.bylines ?? [],
 	post: p,
 	tags: otherTagsByEntry.get(p.data.id) ?? [],
+	bylines: p.data.bylines ?? [],
 }));
 
 const publishDate =
 	post.data.publishedAt?.toLocaleDateString("en-US", {
-		day: "numeric",
-		month: "long",
 		year: "numeric",
+		month: "long",
+		day: "numeric",
 	}) ?? null;
 ---
 
@@ -288,13 +284,13 @@ const publishDate =
 		function buildToc() {
 			const content = document.querySelector(".article-content");
 			const tocContainer = document.getElementById("toc-content");
-			if (!content || !tocContainer) {return;}
+			if (!content || !tocContainer) return;
 
 			const headings = content.querySelectorAll("h2, h3");
 			if (headings.length === 0) {
 				// Hide TOC if no headings
 				const toc = document.querySelector(".toc") as HTMLElement | null;
-				if (toc) {toc.style.display = "none";}
+				if (toc) toc.style.display = "none";
 				return;
 			}
 
@@ -326,7 +322,7 @@ const publishDate =
 			const observer = new IntersectionObserver(
 				(entries) => {
 					entries.forEach((entry) => {
-						const {id} = entry.target;
+						const id = entry.target.id;
 						const link = tocContainer.querySelector(`a[href="#${id}"]`);
 						if (link) {
 							if (entry.isIntersecting) {

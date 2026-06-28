@@ -6,10 +6,10 @@ const WHITESPACE_REGEX = /\s+/;
 const CJK_CHARACTER_REGEX =
   /\p{Script=Han}|\p{Script=Hangul}|\p{Script=Hiragana}|\p{Script=Katakana}/gu;
 
-interface PortableTextSpan {
+type PortableTextSpan = {
   _type: string;
   text?: string;
-}
+};
 
 type PortableTextTextBlock = PortableTextBlock & {
   _type: "block";
@@ -32,9 +32,7 @@ function countCjkCharacters(text: string): number {
  * Extract plain text from Portable Text blocks
  */
 export function extractText(blocks: PortableTextBlock[] | undefined): string {
-  if (!blocks || !Array.isArray(blocks)) {
-    return "";
-  }
+  if (!blocks || !Array.isArray(blocks)) return "";
 
   return blocks
     .filter(isTextBlock)

@@ -1,9 +1,9 @@
 ---
 import {
-	decodeSlug,
-	getEmDashCollection,
 	getTerm,
+	getEmDashCollection,
 	getTermsForEntries,
+	decodeSlug,
 } from "emdash";
 import Base from "../../layouts/Base.astro";
 import PostCard from "../../components/PostCard.astro";
@@ -17,14 +17,14 @@ if (!term) {
 }
 
 const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
-	orderBy: { published_at: "desc" },
 	where: { tag: term.slug },
+	orderBy: { published_at: "desc" },
 });
 
-Astro.cache.set(cacheHint);
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Single batched query for tags on every post tagged with this term,
-// Rather than calling getEntryTerms() per post.
+// rather than calling getEntryTerms() per post.
 const tagsByEntry = await getTermsForEntries(
 	"posts",
 	posts.map((p) => p.data.id),

@@ -1,8 +1,8 @@
 ---
 import {
 	getEmDashCollection,
-	getSiteSettings,
 	getTermsForEntries,
+	getSiteSettings,
 } from "emdash";
 import { Image } from "emdash/ui";
 import Base from "../layouts/Base.astro";
@@ -11,19 +11,19 @@ import { getReadingTime } from "../utils/reading-time";
 import { resolveBlogSiteIdentity } from "../utils/site-identity";
 
 // Limit to what we render (1 featured + 6 grid). The DB does the slicing
-// Instead of fetching every post and discarding the tail in JS.
+// instead of fetching every post and discarding the tail in JS.
 const POSTS_PER_PAGE = 7;
 
 const [{ entries: posts, cacheHint }, settings] = await Promise.all([
 	getEmDashCollection("posts", {
-		limit: POSTS_PER_PAGE + 1,
-		orderBy: { published_at: "desc" }, // +1 to detect "view all" need
+		orderBy: { published_at: "desc" },
+		limit: POSTS_PER_PAGE + 1, // +1 to detect "view all" need
 	}),
 	getSiteSettings(),
 ]);
 const { siteTitle, siteTagline } = resolveBlogSiteIdentity(settings);
 
-Astro.cache.set(cacheHint);
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Trim the lookahead post used to detect overflow
 const visiblePosts = posts.slice(0, POSTS_PER_PAGE);
@@ -47,28 +47,28 @@ const tagsByEntry = await getTermsForEntries("posts", tagEntryIds, "tag");
 
 const featuredTags = featuredPost
 	? (tagsByEntry.get(featuredPost.data.id) ?? []).map((t) => ({
-			label: t.label,
 			slug: t.slug,
+			label: t.label,
 		}))
 	: [];
 const featuredBylines = featuredPost?.data.bylines ?? [];
 
 const gridPostsWithTags = gridPosts.map((post) => ({
-	bylines: post.data.bylines ?? [],
 	post,
 	tags: (tagsByEntry.get(post.data.id) ?? []).map((t) => ({
 		slug: t.slug,
 		label: t.label,
 	})),
+	bylines: post.data.bylines ?? [],
 }));
 
 // Format date helper
 function formatDate(date: Date | null | undefined) {
-	if (!date) {return null;}
+	if (!date) return null;
 	return date.toLocaleDateString("en-US", {
-		day: "numeric",
-		month: "long",
 		year: "numeric",
+		month: "long",
+		day: "numeric",
 	});
 }
 ---
