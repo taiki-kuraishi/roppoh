@@ -27,3 +27,10 @@ module "zero_trust" {
   source     = "../../modules/zero-trust"
   account_id = var.cloudflare_account_id
 }
+
+# ----- DNS -----
+module "dns" {
+  source       = "../../modules/dns"
+  zone_name    = "tsar-bmb.org"
+  tunnel_cname = module.zero_trust.tunnel_cname
+}
