@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#MISE description="run development server"
+#MISE description="run development server (bun/turbo)"
 
 set -euo pipefail
 

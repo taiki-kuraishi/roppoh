@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="run discord-gateway-proxy locally"
+#MISE dir="{{config_root}}/cmd/discord-gateway-proxy"
+
+set -euo pipefail
+
+dotenvx run -- go run .

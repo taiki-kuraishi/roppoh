@@ -34,6 +34,10 @@ pre-commit:
       root: infra
       glob: "infra/**/*.tf"
       run: mise exec -- tflint
+    go-lint:
+      glob: "**/*.go"
+      run: mise exec -- golangci-lint run --fix
+      stage_fixed: true
     kubeconform:
       glob: "k8s/**/*.{yml,yaml}"
       run: mise exec -- kubeconform -summary -ignore-missing-schemas k8s

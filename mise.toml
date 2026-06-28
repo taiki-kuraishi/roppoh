@@ -1,5 +1,9 @@
 [tools]
 bun = "1.3.12"
+# Keep this version in sync with .github/actions/setup-go and the go directive in go.mod
+go = "1.26.4"
+# Keep this version in sync with golangci/golangci-lint-action version in .github/workflows/go-ci.yml
+golangci-lint = "2.12.2"
 kube-linter = "latest"
 kubeconform = "latest"
 lefthook = "latest"
