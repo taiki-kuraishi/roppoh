@@ -24,7 +24,11 @@ jobs:
       - uses: jdx/mise-action@v4
       - name: kubeconform (validate)
         run: |
-          find k8s -name "*.yaml" -not -name "*.sops.yaml" -not -path "*/patches/*" \
-            | xargs kubeconform -summary -ignore-missing-schemas
+          kubeconform \
+            -summary \
+            -ignore-missing-schemas \
+            -ignore-filename-pattern '.*\.sops\.yaml' \
+            -ignore-filename-pattern '.*/patches/.*' \
+            k8s
       - name: kube-linter (lint)
         run: kube-linter lint k8s --config .kube-linter.yaml
