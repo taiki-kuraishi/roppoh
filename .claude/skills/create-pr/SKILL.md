@@ -49,6 +49,7 @@ This skill uses emojis from [gitmoji.dev](https://gitmoji.dev/) specification. P
 ## Notes
 
 - Title is generated in **English only**
+- Body is generated in **English only**
 - Body follows the project's PR template structure
 - All generated content can be reviewed before final commit
 - GitHub CLI (`gh pr create`) handles the actual PR creation
