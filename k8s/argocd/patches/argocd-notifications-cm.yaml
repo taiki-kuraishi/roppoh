@@ -17,6 +17,8 @@ data:
         details_url: "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}?operation=true"
         status: completed
         conclusion: success
+        started_at: "{{.app.status.operationState.startedAt}}"
+        completed_at: "{{.app.status.operationState.finishedAt}}"
         output:
           title: "Deployment of {{.app.metadata.name}} on ArgoCD"
           summary: "Application {{.app.metadata.name}} is now running new version of deployments manifests."
