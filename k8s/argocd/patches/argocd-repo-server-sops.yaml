@@ -37,7 +37,7 @@ spec:
               mountPath: /usr/local/bin/sops
               subPath: sops
             - name: custom-tools
-              mountPath: /.config/kustomize/plugin/viaductoss/v1beta1/ksops/ksops
+              mountPath: /usr/local/bin/ksops
               subPath: ksops
             - name: sops-age
               mountPath: /sops/age
