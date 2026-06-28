@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-tempo
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    # 2026-01-30 以降 OSS Tempo Helm chart は grafana-community に移行済み
+    repoURL: https://grafana-community.github.io/helm-charts
+    chart: tempo
+    targetRevision: 2.2.3
+    helm:
+      valuesObject:
+        tempo:
+          # -----------------------------------------------------------------------
+          # Cloudflare R2 (S3 互換) ストレージ設定
+          # 事前準備: R2 バケット `roppoh-grafana-tempo` を作成すること
+          # -----------------------------------------------------------------------
+          storage:
+            trace:
+              backend: s3
+              s3:
+                # R2 エンドポイント: <アカウントID>.r2.cloudflarestorage.com に変更すること
+                endpoint: bd1a33a9922e50b3afff5a2f21ad52d0.r2.cloudflarestorage.com
+                bucket: roppoh-grafana-tempo
+                region: auto
+                # 認証情報は grafana-object-storage Secret から env 展開で注入
+                access_key: "${AWS_ACCESS_KEY_ID}"
+                secret_key: "${AWS_SECRET_ACCESS_KEY}"
+                insecure: false # R2 は HTTPS を使用
+              wal:
+                path: /var/tempo/wal
+
+          # -----------------------------------------------------------------------
+          # OTLP レシーバー: デフォルト値のままで有効（gRPC:4317, HTTP:4318）
+          # 将来の Cloudflare Workers からのトレース push を受け付ける
+          # -----------------------------------------------------------------------
+          receivers:
+            jaeger:
+              protocols:
+                grpc:
+                  endpoint: 0.0.0.0:14250
+                thrift_binary:
+                  endpoint: 0.0.0.0:6832
+                thrift_compact:
+                  endpoint: 0.0.0.0:6831
+                thrift_http:
+                  endpoint: 0.0.0.0:14268
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: "0.0.0.0:4317"
+                http:
+                  endpoint: "0.0.0.0:4318"
+
+          # -----------------------------------------------------------------------
+          # 設定ファイル内の ${AWS_*} を env 展開するフラグ
+          # extraArgs は dict 形式 (key: value → --key=value として渡される)
+          # -----------------------------------------------------------------------
+          extraArgs:
+            config.expand-env: "true"
+
+          # grafana-object-storage Secret を環境変数として注入
+          extraEnvFrom:
+            - secretRef:
+                name: grafana-object-storage
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
