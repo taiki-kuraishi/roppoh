@@ -23,7 +23,7 @@
         "@astrojs/react": "5.0.5",
         "@emdash-cms/cloudflare": "0.23.0",
         "@emdash-cms/plugin-forms": "0.2.4",
-        "@emdash-cms/plugin-webhook-notifier": "0.1.3",
+        "@emdash-cms/plugin-webhook-notifier": "0.2.0",
         "astro": "6.3.8",
         "emdash": "0.23.0",
         "react": "catalog:",
@@ -590,7 +590,7 @@
 
     "@emdash-cms/plugin-types": ["@emdash-cms/plugin-types@0.1.0", "", {}, "sha512-aV6bQ/XUK/KBjuG6wVMhtMPWjG4n5VM5qjZY1SVJed9qFWKmzvyMlf00x2Y/nQfp5Hik2Yj2AVeAGf0dtuhvOw=="],
 
-    "@emdash-cms/plugin-webhook-notifier": ["@emdash-cms/plugin-webhook-notifier@0.1.3", "", { "peerDependencies": { "emdash": ">=0.10.0" } }, "sha512-sIVHN5NkQI3GNHK2La4fecni02A8+bFhoe56qYSfKwYxwschB8fy3X4UVq887K2Px7sylMsoVkiBEdUBPkiHCQ=="],
+    "@emdash-cms/plugin-webhook-notifier": ["@emdash-cms/plugin-webhook-notifier@0.2.0", "", { "peerDependencies": { "emdash": ">=0.13.0" } }, "sha512-0qyDWwBAg6LZT/ODAEOiDdsErIwloQ9nNohkYj/y3ZvrUExG/LJeC6XIKY7+5K7jeQ2RlDnuNfSLyEJdDcZxSw=="],
 
     "@emdash-cms/registry-client": ["@emdash-cms/registry-client@0.3.2", "", { "dependencies": { "@atcute/atproto": "^4.0.2", "@atcute/client": "^5.0.0", "@atcute/lexicons": "^2.0.0", "@emdash-cms/registry-lexicons": "0.1.1" } }, "sha512-2mjKuMUbFNeLVuRoBwbB4xu1AXpsCWFSJLIJcH0tceddd6MZEAYpkaiQLFpBhrIDYKFM5Gg73Qha7UX9PmQ7PA=="],
 
