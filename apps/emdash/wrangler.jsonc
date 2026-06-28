@@ -37,4 +37,13 @@
       "zone_name": "tsar-bmb.org",
     },
   ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+    },
+  },
 }

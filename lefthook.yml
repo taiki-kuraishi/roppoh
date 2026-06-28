@@ -2,25 +2,25 @@ pre-commit:
   parallel: true
   commands:
     install:
-      run: bun install --frozen-lockfile --dry-run
+      run: mise exec -- bun install --frozen-lockfile --dry-run
     oxfmt:
       stage_fixed: true
       exclude: "**/*.png"
       run: mise exec -- oxfmt
     oxlint:
       stage_fixed: true
-      run: bun run oxlint
+      run: mise exec -- bun run oxlint
     build:
-      run: turbo build
+      run: mise exec -- turbo build
     type-check:root:
-      run: bun run type-check
+      run: mise exec -- bun run type-check
     type-check:turbo:
-      run: turbo type-check
+      run: mise exec -- turbo type-check
     cf-typegen:
       stage_fixed: true
-      run: turbo cf-typegen
+      run: mise exec -- turbo cf-typegen
     knip:
-      run: bun run knip
+      run: mise exec -- bun run knip
     terraform-fmt:
       root: infra
       glob: "infra/**/*.tf"
