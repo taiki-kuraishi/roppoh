@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 #MISE description="Decrypt env files for apps/neo-fujimatsu"
 
-dotenvx decrypt --stdout -f apps/neo-fujimatsu/.env.enc -fk .env.keys > apps/neo-fujimatsu/.env
+sops --decrypt --output-type dotenv apps/neo-fujimatsu/.env.sops.yaml > apps/neo-fujimatsu/.env

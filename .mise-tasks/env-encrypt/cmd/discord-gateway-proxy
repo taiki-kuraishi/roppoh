@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 #MISE description="Encrypt env files for cmd/discord-gateway-proxy"
 
-dotenvx encrypt --stdout -f cmd/discord-gateway-proxy/.env -fk .env.keys > cmd/discord-gateway-proxy/.env.enc
+sops --encrypt --input-type dotenv cmd/discord-gateway-proxy/.env > cmd/discord-gateway-proxy/.env.sops.yaml

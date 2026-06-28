@@ -40,7 +40,7 @@ pre-commit:
       stage_fixed: true
     kubeconform:
       glob: "k8s/**/*.{yml,yaml}"
-      run: mise exec -- kubeconform -summary -ignore-missing-schemas k8s
+      run: mise exec -- sh -c 'find k8s -name "*.yaml" -not -name "*.sops.yaml" -not -path "*/patches/*" | xargs kubeconform -summary -ignore-missing-schemas'
     kube-linter:
       glob: "k8s/**/*.{yml,yaml}"
       run: mise exec -- kube-linter lint k8s --config .kube-linter.yaml

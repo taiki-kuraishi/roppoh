@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 #MISE description="Decrypt env files for cmd/discord-gateway-proxy"
 
-dotenvx decrypt --stdout -f cmd/discord-gateway-proxy/.env.enc -fk .env.keys > cmd/discord-gateway-proxy/.env
+sops --decrypt --output-type dotenv cmd/discord-gateway-proxy/.env.sops.yaml > cmd/discord-gateway-proxy/.env

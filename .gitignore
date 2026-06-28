@@ -43,8 +43,9 @@ test-results
 # zed
 .zed/settings.json
 
-# dotenvx
+# sops
 .env.keys
+*.env.sops.yaml.dec
 
 # lefthook
 .lefthook-local.yml

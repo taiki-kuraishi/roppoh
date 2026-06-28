@@ -1,0 +1,11 @@
+creation_rules:
+  # k8s Secret manifests: encrypt only data/stringData, keep metadata as plaintext
+  - path_regex: 'k8s/secrets/.*\.sops\.yaml$'
+    encrypted_regex: "^(data|stringData)$"
+    age: >-
+      age1wref3z28crtwtmd5h570vlrutrrd53r2rdyztaklr5zqwc7kf3msdrjp56
+
+  # App and infra dotenv files: encrypt all values
+  - path_regex: '(apps|cmd|infra)/.*\.env\.sops\.yaml$'
+    age: >-
+      age1wref3z28crtwtmd5h570vlrutrrd53r2rdyztaklr5zqwc7kf3msdrjp56
