@@ -28,6 +28,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "otel.tsar-bmb.org"
         service  = "http://grafana-alloy.monitoring.svc.cluster.local:4318"
       },
+      {
+        hostname = "alloy.tsar-bmb.org"
+        service  = "http://grafana-alloy.monitoring.svc.cluster.local:12345"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"
