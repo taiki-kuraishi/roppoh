@@ -4,3 +4,4 @@ resources:
   - install.yaml
 patches:
   - path: patches/argocd-cm.yaml
+  - path: patches/argocd-notifications-cm.yaml
