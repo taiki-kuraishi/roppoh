@@ -12,5 +12,4 @@ patches:
       kind: Secret
       metadata:
         name: argocd-notifications-secret
-        namespace: argocd
       $patch: delete
