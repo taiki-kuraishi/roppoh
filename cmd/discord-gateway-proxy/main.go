@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := logging.New(cfg.LogLevel)
+	logger := logging.New(slog.LevelInfo)
 
 	session, err := gateway.NewSession(cfg.BotToken, logger)
 	if err != nil {

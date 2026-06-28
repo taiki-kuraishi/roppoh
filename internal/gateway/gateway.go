@@ -4,6 +4,7 @@ package gateway
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -19,9 +20,9 @@ func NewSession(token string, logger *slog.Logger) (*discordgo.Session, error) {
 		return nil, fmt.Errorf("create discord session: %w", err)
 	}
 
-	// Request only non-privileged intents. Message content, member lists and
-	// presences require privileged intents enabled in the Developer Portal.
-	session.Identify.Intents = discordgo.IntentsAllWithoutPrivileged
+	// Request non-privileged intents plus Presence Intent (privileged, must be
+	// enabled in the Developer Portal under Bot → Privileged Gateway Intents).
+	session.Identify.Intents = discordgo.IntentsAllWithoutPrivileged | discordgo.IntentsGuildPresences
 
 	// Bridge discordgo's internal logs (reconnects, heartbeats, errors) into slog.
 	discordgo.Logger = func(msgL, _ int, format string, a ...any) {
@@ -30,8 +31,13 @@ func NewSession(token string, logger *slog.Logger) (*discordgo.Session, error) {
 	}
 
 	// Catch-all handler: log the concrete Go type of every dispatched event.
+	// TODO(temporary): remove json body logging once event structure is understood.
 	session.AddHandler(func(_ *discordgo.Session, event any) {
-		logger.Info("gateway event", slog.String("event_type", fmt.Sprintf("%T", event)))
+		body, _ := json.Marshal(event)
+		logger.Info("gateway event",
+			slog.String("event_type", fmt.Sprintf("%T", event)),
+			slog.String("body", string(body)),
+		)
 	})
 
 	// Log connection details once the gateway becomes ready.

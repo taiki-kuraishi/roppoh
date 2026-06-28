@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 #MISE description="Encrypt all env files across all packages"
-#MISE depends=["env-encrypt:neo-fujimatsu", "env-encrypt:emdash", "env-encrypt:infra-prod"]
+#MISE depends=["env-encrypt:apps:neo-fujimatsu", "env-encrypt:apps:emdash", "env-encrypt:infra:env:prod", "env-encrypt:cmd:discord-gateway-proxy"]
