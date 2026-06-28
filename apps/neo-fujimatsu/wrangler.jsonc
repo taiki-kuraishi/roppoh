@@ -12,7 +12,15 @@
   ],
   "main": "./src/server/entry.ts",
   "name": "neo-fujimatsu",
-  "observability": { "enabled": true },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+    },
+    "traces": {
+      "enabled": true,
+    },
+  },
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "single-page-application",
