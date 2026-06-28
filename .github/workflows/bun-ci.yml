@@ -35,6 +35,7 @@ jobs:
           package-manager-cache: false
       - uses: ./.github/actions/setup-bun
       - uses: ./.github/actions/setup-turbo
+      - run: bun audit
       - run: bun --bun oxlint --deny-warnings --format=github
       - run: bun run type-check
       - run: bun turbo type-check
