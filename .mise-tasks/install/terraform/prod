@@ -4,6 +4,6 @@
 
 set -euo pipefail
 
-dotenvx run -- terraform init
-
+set -a && source .env && set +a
+terraform init
 tflint --init

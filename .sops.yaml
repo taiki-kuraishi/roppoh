@@ -1,0 +1,17 @@
+# AGE keys:
+#   taiki-kuraishi (local): age1wref3z28crtwtmd5h570vlrutrrd53r2rdyztaklr5zqwc7kf3msdrjp56
+#   k8s/ArgoCD (cluster):   age184jtgez9qt5a6d0fq79c9yxuwk2a7d9zkh2ptpld6egawf0xpclqvetfju
+
+creation_rules:
+  # k8s Secret manifests: encrypt only data/stringData, keep metadata as plaintext
+  # Both keys: local for editing, k8s/ArgoCD for cluster decryption
+  - path_regex: 'k8s/secrets/.*\.sops\.yaml$'
+    encrypted_regex: "^(data|stringData)$"
+    age: >-
+      age1wref3z28crtwtmd5h570vlrutrrd53r2rdyztaklr5zqwc7kf3msdrjp56,
+      age184jtgez9qt5a6d0fq79c9yxuwk2a7d9zkh2ptpld6egawf0xpclqvetfju
+
+  # App and infra dotenv files: local key only (not used in cluster)
+  - path_regex: '(apps|cmd|infra)/.*\.env\.sops\.yaml$'
+    age: >-
+      age1wref3z28crtwtmd5h570vlrutrrd53r2rdyztaklr5zqwc7kf3msdrjp56

@@ -10,9 +10,13 @@ lefthook = "latest"
 terraform = "latest"
 tflint = "latest"
 "npm:turbo" = "latest"
-"npm:@dotenvx/dotenvx" = "latest"
+sops = "latest"
+age = "latest"
 "npm:dev3000" = "latest"
 "npm:oxfmt" = "latest"
+
+[env]
+SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/keys.txt"
 
 [settings]
 npm.bun = true

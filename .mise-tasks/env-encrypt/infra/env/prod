@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 #MISE description="Encrypt env files for infra/env/prod"
 
-dotenvx encrypt --stdout -f infra/env/prod/.env -fk .env.keys > infra/env/prod/.env.enc
+sops --encrypt --input-type dotenv infra/env/prod/.env > infra/env/prod/.env.sops.yaml
