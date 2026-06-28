@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/tsar-org/roppoh
+    repoURL: https://github.com/taiki-kuraishi/roppoh
     targetRevision: main
     path: k8s/renovate
   destination:
