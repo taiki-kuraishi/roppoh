@@ -4,13 +4,6 @@
 
 set -euo pipefail
 
-# Load decrypted secrets (AWS/Cloudflare creds) for Terraform backend auth
-# infra/env/prod/mise.toml's _.file is not applied when invoked via #MISE dir
-set -a
-# shellcheck source=infra/env/prod/.env
-source .env
-set +a
-
+set -a && source .env && set +a
 terraform init
-
 tflint --init
