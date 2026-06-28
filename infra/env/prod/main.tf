@@ -21,3 +21,9 @@ module "secrets_store" {
   source     = "../../modules/secrets-store"
   account_id = var.cloudflare_account_id
 }
+
+# ----- Zero Trust (Cloudflare Tunnel) -----
+module "zero_trust" {
+  source     = "../../modules/zero-trust"
+  account_id = var.cloudflare_account_id
+}

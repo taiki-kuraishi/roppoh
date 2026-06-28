@@ -25,6 +25,17 @@ spec:
             varlog: true
             dockercontainers: true # Docker ランタイムのシンボリックリンク追従用
 
+          # OTLP ポートを Service に公開（Cloudflare Workers からのトレース受信用）
+          extraPorts:
+            - name: otlp-grpc
+              port: 4317
+              targetPort: 4317
+              protocol: TCP
+            - name: otlp-http
+              port: 4318
+              targetPort: 4318
+              protocol: TCP
+
           # ノード名を env として注入（DaemonSet でノード別にスクレイプ対象を絞るため）
           extraEnv:
             - name: KUBE_NODE_NAME
