@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: argocd-cm
 data:
+  url: https://argocd.tsar-bmb.org
   kustomize.buildOptions: "--enable-alpha-plugins --enable-exec"
   resource.customizations.ignoreResourceUpdates.ConfigMap: |
     jqPathExpressions:
