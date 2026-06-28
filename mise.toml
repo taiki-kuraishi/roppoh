@@ -12,7 +12,6 @@ tflint = "latest"
 "npm:turbo" = "latest"
 sops = "latest"
 age = "latest"
-yq = "latest"
 "npm:dev3000" = "latest"
 "npm:oxfmt" = "latest"
 
