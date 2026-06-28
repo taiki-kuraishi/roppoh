@@ -15,4 +15,4 @@ data:
       status:
         state: success
         label: "continuous-delivery/{{.app.metadata.name}}"
-        targetURL: "{{.context.argocdUrl}}/applications/{{.app.metadata.name}}"
+        targetURL: "https://argocd.tsar-bmb.org/applications/{{.app.metadata.name}}"
