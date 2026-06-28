@@ -120,7 +120,7 @@ data:
       token: fs.readFileSync('/shared/token', 'utf8').trim(),
 
       platform: 'github',
-      repositories: ['tsar-org/roppoh'],
+      repositories: ['taiki-kuraishi/roppoh'],
 
       // repo 側に renovate.json が存在するため onboarding PR は不要
       onboarding: false,
