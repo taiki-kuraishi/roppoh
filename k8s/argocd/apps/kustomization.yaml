@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - argocd.yaml
   - renovate.yaml
+  - cloudflared.yaml
   - grafana-loki.yaml
   - grafana-mimir.yaml
   - grafana-tempo.yaml
