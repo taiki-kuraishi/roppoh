@@ -4,15 +4,15 @@ import Base from "../../layouts/Base.astro";
 import { getReadingTime } from "../../utils/reading-time";
 
 // Sort in the database rather than in JS — lets the DB use its index on
-// Published_at and avoids a full-table scan on the client.
+// published_at and avoids a full-table scan on the client.
 const { entries: posts, cacheHint } = await getEmDashCollection("posts", {
 	orderBy: { published_at: "desc" },
 });
 
-Astro.cache.set(cacheHint);
+if (Astro.cache?.enabled) Astro.cache.set(cacheHint);
 
 // Single batched query for tags across all posts, instead of one
-// GetEntryTerms() call per post (which would be N round-trips).
+// getEntryTerms() call per post (which would be N round-trips).
 // Bylines are already hydrated on entry.data.bylines.
 const tagsByEntry = await getTermsForEntries(
 	"posts",
@@ -21,16 +21,16 @@ const tagsByEntry = await getTermsForEntries(
 );
 
 const postsWithTags = posts.map((post) => ({
-	bylines: post.data.bylines ?? [],
 	post,
 	tags: tagsByEntry.get(post.data.id) ?? [],
+	bylines: post.data.bylines ?? [],
 }));
 
 const formatDate = (date: Date) =>
 	date.toLocaleDateString("en-US", {
-		day: "numeric",
-		month: "long",
 		year: "numeric",
+		month: "long",
+		day: "numeric",
 	});
 ---
 

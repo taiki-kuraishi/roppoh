@@ -1,5 +1,5 @@
 ---
-import type { ContentBylineCredit, MediaValue } from "emdash";
+import type { MediaValue, ContentBylineCredit } from "emdash";
 import { Image } from "emdash/ui";
 
 interface Props {
@@ -9,7 +9,7 @@ interface Props {
 	href: string;
 	date?: Date;
 	readingTime?: number;
-	tags?: { slug: string; label: string }[];
+	tags?: Array<{ slug: string; label: string }>;
 	bylines?: ContentBylineCredit[];
 }
 
@@ -26,9 +26,9 @@ const {
 
 const formattedDate = date
 	? date.toLocaleDateString("en-US", {
-			day: "numeric",
-			month: "short",
 			year: "numeric",
+			month: "short",
+			day: "numeric",
 		})
 	: null;
 ---

@@ -1,21 +1,14 @@
-import type { PluginDescriptor } from "emdash";
-
 import cloudflare from "@astrojs/cloudflare";
 import react from "@astrojs/react";
-import { cloudflareCache, d1, r2, sandbox } from "@emdash-cms/cloudflare";
+import { d1, r2, sandbox } from "@emdash-cms/cloudflare";
 import { formsPlugin } from "@emdash-cms/plugin-forms";
-import { webhookNotifierPlugin } from "@emdash-cms/plugin-webhook-notifier";
+import webhookNotifier from "@emdash-cms/plugin-webhook-notifier";
 import { defineConfig, fontProviders } from "astro/config";
 import emdash from "emdash/astro";
 
 export default defineConfig({
   adapter: cloudflare(),
   devToolbar: { enabled: false },
-  experimental: {
-    cache: {
-      provider: cloudflareCache(),
-    },
-  },
   fonts: [
     {
       cssVariable: "--font-sans",
@@ -41,9 +34,8 @@ export default defineConfig({
     emdash({
       database: d1({ binding: "DB", session: "auto" }),
       storage: r2({ binding: "MEDIA" }),
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-      plugins: [formsPlugin() as PluginDescriptor],
-      sandboxed: [webhookNotifierPlugin()],
+      plugins: [formsPlugin()],
+      sandboxed: [webhookNotifier],
       sandboxRunner: sandbox(),
       marketplace: "https://marketplace.emdashcms.com",
     }),

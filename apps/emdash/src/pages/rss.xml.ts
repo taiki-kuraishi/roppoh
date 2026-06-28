@@ -9,15 +9,13 @@ export const GET: APIRoute = async ({ site, url }) => {
   const { siteTitle, siteTagline } = resolveBlogSiteIdentity(await getSiteSettings());
 
   const { entries: posts } = await getEmDashCollection("posts", {
-    limit: 20,
     orderBy: { published_at: "desc" },
+    limit: 20,
   });
 
   const items = posts
     .map((post) => {
-      if (!post.data.publishedAt) {
-        return null;
-      }
+      if (!post.data.publishedAt) return null;
       const pubDate = post.data.publishedAt.toUTCString();
 
       const postUrl = `${siteUrl}/posts/${post.id}`;
@@ -50,8 +48,8 @@ ${items}
 
   return new Response(rss, {
     headers: {
-      "Cache-Control": "public, max-age=3600",
       "Content-Type": "application/rss+xml; charset=utf-8",
+      "Cache-Control": "public, max-age=3600",
     },
   });
 };
