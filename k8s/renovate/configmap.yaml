@@ -128,4 +128,8 @@ data:
       // GitHub App として PR / commit を作成するときの git author。
       // APP_USER_ID を実際の数値に置き換えること。
       gitAuthor: 'renovate-tsar[bot] <297387044+renovate-tsar[bot]@users.noreply.github.com>',
+
+      // mise.lock 更新時に `mise trust` / `mise lock` の実行を許可する。
+      // self-hosted では明示的な許可が必須(Renovate 43.210.1+)。
+      allowedUnsafeExecutions: ['mise'],
     };

@@ -43,6 +43,18 @@
       "addLabels": ["kubernetes", "helm"]
     },
     {
+      "matchManagers": ["mise"],
+      "addLabels": ["mise"]
+    },
+    {
+      "matchPackageNames": ["turbo"],
+      "groupName": "turbo"
+    },
+    {
+      "matchPackageNames": ["bun"],
+      "groupName": "bun"
+    },
+    {
       "matchManagers": ["npm", "bun"],
       "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
       "groupName": "react"

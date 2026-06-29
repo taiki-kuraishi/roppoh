@@ -35,7 +35,7 @@ spec:
           initContainers:
             - name: token
               # 【自己更新】このイメージタグは Renovate 自身が kubernetes manager で更新する
-              image: renovate/renovate:39.263.0
+              image: renovate/renovate:43.246.1
               command: ["node", "/scripts/token-init.js"]
               env:
                 - name: APP_ID
@@ -70,7 +70,7 @@ spec:
                   mountPath: /shared
           containers:
             - name: renovate
-              image: renovate/renovate:39.263.0
+              image: renovate/renovate:43.246.1
               env:
                 - name: RENOVATE_CONFIG_FILE
                   value: /scripts/config.js
