@@ -20,13 +20,7 @@ jobs:
         working-directory: infra/env/prod
     steps:
       - uses: actions/checkout@v7
-      - uses: hashicorp/setup-terraform@v4
-        with:
-          terraform_wrapper: false
-          terraform_version: "latest"
-      - uses: terraform-linters/setup-tflint@v6
-        with:
-          tflint_version: latest
+      - uses: jdx/mise-action@v4
       - name: terraform fmt
         working-directory: infra
         run: terraform fmt -check -recursive
