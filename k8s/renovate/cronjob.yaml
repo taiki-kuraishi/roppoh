@@ -11,10 +11,12 @@ metadata:
     # readOnlyRootFilesystem を main コンテナで強制しない
     ignore-check.kube-linter.io/no-read-only-root-fs: "Renovate requires write access to its container filesystem"
 spec:
-  # 毎週月曜 03:00 UTC に実行（.github/workflows/renovate.yml の cron 設定を踏襲）
-  schedule: "0 3 * * 1"
+  # 毎時 0 分に実行
+  schedule: "0 * * * *"
   # 前回のジョブが実行中であれば新しいジョブを起動しない
   concurrencyPolicy: Forbid
+  # スケジューラ遅延時に未実行ジョブが積み上がるのを防ぐ
+  startingDeadlineSeconds: 200
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 3
   jobTemplate:
