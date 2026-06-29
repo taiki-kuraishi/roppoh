@@ -4,6 +4,6 @@
 
 set -euo pipefail
 
-set -a && source .env && set +a
-terraform init
-tflint --init
+sops exec-env .env.sops.yaml 'terraform init'
+
+sops exec-env .env.sops.yaml 'tflint --init'
