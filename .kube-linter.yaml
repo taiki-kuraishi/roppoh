@@ -5,3 +5,7 @@ checks:
     # install.yaml can no longer be excluded by the install.yaml path alone;
     # ignore the whole overlay dir (its only workload content is install.yaml).
     - "k8s/argocd/**"
+    # k8s/monitoring/dashboards holds generated Grafana dashboard JSON +
+    # a configMapGenerator. The dashboard JSON is not a k8s manifest, so
+    # ignore the dir (the generated ConfigMap has nothing to lint anyway).
+    - "k8s/monitoring/dashboards/**"

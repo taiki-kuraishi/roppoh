@@ -72,6 +72,23 @@ spec:
                     datasourceUid: mimir
 
         # -----------------------------------------------------------------------
+        # ダッシュボード provisioning (コード管理)
+        # sidecar が monitoring namespace の `grafana_dashboard: "1"` ラベル付き
+        # ConfigMap を監視して自動ロードする。ConfigMap は
+        # k8s/monitoring/dashboards/ から kustomize (configMapGenerator) で生成し、
+        # JSON 自体は packages/grafana-dashboards (Foundation SDK) が出力する。
+        # -----------------------------------------------------------------------
+        sidecar:
+          dashboards:
+            enabled: true
+            label: grafana_dashboard
+            labelValue: "1"
+            # ConfigMap の `grafana_folder` アノテーションでフォルダ分けする
+            folderAnnotation: grafana_folder
+            provider:
+              foldersFromFilesStructure: true
+
+        # -----------------------------------------------------------------------
         # Service: ClusterIP のみ (外部公開は Cloudflare Tunnel で別途対応)
         # アクセス: kubectl -n monitoring port-forward svc/grafana 3000:80
         # -----------------------------------------------------------------------

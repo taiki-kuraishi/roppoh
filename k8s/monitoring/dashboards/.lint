@@ -1,0 +1,25 @@
+# grafana/dashboard-linter 設定
+# https://github.com/grafana/dashboard-linter
+#
+# dashboard-linter は「アプリ/サービス監視」向けに job / instance テンプレ変数を
+# 強制するが、このリポジトリのクラスタ用ダッシュボードは grafana-alloy が
+# cAdvisor/kubelet を単一の固定 job (kubernetes-cadvisor / kubelet) として、
+# かつ apiserver proxy 経由で instance を同一値にしてスクレイプしている。
+# したがって job / instance による絞り込みは意味を持たないため除外する。
+exclusions:
+  template-job-rule:
+    reason: "cAdvisor/kubelet は固定 job のため $job 変数は不要"
+  template-instance-rule:
+    reason: "全ノードが apiserver proxy 経由で instance 同一のため $instance 変数は無意味"
+  target-job-rule:
+    reason: "固定 job (kubernetes-cadvisor) を直接指定しており $job マッチャは使わない"
+  target-instance-rule:
+    reason: "instance がノード間で同一のため instance マッチャは使わない"
+  # 以下は Loki/Tempo ダッシュボード (cf-workers-otel) 向け。dashboard-linter は
+  # Prometheus 前提で datasource テンプレ変数を要求するが、Loki/Tempo は各 1 つで
+  # UID 直指定のため不要。共有 .lint なので K8s 1 枚目にも適用されるが、1 枚目は
+  # 元々 datasource 変数を持つので実害はない。
+  template-datasource-rule:
+    reason: "Loki/Tempo ダッシュボードは datasource が単一・UID 直指定で変数化しない"
+  panel-datasource-rule:
+    reason: "Loki/Tempo パネルは UID 直指定。Prometheus datasource 変数は持たない"

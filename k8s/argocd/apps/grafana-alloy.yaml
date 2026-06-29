@@ -243,7 +243,8 @@ spec:
                 }
                 output {
                   traces  = [otelcol.exporter.otlp.tempo.input]
-                  logs    = [otelcol.exporter.loki.grafana.input]
+                  // logs は transform で Loki ラベルヒントを付与してから exporter へ流す
+                  logs    = [otelcol.processor.transform.cf_workers_loki_labels.input]
                   metrics = [otelcol.exporter.prometheus.mimir.input]
                 }
               }
@@ -254,6 +255,24 @@ spec:
                   tls {
                     insecure = true
                   }
+                }
+              }
+
+              // OTLP logs に Loki ラベルヒントを付与する。
+              // otelcol.exporter.loki は resource 属性 `loki.resource.labels` に
+              // 列挙されたキーを Loki ストリームラベルへ昇格させる。service.name を
+              // 指定するとラベル `service_name` が付き、ダッシュボードの
+              // {service_name=~"$service"} で絞り込める(pod ログとの区別にもなる)。
+              otelcol.processor.transform "cf_workers_loki_labels" {
+                error_mode = "ignore"
+                log_statements {
+                  context = "resource"
+                  statements = [
+                    `set(resource.attributes["loki.resource.labels"], "service.name")`,
+                  ]
+                }
+                output {
+                  logs = [otelcol.exporter.loki.grafana.input]
                 }
               }
 

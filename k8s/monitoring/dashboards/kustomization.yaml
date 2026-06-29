@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+# Grafana ダッシュボード JSON を ConfigMap 化する。
+# Grafana Helm chart の sidecar が `grafana_dashboard: "1"` ラベルを監視して
+# 自動ロードし、`grafana_folder` アノテーションでフォルダ分けする。
+#
+# JSON は packages/grafana-dashboards (Foundation SDK) が生成するコード生成物。
+# 追加/更新は `bun run --filter @roppoh/grafana-dashboards build` で行う。
+configMapGenerator:
+  - name: grafana-dashboard-k8s-pods
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Kubernetes
+    files:
+      - k8s-nodes-pods.json
+  - name: grafana-dashboard-cf-workers
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Cloudflare
+    files:
+      - cf-workers-otel.json

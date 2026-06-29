@@ -16,4 +16,5 @@ resources:
   - discord-gateway-proxy.yaml
   - discord-gateway-proxy-build.yaml
   - openclaw.yaml
+  - grafana-dashboards.yaml
   - secrets.yaml
