@@ -221,9 +221,10 @@ spec:
               }
 
               // =================================================================
-              // OTLP RECEIVER: Cloudflare Workers の traces / logs を受信
+              // OTLP RECEIVER: アプリ (discord-gateway-proxy 等) / Cloudflare Workers の
+              // traces / logs / metrics を受信
               //   - bearer 認証で incoming Authorization: Bearer <token> を検証
-              //   - traces → Tempo / logs → Loki
+              //   - traces → Tempo / logs → Loki / metrics → Mimir
               // =================================================================
 
               // incoming リクエストの Authorization: Bearer <token> を検証（server authenticator）
@@ -241,8 +242,9 @@ spec:
                   auth     = otelcol.auth.bearer.cf_workers.handler
                 }
                 output {
-                  traces = [otelcol.exporter.otlp.tempo.input]
-                  logs   = [otelcol.exporter.loki.grafana.input]
+                  traces  = [otelcol.exporter.otlp.tempo.input]
+                  logs    = [otelcol.exporter.loki.grafana.input]
+                  metrics = [otelcol.exporter.prometheus.mimir.input]
                 }
               }
 
@@ -258,6 +260,12 @@ spec:
               // OTLP logs → Loki 形式に変換し、既存の loki.write.grafana（loki-gateway push API）へ転送
               otelcol.exporter.loki "grafana" {
                 forward_to = [loki.write.grafana.receiver]
+              }
+
+              // OTLP metrics を Prometheus 形式に変換し、既存の remote_write 経由で
+              // Mimir へ送る。
+              otelcol.exporter.prometheus "mimir" {
+                forward_to = [prometheus.remote_write.mimir.receiver]
               }
 
         # -----------------------------------------------------------------------
