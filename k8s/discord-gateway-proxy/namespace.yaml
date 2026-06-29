@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: discord-gateway-proxy
+  labels:
+    app.kubernetes.io/name: discord-gateway-proxy
+    app.kubernetes.io/managed-by: argocd

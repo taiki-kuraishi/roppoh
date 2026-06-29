@@ -9,4 +9,8 @@ resources:
   - grafana-tempo.yaml
   - grafana.yaml
   - grafana-alloy.yaml
+  - argo-workflows.yaml
+  - zot.yaml
+  - discord-gateway-proxy.yaml
+  - discord-gateway-proxy-build.yaml
   - secrets.yaml

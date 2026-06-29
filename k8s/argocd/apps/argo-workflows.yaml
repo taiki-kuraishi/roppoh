@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argo-workflows
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-workflows
+    targetRevision: 1.0.18
+    helm:
+      valuesObject:
+        # UI/API サーバは不要（CronWorkflow の実行は workflow-controller が担う）。
+        # 攻撃面を減らすため server は無効化。
+        server:
+          enabled: false
+        controller:
+          # Workflow / CronWorkflow を実行する namespace
+          workflowNamespaces:
+            - argo
+        # Workflow Pod 用の ServiceAccount(argo-workflow) と最小 RBAC を作成
+        workflow:
+          serviceAccount:
+            create: true
+            name: argo-workflow
+          rbac:
+            create: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # CRD を含む大きな manifest があるため server-side apply を使う
+      - ServerSideApply=true
