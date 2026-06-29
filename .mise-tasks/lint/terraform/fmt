@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Check terraform formatting"
+#MISE dir="{{config_root}}/infra"
+
+set -euo pipefail
+
+terraform fmt -check -recursive

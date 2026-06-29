@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#MISE description="Lint bun/turbo code (oxlint, type-check, build, knip)"
+
+set -euo pipefail
+
+bun oxlint --fix
+
+turbo type-check
+
+turbo build
+
+bun knip

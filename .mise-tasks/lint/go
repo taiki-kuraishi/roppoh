@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Lint go code (golangci-lint, build)"
+
+set -euo pipefail
+
+golangci-lint run
+
+go build ./...
