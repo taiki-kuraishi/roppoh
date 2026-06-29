@@ -15,7 +15,6 @@ on:
       - "apps/**"
       - "bun.lock"
       - "bunfig.toml"
-      - "lefthook.yml"
       - "mise.toml"
       - "package.json"
       - "packages/**"
