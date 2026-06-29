@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Lint k8s manifests (kubeconform, kube-linter)"
+
+set -euo pipefail
+
+# patches/ holds Kustomize strategic-merge patches (partial resources);
+# skip them so kubeconform doesn't reject them for missing required fields.
+kubeconform -summary -ignore-missing-schemas -ignore-filename-pattern 'patches/' k8s
+
+kube-linter lint k8s --config .kube-linter.yaml
