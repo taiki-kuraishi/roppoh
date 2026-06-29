@@ -51,9 +51,11 @@
     "logs": {
       "enabled": true,
       "invocation_logs": true,
+      "destinations": ["alloy-logs"],
     },
     "traces": {
       "enabled": true,
+      "destinations": ["alloy-traces"],
     },
   },
 }

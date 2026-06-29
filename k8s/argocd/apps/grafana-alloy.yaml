@@ -42,6 +42,12 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            # OTLP receiver の bearer 認証トークン（Cloudflare Workers からの送信を検証）
+            - name: CF_WORKERS_OTLP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cf-workers-otlp-token
+                  key: token
 
           # -----------------------------------------------------------------------
           # Alloy (River) 設定
@@ -215,18 +221,28 @@ spec:
               }
 
               // =================================================================
-              // OTLP RECEIVER: 将来の Cloudflare Workers トレース向け
+              // OTLP RECEIVER: Cloudflare Workers の traces / logs を受信
+              //   - bearer 認証で incoming Authorization: Bearer <token> を検証
+              //   - traces → Tempo / logs → Loki
               // =================================================================
+
+              // incoming リクエストの Authorization: Bearer <token> を検証（server authenticator）
+              otelcol.auth.bearer "cf_workers" {
+                token = env("CF_WORKERS_OTLP_TOKEN")
+              }
 
               otelcol.receiver.otlp "default" {
                 grpc {
                   endpoint = "0.0.0.0:4317"
+                  auth     = otelcol.auth.bearer.cf_workers.handler
                 }
                 http {
                   endpoint = "0.0.0.0:4318"
+                  auth     = otelcol.auth.bearer.cf_workers.handler
                 }
                 output {
                   traces = [otelcol.exporter.otlp.tempo.input]
+                  logs   = [otelcol.exporter.loki.grafana.input]
                 }
               }
 
@@ -237,6 +253,11 @@ spec:
                     insecure = true
                   }
                 }
+              }
+
+              // OTLP logs → Loki 形式に変換し、既存の loki.write.grafana（loki-gateway push API）へ転送
+              otelcol.exporter.loki "grafana" {
+                forward_to = [loki.write.grafana.receiver]
               }
 
         # -----------------------------------------------------------------------
