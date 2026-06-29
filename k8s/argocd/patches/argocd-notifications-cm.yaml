@@ -14,5 +14,5 @@ data:
     github:
       status:
         state: success
-        label: "continuous-delivery/{{.app.metadata.name}}"
+        label: "argocd/{{.app.metadata.name}}"
         targetURL: "https://argocd.tsar-bmb.org/applications/{{.app.metadata.name}}"
