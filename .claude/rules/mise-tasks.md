@@ -104,10 +104,10 @@ This task is similar to what Lefthook runs, but runs on-demand instead of automa
 
 **Description**: Comprehensive code quality check
 
-**Task file**: `.mise-tasks/lint`
+**Task file**: `.mise-tasks/lint/` (hierarchical task)
 
 **What it does**:
-See [.mise-tasks/lint](./.mise-tasks/lint) for full implementation
+See [.mise-tasks/lint/](./.mise-tasks/lint/) for full implementation
 
 **When to use**:
 
@@ -120,18 +120,29 @@ See [.mise-tasks/lint](./.mise-tasks/lint) for full implementation
 **Command**:
 
 ```bash
+# Run all lint groups (bun / go / k8s / terraform)
 mise run lint
+
+# Or run a single group
+mise run lint:bun
+mise run lint:go
+mise run lint:k8s
+mise run lint:terraform
 ```
 
-**What's checked**:
+**Structure**:
 
-1. **Linting**: Code quality issues (biome)
-2. **Type Safety**: TypeScript compilation and type errors
-3. **Build**: Successful compilation across all workspaces
-4. **CloudFlare Worker Types**: Worker-specific type generation
-5. **Unused Code**: Exported but unused code (knip)
+`lint` (`lint:_default`) は 4 グループを `depends` で束ねる。グループ間は並列実行(mise デフォルト最大 4 ジョブ)、各グループ内のコマンドは 1 ファイル内で順次実行される。`lint:terraform` はさらに `fmt` / `prod` サブタスクに分かれる(`install:terraform` と同じ構造)。
 
-**Duration**: This task takes longer as it runs a full build. Use selectively.
+| Subtask               | What's checked                                                                                           |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| `lint:bun`            | oxlint (`--fix`) → `turbo type-check` → `turbo build` → knip                                             |
+| `lint:go`             | `golangci-lint run` → `go build ./...`                                                                   |
+| `lint:k8s`            | `kubeconform` (manifest 検証、patches は除外) → `kube-linter`                                            |
+| `lint:terraform:fmt`  | `terraform fmt -check -recursive`(`infra` 全体)                                                          |
+| `lint:terraform:prod` | `terraform validate` → `tflint`(`infra/env/prod`。`terraform init` は `mise run install` で実施済み前提) |
+
+**Duration**: This task takes longer as it runs a full build. Use selectively. 特定カテゴリだけ確認したいときは個別サブタスク (`lint:go` など) を使うと速い。
 
 ---
 

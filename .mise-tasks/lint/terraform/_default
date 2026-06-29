@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Lint terraform code"
+#MISE depends=["lint:terraform:fmt", "lint:terraform:prod"]

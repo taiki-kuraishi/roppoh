@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+#MISE description="Lint all code"
+#MISE depends=["lint:bun", "lint:go", "lint:k8s", "lint:terraform"]

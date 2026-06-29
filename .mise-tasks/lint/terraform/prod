@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#MISE description="Lint terraform prod env (validate, tflint)"
+#MISE dir="{{config_root}}/infra/env/prod"
+
+set -euo pipefail
+
+# `mise run install` (install:terraform:prod) already runs `terraform init` here,
+# so validate/tflint reuse the existing .terraform; no init needed in lint.
+terraform validate
+
+tflint --init
+
+tflint
