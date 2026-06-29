@@ -1,3 +1,11 @@
+output:
+  - meta
+  - summary
+  - success
+  - failure
+  - execution_info
+  - skips
+
 pre-commit:
   parallel: true
   commands:
