@@ -24,7 +24,7 @@ on:
 
 jobs:
   lint-and-build:
-    runs-on: ubuntu-latest
+    runs-on: roppoh-runners
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -42,7 +42,7 @@ jobs:
       - run: bun turbo build
 
   visual-regression-test:
-    runs-on: ubuntu-latest
+    runs-on: roppoh-runners
     timeout-minutes: 15
     needs: lint-and-build
     strategy:
@@ -81,7 +81,7 @@ jobs:
             bun run --filter ${{ matrix.package }} ${{ matrix.test_script }}
 
   unit-test:
-    runs-on: ubuntu-latest
+    runs-on: roppoh-runners
     timeout-minutes: 5
     needs: lint-and-build
     steps:
