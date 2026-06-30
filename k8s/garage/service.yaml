@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: garage
+  namespace: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # Headless Service — StatefulSet の serviceName に使用し、
+  # garage-0.garage.garage.svc.cluster.local で Pod に直接到達できる。
+  # シングル Pod 構成では garage.garage.svc.cluster.local も Pod IP に解決される。
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: garage
+  ports:
+    - name: s3
+      port: 3900
+      targetPort: s3
+      protocol: TCP
+    - name: rpc
+      port: 3901
+      targetPort: rpc
+      protocol: TCP
+    - name: admin
+      port: 3903
+      targetPort: admin
+      protocol: TCP

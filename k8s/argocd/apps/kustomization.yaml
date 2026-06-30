@@ -12,6 +12,7 @@ resources:
   - grafana-alloy.yaml
   - argo-workflows.yaml
   - zot.yaml
+  - garage.yaml
   - discord-gateway-proxy.yaml
   - discord-gateway-proxy-build.yaml
   - secrets.yaml
