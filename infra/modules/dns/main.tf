@@ -39,3 +39,12 @@ resource "cloudflare_dns_record" "alloy" {
   proxied = true
   ttl     = 1
 }
+
+resource "cloudflare_dns_record" "ollama" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "ollama.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}

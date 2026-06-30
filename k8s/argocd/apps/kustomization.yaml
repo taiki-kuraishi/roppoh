@@ -4,6 +4,7 @@ resources:
   - argocd.yaml
   - renovate.yaml
   - cloudflared.yaml
+  - ollama.yaml
   - grafana-loki.yaml
   - grafana-mimir.yaml
   - grafana-tempo.yaml
