@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-gateway-proxy
+  namespace: discord-gateway-proxy
+  labels:
+    app.kubernetes.io/name: discord-gateway-proxy
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # Discord gateway は 1 bot token = 1 接続のため必ず単一 Pod。
+  # ローリング更新で新旧 Pod が同時接続するのを避けるため Recreate を使う。
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: discord-gateway-proxy
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: discord-gateway-proxy
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        # distroless:nonroot の既定ユーザー
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: discord-gateway-proxy
+          # 【自己更新】このタグは discord-gateway-proxy-build の CronWorkflow が commit-back する。
+          # registry.roppoh.local は各ノードの /etc/rancher/k3s/registries.yaml ミラーで
+          # zot(NodePort)へ解決される（匿名 read のため imagePullSecret 不要）。
+          image: registry.roppoh.local/discord-gateway-proxy:7e72413
+          env:
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: discord-gateway-proxy
+                  key: bot-token
+            # ---- OpenTelemetry: traces/metrics をクラスタ内 alloy へ OTLP/gRPC 送信 ----
+            # ログは stdout(JSON) のまま alloy DaemonSet が tail して Loki へ送るため OTLP 対象外。
+            - name: OTEL_TRACES_EXPORTER
+              value: otlp
+            - name: OTEL_METRICS_EXPORTER
+              value: otlp
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: grpc
+            # http:// スキーム = 平文 gRPC（alloy:4317 は平文）
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://grafana-alloy.monitoring.svc.cluster.local:4317
+            # alloy の otelcol.auth.bearer が検証するトークン（cf-workers-otlp-token と同値）
+            - name: OTLP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: discord-gateway-proxy
+                  key: otlp-token
+            # 直前で定義した OTLP_TOKEN を $(VAR) 展開して Authorization ヘッダに乗せる
+            - name: OTEL_EXPORTER_OTLP_HEADERS
+              value: Authorization=Bearer $(OTLP_TOKEN)
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: deployment.environment=prod,service.namespace=discord
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi

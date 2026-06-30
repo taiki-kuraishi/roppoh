@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: zot
+  namespace: zot
+  labels:
+    app.kubernetes.io/name: zot
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # kubelet(containerd)は Service DNS を解決できないため、各ノードの
+  # /etc/rancher/k3s/registries.yaml で registry.roppoh.local → http://<node-ip>:30500
+  # にミラーして pull する。クラスタ内の kaniko push は zot.zot.svc.cluster.local:5000 を使用。
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: zot
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http
+      nodePort: 30500
+      protocol: TCP

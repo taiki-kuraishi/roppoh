@@ -1,0 +1,196 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: discord-gateway-proxy-build
+  namespace: argo
+  labels:
+    app.kubernetes.io/name: discord-gateway-proxy-build
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # main を定期ポーリングしてビルド。外部到達不要の pull 型。
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  workflowSpec:
+    serviceAccountName: argo-workflow
+    entrypoint: main
+    activeDeadlineSeconds: 1800
+    ttlStrategy:
+      secondsAfterCompletion: 3600
+    podGC:
+      strategy: OnWorkflowSuccess
+    arguments:
+      parameters:
+        - name: repo
+          value: https://github.com/taiki-kuraishi/roppoh.git
+        - name: image
+          value: discord-gateway-proxy
+        # クラスタ内 push 先（Service DNS）。pull は registries.yaml ミラー経由。
+        - name: zot
+          value: zot.zot.svc.cluster.local:5000
+    volumes:
+      - name: docker-config
+        secret:
+          secretName: zot-push-dockerconfig
+      - name: github-app
+        secret:
+          secretName: build-github-app
+    templates:
+      # -------------------------------------------------------------------
+      # main: resolve → (build) → (bump) の 3 ステップ
+      # -------------------------------------------------------------------
+      - name: main
+        steps:
+          - - name: resolve
+              template: resolve
+          - - name: build
+              template: build
+              when: '{{steps.resolve.outputs.parameters.needs_build}} == "true"'
+              arguments:
+                parameters:
+                  - name: image_sha
+                    value: "{{steps.resolve.outputs.parameters.image_sha}}"
+          - - name: bump
+              template: bump
+              when: '{{steps.resolve.outputs.parameters.needs_bump}} == "true"'
+              arguments:
+                parameters:
+                  - name: image_sha
+                    value: "{{steps.resolve.outputs.parameters.image_sha}}"
+
+      # -------------------------------------------------------------------
+      # resolve: コードパスの短縮 SHA を算出、zot にタグ有無 / manifest 差分を判定
+      # -------------------------------------------------------------------
+      - name: resolve
+        outputs:
+          parameters:
+            - name: image_sha
+              valueFrom:
+                path: /tmp/out/image_sha
+            - name: needs_build
+              valueFrom:
+                path: /tmp/out/needs_build
+            - name: needs_bump
+              valueFrom:
+                path: /tmp/out/needs_bump
+        script:
+          image: alpine:3.21
+          command: [sh]
+          env:
+            - name: REPO
+              value: "{{workflow.parameters.repo}}"
+            - name: IMAGE
+              value: "{{workflow.parameters.image}}"
+            - name: ZOT
+              value: "{{workflow.parameters.zot}}"
+          source: |
+            set -eu
+            apk add --no-cache git curl >/dev/null
+            mkdir -p /tmp/out
+            # blob を取得しない部分クローン（履歴は全取得 → log -- paths を確実に解決）
+            git clone --filter=blob:none "$REPO" /src
+            cd /src
+            IMAGE_SHA=$(git log -1 --format=%h -- cmd internal go.mod go.sum .docker/discord-gateway-proxy)
+            CUR_TAG=$(grep -E "^[[:space:]]*image:.*${IMAGE}:" k8s/discord-gateway-proxy/deployment.yaml \
+              | sed -E "s/.*${IMAGE}:([^[:space:]\"]+).*/\1/" | head -1)
+            ACCEPT='application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json'
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Accept: ${ACCEPT}" \
+              "http://${ZOT}/v2/${IMAGE}/manifests/${IMAGE_SHA}")
+            if [ "$CODE" = "200" ]; then NEEDS_BUILD=false; else NEEDS_BUILD=true; fi
+            if [ "$CUR_TAG" = "$IMAGE_SHA" ]; then NEEDS_BUMP=false; else NEEDS_BUMP=true; fi
+            printf '%s' "$IMAGE_SHA"   > /tmp/out/image_sha
+            printf '%s' "$NEEDS_BUILD" > /tmp/out/needs_build
+            printf '%s' "$NEEDS_BUMP"  > /tmp/out/needs_bump
+            echo "image_sha=${IMAGE_SHA} needs_build=${NEEDS_BUILD} needs_bump=${NEEDS_BUMP} (cur=${CUR_TAG})"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+
+      # -------------------------------------------------------------------
+      # build: kaniko で git context からビルドし zot へ push（HTTP, ci 認証）
+      # -------------------------------------------------------------------
+      - name: build
+        inputs:
+          parameters:
+            - name: image_sha
+        container:
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          command: ["/kaniko/executor"]
+          args:
+            - --context=git://github.com/taiki-kuraishi/roppoh.git#refs/heads/main
+            - --dockerfile=.docker/discord-gateway-proxy/Dockerfile
+            - --destination={{workflow.parameters.zot}}/{{workflow.parameters.image}}:{{inputs.parameters.image_sha}}
+            # zot のみ HTTP/insecure 扱い（base image は HTTPS のまま）
+            - --insecure-registry={{workflow.parameters.zot}}
+            - --skip-tls-verify-registry={{workflow.parameters.zot}}
+          volumeMounts:
+            # zot push 用の ci 認証 config.json
+            - name: docker-config
+              mountPath: /kaniko/.docker
+              readOnly: true
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+
+      # -------------------------------------------------------------------
+      # bump: GitHub App トークンを生成し deployment.yaml のタグを main へ commit-back
+      # -------------------------------------------------------------------
+      - name: bump
+        inputs:
+          parameters:
+            - name: image_sha
+        script:
+          image: alpine:3.21
+          command: [sh]
+          env:
+            - name: IMAGE_SHA
+              value: "{{inputs.parameters.image_sha}}"
+            - name: IMAGE
+              value: "{{workflow.parameters.image}}"
+          source: |
+            set -eu
+            apk add --no-cache git curl openssl jq coreutils >/dev/null
+            APP_ID=$(cat /github/app-id)
+            INSTALLATION_ID=$(cat /github/installation-id)
+            b64() { openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
+            now=$(date +%s)
+            header=$(printf '{"alg":"RS256","typ":"JWT"}' | b64)
+            payload=$(printf '{"iat":%d,"exp":%d,"iss":"%s"}' $((now - 60)) $((now + 540)) "$APP_ID" | b64)
+            sig=$(printf '%s.%s' "$header" "$payload" | openssl dgst -sha256 -sign /github/private-key.pem | b64)
+            jwt="${header}.${payload}.${sig}"
+            TOKEN=$(curl -s -X POST \
+              -H "Authorization: Bearer ${jwt}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/app/installations/${INSTALLATION_ID}/access_tokens" | jq -r .token)
+            [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ] || { echo "failed to obtain installation token"; exit 1; }
+            git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/taiki-kuraishi/roppoh.git" /repo
+            cd /repo
+            sed -i -E "s#(image: registry.roppoh.local/${IMAGE}:)[^[:space:]]+#\1${IMAGE_SHA}#" \
+              k8s/discord-gateway-proxy/deployment.yaml
+            if git diff --quiet; then echo "manifest already up to date"; exit 0; fi
+            git config user.name "renovate-tsar[bot]"
+            git config user.email "297387044+renovate-tsar[bot]@users.noreply.github.com"
+            git add k8s/discord-gateway-proxy/deployment.yaml
+            git commit -m "⬆️ deploy(${IMAGE}): ${IMAGE_SHA} [skip ci]"
+            git push origin HEAD:main
+          volumeMounts:
+            - name: github-app
+              mountPath: /github
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

@@ -28,3 +28,9 @@ resource "cloudflare_r2_bucket" "roppoh_grafana_tempo" {
   account_id = var.account_id
   name       = "roppoh-grafana-tempo"
 }
+
+# ----- zot OCI registry (in-cluster image store) -----
+resource "cloudflare_r2_bucket" "roppoh_zot" {
+  account_id = var.account_id
+  name       = "roppoh-zot"
+}
