@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - install.yaml
   - apps/
+  - arc-helm-repository.yaml
 patches:
   - path: patches/argocd-cm.yaml
   - path: patches/argocd-notifications-cm.yaml
