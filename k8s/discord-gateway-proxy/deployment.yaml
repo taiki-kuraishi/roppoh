@@ -33,7 +33,7 @@ spec:
           # 【自己更新】このタグは discord-gateway-proxy-build の CronWorkflow が commit-back する。
           # registry.roppoh.local は各ノードの /etc/rancher/k3s/registries.yaml ミラーで
           # zot(NodePort)へ解決される（匿名 read のため imagePullSecret 不要）。
-          image: registry.roppoh.local/discord-gateway-proxy:7e72413
+          image: registry.roppoh.local/discord-gateway-proxy:22c8658
           env:
             - name: DISCORD_BOT_TOKEN
               valueFrom:

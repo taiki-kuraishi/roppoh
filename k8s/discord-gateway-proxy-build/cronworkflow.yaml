@@ -57,7 +57,7 @@ spec:
               template: resolve
           - - name: notify-pending
               template: notify
-              when: '{{steps.resolve.outputs.parameters.needs_build}} == "true"'
+              when: '"{{steps.resolve.outputs.parameters.needs_build}}" == "true"'
               continueOn:
                 failed: true
               arguments:
@@ -70,14 +70,14 @@ spec:
                     value: building image
           - - name: build
               template: build
-              when: '{{steps.resolve.outputs.parameters.needs_build}} == "true"'
+              when: '"{{steps.resolve.outputs.parameters.needs_build}}" == "true"'
               arguments:
                 parameters:
                   - name: image_sha
                     value: "{{steps.resolve.outputs.parameters.image_sha}}"
           - - name: bump
               template: bump
-              when: '{{steps.resolve.outputs.parameters.needs_bump}} == "true"'
+              when: '"{{steps.resolve.outputs.parameters.needs_bump}}" == "true"'
               arguments:
                 parameters:
                   - name: image_sha
@@ -354,7 +354,7 @@ spec:
         steps:
           - - name: success
               template: notify
-              when: '{{workflow.status}} == "Succeeded" && {{workflow.outputs.parameters.needs_build}} == "true"'
+              when: '"{{workflow.status}}" == "Succeeded" && "{{workflow.outputs.parameters.needs_build}}" == "true"'
               continueOn:
                 failed: true
               arguments:
@@ -367,7 +367,7 @@ spec:
                     value: image built and pushed
             - name: failure
               template: notify
-              when: '{{workflow.status}} != "Succeeded" && {{workflow.outputs.parameters.needs_build}} == "true"'
+              when: '"{{workflow.status}}" != "Succeeded" && "{{workflow.outputs.parameters.needs_build}}" == "true"'
               continueOn:
                 failed: true
               arguments:
