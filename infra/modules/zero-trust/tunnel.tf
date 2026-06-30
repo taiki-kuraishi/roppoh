@@ -36,6 +36,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "ollama.tsar-bmb.org"
         service  = "http://ollama.ollama.svc.cluster.local:11434"
       },
+      {
+        hostname = "zot.tsar-bmb.org"
+        service  = "http://zot.zot.svc.cluster.local:5000"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"

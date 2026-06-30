@@ -48,6 +48,14 @@ data:
           }
         }
       },
+      "extensions": {
+        "search": {
+          "enable": true
+        },
+        "ui": {
+          "enable": true
+        }
+      },
       "log": {
         "level": "info"
       }
