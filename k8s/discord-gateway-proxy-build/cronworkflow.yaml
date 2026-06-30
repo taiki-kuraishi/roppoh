@@ -8,7 +8,9 @@ metadata:
     app.kubernetes.io/managed-by: argocd
 spec:
   # main を定期ポーリングしてビルド。外部到達不要の pull 型。
-  schedule: "*/10 * * * *"
+  # Argo Workflows v3.7+ は schedules(複数形・リスト)必須。
+  schedules:
+    - "*/10 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 2
