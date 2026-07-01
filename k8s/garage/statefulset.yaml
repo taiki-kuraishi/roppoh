@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: garage
+  namespace: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  serviceName: garage
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: garage
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: garage
+    spec:
+      securityContext:
+        # dxflrs/garage v2.x は uid 1000 の非 root ユーザーで動作する。
+        # 起動失敗時は runAsUser の値を調整すること。
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        # PVC (/var/lib/garage/meta, /var/lib/garage/data) へのグループ書き込みを許可
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: garage
+          # 【自己更新】このイメージタグは Renovate が更新する
+          image: dxflrs/garage:v2.3.0
+          ports:
+            - name: s3
+              containerPort: 3900
+              protocol: TCP
+            - name: rpc
+              containerPort: 3901
+              protocol: TCP
+            - name: admin
+              containerPort: 3903
+              protocol: TCP
+          envFrom:
+            # GARAGE_RPC_SECRET / GARAGE_ADMIN_TOKEN /
+            # GARAGE_S3_ACCESS_KEY_ID / GARAGE_S3_SECRET_ACCESS_KEY
+            - secretRef:
+                name: garage-secrets
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: admin
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: admin
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/garage.toml
+              subPath: garage.toml
+              readOnly: true
+            - name: meta
+              mountPath: /var/lib/garage/meta
+            - name: data
+              mountPath: /var/lib/garage/data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: garage-config
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: meta
+      spec:
+        storageClassName: local-path
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            # LMDB メタデータ用(バケット情報・キー情報・オブジェクトインデックス)
+            storage: 1Gi
+    - metadata:
+        name: data
+      spec:
+        storageClassName: local-path
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            # オブジェクト実体(イメージ layer・manifest 等)
+            storage: 10Gi

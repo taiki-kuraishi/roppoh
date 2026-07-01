@@ -16,14 +16,32 @@ data:
       "storage": {
         "rootDirectory": "/var/lib/zot",
         "dedupe": false,
+        "gc": true,
+        "gcDelay": "1h",
+        "gcInterval": "24h",
+        "retention": {
+          "dryRun": false,
+          "policies": [
+            {
+              "repositories": ["**"],
+              "keepTags": [
+                {
+                  "patterns": [".*"],
+                  "mostRecentlyPushedCount": 10,
+                  "pushedWithin": "720h"
+                }
+              ]
+            }
+          ]
+        },
         "storageDriver": {
           "name": "s3",
           "rootdirectory": "/zot",
-          "region": "auto",
-          "regionendpoint": "https://bd1a33a9922e50b3afff5a2f21ad52d0.r2.cloudflarestorage.com",
+          "region": "garage",
+          "regionendpoint": "http://garage.garage.svc.cluster.local:3900",
           "bucket": "roppoh-zot",
           "forcepathstyle": true,
-          "secure": true
+          "secure": false
         }
       },
       "http": {
