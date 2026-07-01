@@ -62,10 +62,13 @@ spec:
                   --post-data="${2}" "${ADMIN_URL}${1}"
               }
 
-              # JSON 文字列フィールドを抽出: json_str "$json" "fieldname"
-              json_str() { echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed 's/.*:"//;s/"//'; }
-              # JSON 数値フィールドを抽出: json_num "$json" "fieldname"
-              json_num() { echo "$1" | grep -o "\"$2\":[0-9-]*" | head -1 | sed "s/\"$2\"://"; }
+              # JSON 文字列/数値フィールドを抽出。Garage の Admin API はインデント
+              # 付き JSON ("key": "value" のようにコロンの後にスペースが入る)を
+              # 返すため、コロンの後の空白を許容する(実機で確認済み: これを
+              # 許容しないと version/id 等の抽出が常に空文字列になり、
+              # レイアウト初期化やバケット ID 取得が正しく動作しない)。
+              json_str() { echo "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/^[^:]*:[[:space:]]*"//; s/"$//'; }
+              json_num() { echo "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*[0-9-]*" | head -1 | sed 's/^[^:]*:[[:space:]]*//'; }
 
               # ── 1. Garage の Admin API ポートが開くまで待機 ───────────────
               # /health はレイアウト未適用時に 503 を返し、wget はこれを失敗と
