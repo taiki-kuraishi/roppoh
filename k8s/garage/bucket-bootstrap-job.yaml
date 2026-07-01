@@ -79,8 +79,17 @@ spec:
               echo "Garage admin port is up."
 
               # ── 2. レイアウト初期化(冪等) ─────────────────────────────────
+              # Garage の Admin API はインデント付き JSON ("roles": [] のように
+              # コロンの後にスペースが入る)を返すため、以前の
+              # `grep -q '"roles":\[\]'`(スペース無し)は常にマッチせず、
+              # レイアウトが空でも「既に設定済み」と誤判定してこの初期化ブロック
+              # を丸ごとスキップしていた(実機で確認済み: GetClusterLayout が
+              # version:0/roles:[] のままでも Job のログには "Layout already
+              # configured, skipping." と出続けていた)。未設定の判定は
+              # version が 0 かどうかで行う。
               LAYOUT=$(api_get "/v2/GetClusterLayout")
-              if echo "${LAYOUT}" | grep -q '"roles":\[\]'; then
+              CURR_VER=$(json_num "${LAYOUT}" "version")
+              if [ "${CURR_VER}" = "0" ]; then
                 echo "No layout assigned. Initializing..."
 
                 STATUS=$(api_get "/v2/GetClusterStatus")
