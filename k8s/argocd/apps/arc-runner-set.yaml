@@ -22,35 +22,87 @@ spec:
         runnerGroup: default
         # idle 時 Pod ゼロ (N100 16GB 逼迫下でのメモリ節約の肝)
         minRunners: 0
-        maxRunners: 2
-        containerMode:
-          # bun-ci VRT と go-ci docker が Docker デーモンを必要とするため dind を採用
-          # arc-runners namespace 限定で privileged サイドカーを許容
-          # (house style の非root/readOnlyRootFS/drop ALL からの意図的逸脱)
-          type: dind
+        maxRunners: 4
         # controller が別 namespace のため SA を明示
         # SA 名はデプロイ後に kubectl -n arc-systems get sa で必ず確認すること
         controllerServiceAccount:
           namespace: arc-systems
           name: arc-controller-gha-rs-controller
+        # containerMode.type=dind は使わず、chart 0.14.2 が dind mode で生成する Pod spec
+        # (values.yaml のコメントに記載されたデフォルト構成) を手書き展開している。
+        # 理由: dind sidecar は chart のテンプレート内でハードコード生成されており、
+        # values 経由の containers[].name=dind による resources 上書きを受け付けない
+        # (non-runner-non-dind-containers ヘルパーで黙って除外される)。
+        # containerMode を外して template.spec を直接書くことで resources を効かせる。
         template:
           spec:
+            # bun-ci VRT と go-ci docker が Docker デーモンを必要とするため dind を採用
+            # arc-runners namespace 限定で privileged サイドカーを許容
+            # (house style の非root/readOnlyRootFS/drop ALL からの意図的逸脱)
+            initContainers:
+              - name: init-dind-externals
+                image: ghcr.io/actions/actions-runner:latest
+                command: ["cp", "-r", "/home/runner/externals/.", "/home/runner/tmpDir/"]
+                volumeMounts:
+                  - name: dind-externals
+                    mountPath: /home/runner/tmpDir
+              - name: dind
+                image: docker:dind
+                args:
+                  - dockerd
+                  - --host=unix:///var/run/docker.sock
+                  - --group=$(DOCKER_GROUP_GID)
+                env:
+                  - name: DOCKER_GROUP_GID
+                    value: "123"
+                securityContext:
+                  privileged: true
+                restartPolicy: Always
+                startupProbe:
+                  exec:
+                    command: ["docker", "info"]
+                  initialDelaySeconds: 0
+                  failureThreshold: 24
+                  periodSeconds: 5
+                # limits を設けない: GitHub-hosted 相当に「ノードの空きメモリが尽きるまで動く」挙動にする
+                # (人為的な limits で早期に OOMKilled されていた問題への対応。requests は QoS/スケジューリング用に維持)
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 512Mi
+                volumeMounts:
+                  - name: work
+                    mountPath: /home/runner/_work
+                  - name: dind-sock
+                    mountPath: /var/run
+                  - name: dind-externals
+                    mountPath: /home/runner/externals
             containers:
               - name: runner
                 image: ghcr.io/actions/actions-runner:latest
                 command: ["/home/runner/run.sh"]
-                resources:
-                  # limits を設けない: GitHub-hosted 相当に「ノードの空きメモリが尽きるまで動く」挙動にする
-                  # (人為的な limits で早期に OOMKilled されていた問題への対応。requests は QoS/スケジューリング用に維持)
-                  requests:
-                    cpu: 250m
-                    memory: 512Mi
-              # dind サイドカーの resources を上書き
-              - name: dind
+                # containerMode.type=dind が本来自動注入する環境変数 (手書き展開のため明示)
+                env:
+                  - name: DOCKER_HOST
+                    value: unix:///var/run/docker.sock
+                  - name: RUNNER_WAIT_FOR_DOCKER_IN_SECONDS
+                    value: "120"
                 resources:
                   requests:
                     cpu: 250m
                     memory: 512Mi
+                volumeMounts:
+                  - name: work
+                    mountPath: /home/runner/_work
+                  - name: dind-sock
+                    mountPath: /var/run
+            volumes:
+              - name: work
+                emptyDir: {}
+              - name: dind-sock
+                emptyDir: {}
+              - name: dind-externals
+                emptyDir: {}
   destination:
     server: https://kubernetes.default.svc
     namespace: arc-runners
