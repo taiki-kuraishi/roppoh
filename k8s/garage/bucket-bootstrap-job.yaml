@@ -99,9 +99,13 @@ spec:
                 NODE_ID=$(json_str "${STATUS}" "id")
                 echo "  Node ID: ${NODE_ID}"
 
-                # レイアウト更新をステージング(10Gi = 10737418240 bytes)
+                # レイアウト更新をステージング(10Gi = 10737418240 bytes)。
+                # UpdateClusterLayoutRequest は { roles: [{ id, zone, capacity,
+                # tags }] } という配列形式が正しいスキーマ(OpenAPI仕様
+                # doc/api/garage-admin-v2.json で確認済み)。以前のトップレベル
+                # nodeId フラット形式は誤りで 500 Internal Server Error になっていた。
                 api_post "/v2/UpdateClusterLayout" \
-                  "{\"nodeId\":\"${NODE_ID}\",\"zone\":\"dc1\",\"capacity\":10737418240,\"tags\":[]}"
+                  "{\"roles\":[{\"id\":\"${NODE_ID}\",\"zone\":\"dc1\",\"capacity\":10737418240,\"tags\":[]}]}"
 
                 # 現在のバージョン +1 で適用
                 LAYOUT2=$(api_get "/v2/GetClusterLayout")
