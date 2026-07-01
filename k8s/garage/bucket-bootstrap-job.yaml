@@ -22,8 +22,13 @@ spec:
   backoffLimit: 5
   template:
     metadata:
+      # garage Service の selector (app.kubernetes.io/name: garage) と衝突しない
+      # ラベルにする。衝突すると、この Job の Pod 自身が Service の Endpoints に
+      # 混入し、DNS ラウンドロビンで自分自身に接続してしまうことがある
+      # (実機で確認済み: wget が自分の Pod IP に到達しようとして connection
+      # refused になった)。
       labels:
-        app.kubernetes.io/name: garage
+        app.kubernetes.io/name: garage-bootstrap
     spec:
       restartPolicy: OnFailure
       securityContext:
@@ -57,10 +62,13 @@ spec:
                   --post-data="${2}" "${ADMIN_URL}${1}"
               }
 
-              # JSON 文字列フィールドを抽出: json_str "$json" "fieldname"
-              json_str() { echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed 's/.*:"//;s/"//'; }
-              # JSON 数値フィールドを抽出: json_num "$json" "fieldname"
-              json_num() { echo "$1" | grep -o "\"$2\":[0-9-]*" | head -1 | sed "s/\"$2\"://"; }
+              # JSON 文字列/数値フィールドを抽出。Garage の Admin API はインデント
+              # 付き JSON ("key": "value" のようにコロンの後にスペースが入る)を
+              # 返すため、コロンの後の空白を許容する(実機で確認済み: これを
+              # 許容しないと version/id 等の抽出が常に空文字列になり、
+              # レイアウト初期化やバケット ID 取得が正しく動作しない)。
+              json_str() { echo "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/^[^:]*:[[:space:]]*"//; s/"$//'; }
+              json_num() { echo "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*[0-9-]*" | head -1 | sed 's/^[^:]*:[[:space:]]*//'; }
 
               # ── 1. Garage の Admin API ポートが開くまで待機 ───────────────
               # /health はレイアウト未適用時に 503 を返し、wget はこれを失敗と
@@ -74,17 +82,30 @@ spec:
               echo "Garage admin port is up."
 
               # ── 2. レイアウト初期化(冪等) ─────────────────────────────────
+              # Garage の Admin API はインデント付き JSON ("roles": [] のように
+              # コロンの後にスペースが入る)を返すため、以前の
+              # `grep -q '"roles":\[\]'`(スペース無し)は常にマッチせず、
+              # レイアウトが空でも「既に設定済み」と誤判定してこの初期化ブロック
+              # を丸ごとスキップしていた(実機で確認済み: GetClusterLayout が
+              # version:0/roles:[] のままでも Job のログには "Layout already
+              # configured, skipping." と出続けていた)。未設定の判定は
+              # version が 0 かどうかで行う。
               LAYOUT=$(api_get "/v2/GetClusterLayout")
-              if echo "${LAYOUT}" | grep -q '"roles":\[\]'; then
+              CURR_VER=$(json_num "${LAYOUT}" "version")
+              if [ "${CURR_VER}" = "0" ]; then
                 echo "No layout assigned. Initializing..."
 
                 STATUS=$(api_get "/v2/GetClusterStatus")
                 NODE_ID=$(json_str "${STATUS}" "id")
                 echo "  Node ID: ${NODE_ID}"
 
-                # レイアウト更新をステージング(10Gi = 10737418240 bytes)
+                # レイアウト更新をステージング(10Gi = 10737418240 bytes)。
+                # UpdateClusterLayoutRequest は { roles: [{ id, zone, capacity,
+                # tags }] } という配列形式が正しいスキーマ(OpenAPI仕様
+                # doc/api/garage-admin-v2.json で確認済み)。以前のトップレベル
+                # nodeId フラット形式は誤りで 500 Internal Server Error になっていた。
                 api_post "/v2/UpdateClusterLayout" \
-                  "{\"nodeId\":\"${NODE_ID}\",\"zone\":\"dc1\",\"capacity\":10737418240,\"tags\":[]}"
+                  "{\"roles\":[{\"id\":\"${NODE_ID}\",\"zone\":\"dc1\",\"capacity\":10737418240,\"tags\":[]}]}"
 
                 # 現在のバージョン +1 で適用
                 LAYOUT2=$(api_get "/v2/GetClusterLayout")
@@ -112,7 +133,10 @@ spec:
                   2>/dev/null || true
                 echo "  Bucket done (created or already existed)."
 
-                BINFO=$(api_get "/v2/GetBucketInfo?alias=${bucket_alias}")
+                # Garage Admin API は globalAlias を要求する(alias は無効な
+                # クエリパラメータ名で 400 "Either id, globalAlias or search
+                # must be provided" になる。実機で確認済み)。
+                BINFO=$(api_get "/v2/GetBucketInfo?globalAlias=${bucket_alias}")
                 BUCKET_ID=$(json_str "${BINFO}" "id")
                 echo "Bucket ID: ${BUCKET_ID}"
 
