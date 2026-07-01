@@ -22,8 +22,13 @@ spec:
   backoffLimit: 5
   template:
     metadata:
+      # garage Service の selector (app.kubernetes.io/name: garage) と衝突しない
+      # ラベルにする。衝突すると、この Job の Pod 自身が Service の Endpoints に
+      # 混入し、DNS ラウンドロビンで自分自身に接続してしまうことがある
+      # (実機で確認済み: wget が自分の Pod IP に到達しようとして connection
+      # refused になった)。
       labels:
-        app.kubernetes.io/name: garage
+        app.kubernetes.io/name: garage-bootstrap
     spec:
       restartPolicy: OnFailure
       securityContext:
