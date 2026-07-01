@@ -1,0 +1,16 @@
+# ARC の Helm chart は ghcr.io の OCI レジストリで配布されている。
+# ArgoCD が OCI Helm repo として認識するために declarative repository Secret を定義する。
+# ref: https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#helm-chart-repositories
+apiVersion: v1
+kind: Secret
+metadata:
+  name: repo-arc-helm
+  namespace: argocd
+  labels:
+    argocd.argoproj.io/secret-type: repository
+type: Opaque
+stringData:
+  type: helm
+  name: arc-helm
+  url: ghcr.io/actions/actions-runner-controller-charts
+  enableOCI: "true"

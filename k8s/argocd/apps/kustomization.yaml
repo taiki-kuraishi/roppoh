@@ -15,4 +15,6 @@ resources:
   - garage.yaml
   - discord-gateway-proxy.yaml
   - discord-gateway-proxy-build.yaml
+  - arc-controller.yaml
+  - arc-runner-set.yaml
   - secrets.yaml

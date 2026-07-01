@@ -1,0 +1,68 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arc-runner-set
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/actions/actions-runner-controller-charts
+    chart: gha-runner-scale-set
+    # controller と同一バージョンに揃える (ARC 要件)
+    targetRevision: 0.14.2
+    helm:
+      valuesObject:
+        # runs-on の値と完全一致する名前 (任意ラベル非対応)
+        runnerScaleSetName: roppoh-runners
+        githubConfigUrl: https://github.com/taiki-kuraishi/roppoh
+        # k8s/secrets/arc/arc-github-app.sops.yaml で管理する GitHub App 認証 Secret
+        githubConfigSecret: arc-github-app
+        runnerGroup: default
+        # idle 時 Pod ゼロ (N100 16GB 逼迫下でのメモリ節約の肝)
+        minRunners: 0
+        # 監視後に maxRunners: 2 への引き上げを検討
+        # (runner+dind ~6Gi と ollama 8Gi / kaniko 2Gi ピークとの競合に注意)
+        maxRunners: 1
+        containerMode:
+          # bun-ci VRT と go-ci docker が Docker デーモンを必要とするため dind を採用
+          # arc-runners namespace 限定で privileged サイドカーを許容
+          # (house style の非root/readOnlyRootFS/drop ALL からの意図的逸脱)
+          type: dind
+        # controller が別 namespace のため SA を明示
+        # SA 名はデプロイ後に kubectl -n arc-systems get sa で必ず確認すること
+        controllerServiceAccount:
+          namespace: arc-systems
+          name: arc-controller-gha-rs-controller
+        template:
+          spec:
+            containers:
+              - name: runner
+                image: ghcr.io/actions/actions-runner:latest
+                command: ["/home/runner/run.sh"]
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 512Mi
+                  limits:
+                    cpu: "2"
+                    memory: 3Gi
+              # dind サイドカーの resources を上書き
+              - name: dind
+                resources:
+                  requests:
+                    cpu: 250m
+                    memory: 512Mi
+                  limits:
+                    cpu: "2"
+                    memory: 3Gi
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arc-runners
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
