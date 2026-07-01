@@ -117,7 +117,10 @@ spec:
                   2>/dev/null || true
                 echo "  Bucket done (created or already existed)."
 
-                BINFO=$(api_get "/v2/GetBucketInfo?alias=${bucket_alias}")
+                # Garage Admin API は globalAlias を要求する(alias は無効な
+                # クエリパラメータ名で 400 "Either id, globalAlias or search
+                # must be provided" になる。実機で確認済み)。
+                BINFO=$(api_get "/v2/GetBucketInfo?globalAlias=${bucket_alias}")
                 BUCKET_ID=$(json_str "${BINFO}" "id")
                 echo "Bucket ID: ${BUCKET_ID}"
 
