@@ -1,0 +1,135 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-bootstrap
+  namespace: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # PostSync: Garage StatefulSet が Ready になった後に実行
+    argocd.argoproj.io/hook: PostSync
+    # 次回 sync 前に古い Job を削除してから新しい Job を作成(冪等に再実行可能)
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  # 完了から 1 時間後に Job リソースを自動削除
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: garage
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        # Alpine:3.21 の nobody(65534) で実行
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          image: alpine:3.21
+          # Alpine busybox の wget / grep / sed / awk のみ使用。
+          # apk add は行わないため readOnlyRootFilesystem: true を維持できる。
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+
+              ADMIN_URL="http://garage.garage.svc.cluster.local:3903"
+              AUTH="Authorization: Bearer ${GARAGE_ADMIN_TOKEN}"
+              CT="Content-Type: application/json"
+
+              # GET ヘルパー
+              api_get() { wget -qO- --header="${AUTH}" "${ADMIN_URL}${1}"; }
+
+              # POST ヘルパー(エラーを無視したい場合は呼び出し元で || true を使う)
+              api_post() {
+                wget -qO- --header="${AUTH}" --header="${CT}" \
+                  --post-data="${2}" "${ADMIN_URL}${1}"
+              }
+
+              # JSON 文字列フィールドを抽出: json_str "$json" "fieldname"
+              json_str() { echo "$1" | grep -o "\"$2\":\"[^\"]*\"" | head -1 | sed 's/.*:"//;s/"//'; }
+              # JSON 数値フィールドを抽出: json_num "$json" "fieldname"
+              json_num() { echo "$1" | grep -o "\"$2\":[0-9-]*" | head -1 | sed "s/\"$2\"://"; }
+
+              # ── 1. Garage が起動するまで待機 ───────────────────────────────
+              echo "Waiting for Garage to be healthy..."
+              until wget -qO- --header="${AUTH}" "${ADMIN_URL}/health" > /dev/null 2>&1; do
+                echo "  not ready, retrying in 3s..."
+                sleep 3
+              done
+              echo "Garage is healthy."
+
+              # ── 2. レイアウト初期化(冪等) ─────────────────────────────────
+              LAYOUT=$(api_get "/v2/GetClusterLayout")
+              if echo "${LAYOUT}" | grep -q '"roles":\[\]'; then
+                echo "No layout assigned. Initializing..."
+
+                STATUS=$(api_get "/v2/GetClusterStatus")
+                NODE_ID=$(json_str "${STATUS}" "id")
+                echo "  Node ID: ${NODE_ID}"
+
+                # レイアウト更新をステージング(10Gi = 10737418240 bytes)
+                api_post "/v2/UpdateClusterLayout" \
+                  "{\"nodeId\":\"${NODE_ID}\",\"zone\":\"dc1\",\"capacity\":10737418240,\"tags\":[]}"
+
+                # 現在のバージョン +1 で適用
+                LAYOUT2=$(api_get "/v2/GetClusterLayout")
+                CURR_VER=$(json_num "${LAYOUT2}" "version")
+                NEXT_VER=$((CURR_VER + 1))
+                api_post "/v2/ApplyClusterLayout" "{\"version\":${NEXT_VER}}"
+                echo "  Layout applied (version ${NEXT_VER})."
+              else
+                echo "Layout already configured, skipping."
+              fi
+
+              # ── 3. S3 キーの import(冪等: 409 Already Exists は無視) ───────
+              echo "Importing S3 key..."
+              api_post "/v2/ImportKey" \
+                "{\"accessKeyId\":\"${GARAGE_S3_ACCESS_KEY_ID}\",\"secretAccessKey\":\"${GARAGE_S3_SECRET_ACCESS_KEY}\",\"name\":\"zot\"}" \
+                2>/dev/null || true
+              echo "  Key done (created or already existed)."
+
+              # ── 4. バケット作成(冪等: 409 Already Exists は無視) ─────────
+              echo "Creating bucket 'roppoh-zot'..."
+              api_post "/v2/CreateBucket" '{"globalAlias":"roppoh-zot"}' \
+                2>/dev/null || true
+              echo "  Bucket done (created or already existed)."
+
+              # ── 5. バケット ID の取得 ──────────────────────────────────────
+              BINFO=$(api_get "/v2/GetBucketInfo?alias=roppoh-zot")
+              BUCKET_ID=$(json_str "${BINFO}" "id")
+              echo "Bucket ID: ${BUCKET_ID}"
+
+              # ── 6. キーへの read/write/owner 権限付与(冪等) ────────────────
+              echo "Granting permissions..."
+              api_post "/v2/AllowBucketKey" \
+                "{\"bucketId\":\"${BUCKET_ID}\",\"accessKeyId\":\"${GARAGE_S3_ACCESS_KEY_ID}\",\"permissions\":{\"read\":true,\"write\":true,\"owner\":true}}"
+
+              echo "Bootstrap complete!"
+          envFrom:
+            - secretRef:
+                name: garage-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
