@@ -42,21 +42,17 @@ spec:
                 image: ghcr.io/actions/actions-runner:latest
                 command: ["/home/runner/run.sh"]
                 resources:
+                  # limits を設けない: GitHub-hosted 相当に「ノードの空きメモリが尽きるまで動く」挙動にする
+                  # (人為的な limits で早期に OOMKilled されていた問題への対応。requests は QoS/スケジューリング用に維持)
                   requests:
                     cpu: 250m
                     memory: 512Mi
-                  limits:
-                    cpu: "2"
-                    memory: 3Gi
               # dind サイドカーの resources を上書き
               - name: dind
                 resources:
                   requests:
                     cpu: 250m
                     memory: 512Mi
-                  limits:
-                    cpu: "2"
-                    memory: 3Gi
   destination:
     server: https://kubernetes.default.svc
     namespace: arc-runners
