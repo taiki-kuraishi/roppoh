@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   go:
-    runs-on: ubuntu-latest
+    runs-on: roppoh-runners
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -33,7 +33,7 @@ jobs:
       - run: go test ./...
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: roppoh-runners
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

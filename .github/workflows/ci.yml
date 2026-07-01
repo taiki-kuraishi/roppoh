@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    runs-on: ubuntu-latest
+    runs-on: roppoh-runners
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
