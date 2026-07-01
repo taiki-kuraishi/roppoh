@@ -11,6 +11,13 @@ spec:
   # garage-0.garage.garage.svc.cluster.local で Pod に直接到達できる。
   # シングル Pod 構成では garage.garage.svc.cluster.local も Pod IP に解決される。
   clusterIP: None
+  # readinessProbe(/health)はクラスタレイアウト適用後にしか 200 を返さないが、
+  # レイアウトは bucket-bootstrap-job がこの Service 経由で Admin API を叩いて
+  # 適用する。publishNotReadyAddresses が無いと Pod が Ready になるまで
+  # Endpoints/DNS に載らず、bootstrap Job が永久に到達不能になる
+  # (レイアウト未適用 → Ready にならない → Service に載らない → bootstrap 不能、の
+  # デッドロック)。Not Ready でも Endpoints に載せることでこれを解消する。
+  publishNotReadyAddresses: true
   selector:
     app.kubernetes.io/name: garage
   ports:
