@@ -22,9 +22,7 @@ spec:
         runnerGroup: default
         # idle 時 Pod ゼロ (N100 16GB 逼迫下でのメモリ節約の肝)
         minRunners: 0
-        # 監視後に maxRunners: 2 への引き上げを検討
-        # (runner+dind ~6Gi と ollama 8Gi / kaniko 2Gi ピークとの競合に注意)
-        maxRunners: 1
+        maxRunners: 2
         containerMode:
           # bun-ci VRT と go-ci docker が Docker デーモンを必要とするため dind を採用
           # arc-runners namespace 限定で privileged サイドカーを許容
