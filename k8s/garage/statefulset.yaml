@@ -46,9 +46,15 @@ spec:
             # GARAGE_S3_ACCESS_KEY_ID / GARAGE_S3_SECRET_ACCESS_KEY
             - secretRef:
                 name: garage-secrets
+          # /health はレイアウト未適用時に 503 を返すため、httpGet のままだと
+          # bucket-bootstrap-job がレイアウトを適用し終える前にコンテナが
+          # 再起動されてしまう(Job との競争になりスタビライズが遅れる)。
+          # liveness はプロセスがハングしていないかだけを見れば十分なので
+          # tcpSocket にする。readiness は「実際にサービス可能か」を正確に
+          # 反映する信号として維持する(bucket-bootstrap-job は
+          # publishNotReadyAddresses により Ready 状態に関わらず到達できる)。
           livenessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: admin
             initialDelaySeconds: 15
             periodSeconds: 30

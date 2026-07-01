@@ -7,8 +7,13 @@ metadata:
     app.kubernetes.io/name: garage
     app.kubernetes.io/managed-by: argocd
   annotations:
-    # PostSync: Garage StatefulSet が Ready になった後に実行
-    argocd.argoproj.io/hook: PostSync
+    # Sync: メイン manifest の適用と並行して実行される (ArgoCD公式ドキュメント:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    # "Sync hooks are applied concurrently with the main manifests")。
+    # PostSync だと「StatefulSet が Healthy になってから実行」になるが、
+    # StatefulSet の readinessProbe はこの Job がレイアウトを適用するまで
+    # 503 を返し続けるため、PostSync では永久に実行されないデッドロックになる。
+    argocd.argoproj.io/hook: Sync
     # 次回 sync 前に古い Job を削除してから新しい Job を作成(冪等に再実行可能)
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
@@ -57,13 +62,16 @@ spec:
               # JSON 数値フィールドを抽出: json_num "$json" "fieldname"
               json_num() { echo "$1" | grep -o "\"$2\":[0-9-]*" | head -1 | sed "s/\"$2\"://"; }
 
-              # ── 1. Garage が起動するまで待機 ───────────────────────────────
-              echo "Waiting for Garage to be healthy..."
-              until wget -qO- --header="${AUTH}" "${ADMIN_URL}/health" > /dev/null 2>&1; do
+              # ── 1. Garage の Admin API ポートが開くまで待機 ───────────────
+              # /health はレイアウト未適用時に 503 を返し、wget はこれを失敗と
+              # みなしてループを抜けられない。この Job 自身がレイアウトを適用する
+              # 主体なので、ここでは TCP 到達性のみを見る(HTTP ステータスは見ない)。
+              echo "Waiting for Garage admin port to accept connections..."
+              until nc -z garage.garage.svc.cluster.local 3903 > /dev/null 2>&1; do
                 echo "  not ready, retrying in 3s..."
                 sleep 3
               done
-              echo "Garage is healthy."
+              echo "Garage admin port is up."
 
               # ── 2. レイアウト初期化(冪等) ─────────────────────────────────
               LAYOUT=$(api_get "/v2/GetClusterLayout")
