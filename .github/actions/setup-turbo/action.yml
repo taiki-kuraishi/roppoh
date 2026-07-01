@@ -1,11 +1,26 @@
 name: Setup Turbo Cache
 description: Cache Turbo build artifacts
 
+inputs:
+  garage-access-key-id:
+    description: Garage S3 access key id for the roppoh-ci-cache bucket
+    required: true
+  garage-secret-access-key:
+    description: Garage S3 secret access key for the roppoh-ci-cache bucket
+    required: true
+
 runs:
   using: "composite"
   steps:
-    - uses: actions/cache@v4
+    - uses: whywaita/actions-cache-s3@v3-s3
       with:
         path: .turbo
         key: ${{ runner.os }}-turbo-${{ github.sha }}
         restore-keys: ${{ runner.os }}-turbo-
+        aws-s3-bucket: roppoh-ci-cache
+        aws-access-key-id: ${{ inputs.garage-access-key-id }}
+        aws-secret-access-key: ${{ inputs.garage-secret-access-key }}
+        aws-region: garage
+        aws-endpoint: http://garage.garage.svc.cluster.local:3900
+        aws-s3-bucket-endpoint: false
+        aws-s3-force-path-style: true

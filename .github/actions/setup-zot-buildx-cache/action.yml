@@ -1,0 +1,27 @@
+name: Setup zot buildx cache auth
+description: >
+  Write ~/.docker/config.json with zot credentials without going through
+  `docker login`. The dind daemon rejects plain-HTTP RegistryLogin against
+  zot.zot.svc.cluster.local:5000, but buildx's own BuildKit container talks
+  to the registry directly and reads this file's `auths` entry regardless.
+
+inputs:
+  password:
+    description: Password for the zot "ci" user
+    required: true
+  registry:
+    description: zot registry host:port to authenticate against
+    required: false
+    default: zot.zot.svc.cluster.local:5000
+
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        ZOT_PASS: ${{ inputs.password }}
+        ZOT_REGISTRY: ${{ inputs.registry }}
+      run: |
+        mkdir -p ~/.docker
+        AUTH=$(printf 'ci:%s' "$ZOT_PASS" | base64 -w0)
+        printf '{"auths":{"%s":{"auth":"%s"}}}' "$ZOT_REGISTRY" "$AUTH" > ~/.docker/config.json
