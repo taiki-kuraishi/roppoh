@@ -146,7 +146,6 @@ spec:
               }
 
               bootstrap_bucket "zot" "${GARAGE_S3_ACCESS_KEY_ID}" "${GARAGE_S3_SECRET_ACCESS_KEY}" "roppoh-zot"
-              bootstrap_bucket "ci-cache" "${GARAGE_CI_CACHE_ACCESS_KEY_ID}" "${GARAGE_CI_CACHE_SECRET_ACCESS_KEY}" "roppoh-ci-cache"
 
               echo "Bootstrap complete!"
           envFrom:
