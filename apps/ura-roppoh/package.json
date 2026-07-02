@@ -22,7 +22,7 @@
     "@tanstack/react-query": "catalog:",
     "babel-plugin-react-compiler": "1.0.0",
     "better-auth": "catalog:",
-    "jotai": "2.20.0",
+    "jotai": "2.20.1",
     "lucide-react": "1.16.0",
     "nuqs": "2.8.9",
     "oauth4webapi": "3.8.6",
