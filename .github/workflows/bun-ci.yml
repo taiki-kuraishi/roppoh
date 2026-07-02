@@ -24,8 +24,8 @@ on:
 
 jobs:
   lint-and-build:
-    runs-on: roppoh-runners
-    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -33,13 +33,7 @@ jobs:
           node-version: "24"
           package-manager-cache: false
       - uses: ./.github/actions/setup-bun
-        with:
-          garage-access-key-id: ${{ secrets.GARAGE_CI_CACHE_ACCESS_KEY_ID }}
-          garage-secret-access-key: ${{ secrets.GARAGE_CI_CACHE_SECRET_ACCESS_KEY }}
       - uses: ./.github/actions/setup-turbo
-        with:
-          garage-access-key-id: ${{ secrets.GARAGE_CI_CACHE_ACCESS_KEY_ID }}
-          garage-secret-access-key: ${{ secrets.GARAGE_CI_CACHE_SECRET_ACCESS_KEY }}
       - run: bun --bun oxlint --deny-warnings --format=github
       - run: bun run type-check
       - run: bun turbo type-check
@@ -48,7 +42,7 @@ jobs:
       - run: bun turbo build
 
   visual-regression-test:
-    runs-on: roppoh-runners
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: lint-and-build
     strategy:
@@ -68,9 +62,6 @@ jobs:
             vrt_dir: apps/ura-roppoh/test/visual-regression
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-zot-buildx-cache
-        with:
-          password: ${{ secrets.ZOT_CI_PASSWORD }}
       - uses: docker/setup-buildx-action@v4
       - name: Build playwright image
         uses: docker/build-push-action@v7
@@ -80,8 +71,8 @@ jobs:
           push: false
           load: true
           tags: roppoh-playwright:latest
-          cache-from: type=registry,ref=zot.zot.svc.cluster.local:5000/cache/playwright:buildcache,registry.insecure=true
-          cache-to: type=registry,ref=zot.zot.svc.cluster.local:5000/cache/playwright:buildcache,mode=max,registry.insecure=true,image-manifest=true,oci-mediatypes=true
+          cache-from: type=gha,scope=playwright
+          cache-to: type=gha,mode=max,scope=playwright
       - name: Run ${{ matrix.app }} VRT
         run: |
           docker run --rm \
@@ -90,15 +81,12 @@ jobs:
             bun run --filter ${{ matrix.package }} ${{ matrix.test_script }}
 
   unit-test:
-    runs-on: roppoh-runners
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: lint-and-build
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-bun
-        with:
-          garage-access-key-id: ${{ secrets.GARAGE_CI_CACHE_ACCESS_KEY_ID }}
-          garage-secret-access-key: ${{ secrets.GARAGE_CI_CACHE_SECRET_ACCESS_KEY }}
       - name: Test apps/neo-fujimatsu
         run: bun run test:e2e
         working-directory: apps/neo-fujimatsu

@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   go:
-    runs-on: roppoh-runners
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -33,13 +33,10 @@ jobs:
       - run: go test ./...
 
   docker:
-    runs-on: roppoh-runners
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup-zot-buildx-cache
-        with:
-          password: ${{ secrets.ZOT_CI_PASSWORD }}
       - uses: docker/setup-buildx-action@v4
       - name: Build discord-gateway-proxy image
         uses: docker/build-push-action@v7
@@ -49,5 +46,5 @@ jobs:
           push: false
           load: false
           tags: discord-gateway-proxy:ci
-          cache-from: type=registry,ref=zot.zot.svc.cluster.local:5000/cache/discord-gateway-proxy:buildcache,registry.insecure=true
-          cache-to: type=registry,ref=zot.zot.svc.cluster.local:5000/cache/discord-gateway-proxy:buildcache,mode=max,registry.insecure=true,image-manifest=true,oci-mediatypes=true
+          cache-from: type=gha,scope=discord-gateway-proxy
+          cache-to: type=gha,mode=max,scope=discord-gateway-proxy
