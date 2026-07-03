@@ -1,0 +1,171 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: garage-bootstrap
+  namespace: garage
+  labels:
+    app.kubernetes.io/name: garage
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # Sync: メイン manifest の適用と並行して実行される (ArgoCD公式ドキュメント:
+    # https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/
+    # "Sync hooks are applied concurrently with the main manifests")。
+    # PostSync だと「StatefulSet が Healthy になってから実行」になるが、
+    # StatefulSet の readinessProbe はこの Job がレイアウトを適用するまで
+    # 503 を返し続けるため、PostSync では永久に実行されないデッドロックになる。
+    argocd.argoproj.io/hook: Sync
+    # 次回 sync 前に古い Job を削除してから新しい Job を作成(冪等に再実行可能)
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  # 完了から 1 時間後に Job リソースを自動削除
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 5
+  template:
+    metadata:
+      # garage Service の selector (app.kubernetes.io/name: garage) と衝突しない
+      # ラベルにする。衝突すると、この Job の Pod 自身が Service の Endpoints に
+      # 混入し、DNS ラウンドロビンで自分自身に接続してしまうことがある
+      # (実機で確認済み: wget が自分の Pod IP に到達しようとして connection
+      # refused になった)。
+      labels:
+        app.kubernetes.io/name: garage-bootstrap
+    spec:
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        # Alpine:3.21 の nobody(65534) で実行
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          image: alpine:3.21
+          # Alpine busybox の wget / grep / sed / awk のみ使用。
+          # apk add は行わないため readOnlyRootFilesystem: true を維持できる。
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+
+              ADMIN_URL="http://garage.garage.svc.cluster.local:3903"
+              AUTH="Authorization: Bearer ${GARAGE_ADMIN_TOKEN}"
+              CT="Content-Type: application/json"
+
+              # GET ヘルパー
+              api_get() { wget -qO- --header="${AUTH}" "${ADMIN_URL}${1}"; }
+
+              # POST ヘルパー(エラーを無視したい場合は呼び出し元で || true を使う)
+              api_post() {
+                wget -qO- --header="${AUTH}" --header="${CT}" \
+                  --post-data="${2}" "${ADMIN_URL}${1}"
+              }
+
+              # JSON 文字列/数値フィールドを抽出。Garage の Admin API はインデント
+              # 付き JSON ("key": "value" のようにコロンの後にスペースが入る)を
+              # 返すため、コロンの後の空白を許容する(実機で確認済み: これを
+              # 許容しないと version/id 等の抽出が常に空文字列になり、
+              # レイアウト初期化やバケット ID 取得が正しく動作しない)。
+              json_str() { echo "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" | head -1 | sed 's/^[^:]*:[[:space:]]*"//; s/"$//'; }
+              json_num() { echo "$1" | grep -o "\"$2\"[[:space:]]*:[[:space:]]*[0-9-]*" | head -1 | sed 's/^[^:]*:[[:space:]]*//'; }
+
+              # ── 1. Garage の Admin API ポートが開くまで待機 ───────────────
+              # /health はレイアウト未適用時に 503 を返し、wget はこれを失敗と
+              # みなしてループを抜けられない。この Job 自身がレイアウトを適用する
+              # 主体なので、ここでは TCP 到達性のみを見る(HTTP ステータスは見ない)。
+              echo "Waiting for Garage admin port to accept connections..."
+              until nc -z garage.garage.svc.cluster.local 3903 > /dev/null 2>&1; do
+                echo "  not ready, retrying in 3s..."
+                sleep 3
+              done
+              echo "Garage admin port is up."
+
+              # ── 2. レイアウト初期化(冪等) ─────────────────────────────────
+              # Garage の Admin API はインデント付き JSON ("roles": [] のように
+              # コロンの後にスペースが入る)を返すため、以前の
+              # `grep -q '"roles":\[\]'`(スペース無し)は常にマッチせず、
+              # レイアウトが空でも「既に設定済み」と誤判定してこの初期化ブロック
+              # を丸ごとスキップしていた(実機で確認済み: GetClusterLayout が
+              # version:0/roles:[] のままでも Job のログには "Layout already
+              # configured, skipping." と出続けていた)。未設定の判定は
+              # version が 0 かどうかで行う。
+              LAYOUT=$(api_get "/v2/GetClusterLayout")
+              CURR_VER=$(json_num "${LAYOUT}" "version")
+              if [ "${CURR_VER}" = "0" ]; then
+                echo "No layout assigned. Initializing..."
+
+                STATUS=$(api_get "/v2/GetClusterStatus")
+                NODE_ID=$(json_str "${STATUS}" "id")
+                echo "  Node ID: ${NODE_ID}"
+
+                # レイアウト更新をステージング(10Gi = 10737418240 bytes)。
+                # UpdateClusterLayoutRequest は { roles: [{ id, zone, capacity,
+                # tags }] } という配列形式が正しいスキーマ(OpenAPI仕様
+                # doc/api/garage-admin-v2.json で確認済み)。以前のトップレベル
+                # nodeId フラット形式は誤りで 500 Internal Server Error になっていた。
+                api_post "/v2/UpdateClusterLayout" \
+                  "{\"roles\":[{\"id\":\"${NODE_ID}\",\"zone\":\"dc1\",\"capacity\":10737418240,\"tags\":[]}]}"
+
+                # 現在のバージョン +1 で適用
+                LAYOUT2=$(api_get "/v2/GetClusterLayout")
+                CURR_VER=$(json_num "${LAYOUT2}" "version")
+                NEXT_VER=$((CURR_VER + 1))
+                api_post "/v2/ApplyClusterLayout" "{\"version\":${NEXT_VER}}"
+                echo "  Layout applied (version ${NEXT_VER})."
+              else
+                echo "Layout already configured, skipping."
+              fi
+
+              # ── 3〜6. S3 キーの import → バケット作成 → ID 取得 → 権限付与 ──
+              # (すべて冪等: 409 Already Exists は無視)
+              bootstrap_bucket() {
+                key_name="$1"; access_key="$2"; secret_key="$3"; bucket_alias="$4"
+
+                echo "Importing S3 key '${key_name}'..."
+                api_post "/v2/ImportKey" \
+                  "{\"accessKeyId\":\"${access_key}\",\"secretAccessKey\":\"${secret_key}\",\"name\":\"${key_name}\"}" \
+                  2>/dev/null || true
+                echo "  Key done (created or already existed)."
+
+                echo "Creating bucket '${bucket_alias}'..."
+                api_post "/v2/CreateBucket" "{\"globalAlias\":\"${bucket_alias}\"}" \
+                  2>/dev/null || true
+                echo "  Bucket done (created or already existed)."
+
+                # Garage Admin API は globalAlias を要求する(alias は無効な
+                # クエリパラメータ名で 400 "Either id, globalAlias or search
+                # must be provided" になる。実機で確認済み)。
+                BINFO=$(api_get "/v2/GetBucketInfo?globalAlias=${bucket_alias}")
+                BUCKET_ID=$(json_str "${BINFO}" "id")
+                echo "Bucket ID: ${BUCKET_ID}"
+
+                echo "Granting permissions..."
+                api_post "/v2/AllowBucketKey" \
+                  "{\"bucketId\":\"${BUCKET_ID}\",\"accessKeyId\":\"${access_key}\",\"permissions\":{\"read\":true,\"write\":true,\"owner\":true}}"
+              }
+
+              bootstrap_bucket "zot" "${GARAGE_S3_ACCESS_KEY_ID}" "${GARAGE_S3_SECRET_ACCESS_KEY}" "roppoh-zot"
+
+              echo "Bootstrap complete!"
+          envFrom:
+            - secretRef:
+                name: garage-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
