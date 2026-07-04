@@ -366,6 +366,47 @@ spec:
               }
 
               // =================================================================
+              // GPU METRICS: DCGM-exporter (z390 限定, dcgm-exporter.yaml)
+              // nvidia.com/gpu=true ノードにしか存在しないため現状は z390 のみが
+              // 対象。将来 GPU ノードが増えても kube-state-metrics と同じ
+              // 「自ノードのみ keep」パターンで多重スクレイプを防ぐ
+              // =================================================================
+
+              discovery.relabel "dcgm_exporter" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "dcgm-exporter"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "9400"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "dcgm-exporter"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              prometheus.scrape "dcgm_exporter" {
+                targets         = discovery.relabel.dcgm_exporter.output
+                scrape_interval = "30s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
               // OTLP RECEIVER: アプリ (discord-gateway-proxy 等) / Cloudflare Workers の
               // traces / logs / metrics を受信
               //   - bearer 認証で incoming Authorization: Bearer <token> を検証

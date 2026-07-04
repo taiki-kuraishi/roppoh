@@ -11,6 +11,7 @@ resources:
   - grafana.yaml
   - grafana-alloy.yaml
   - kube-state-metrics.yaml
+  - dcgm-exporter.yaml
   - argo-workflows.yaml
   - zot.yaml
   - garage.yaml
