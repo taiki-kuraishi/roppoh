@@ -100,6 +100,7 @@ import { ConsentButton } from "@/pages/consent/components/consent-button";
 
 - **1 ファイル 150 行まで**(`max-lines`)
 - **1 関数 100 行まで**(`max-lines-per-function`)
+- **.tsx のトップレベル関数は 1 つまで**(`roppoh/one-function-per-tsx`)。定数は無制限。2 つ目以降のコンポーネント/フック/ヘルパーは別ファイルへ分割する。JSX を含まないファイルは `.ts` にする
 
 超えたらコンポーネント/フックを分割する。フィールド群は `components/` 配下へ、ロジックは `use-*.ts` カスタムフックへ抽出する。
 
@@ -113,6 +114,7 @@ import { ConsentButton } from "@/pages/consent/components/consent-button";
 | ディレクトリ名 kebab-case / pages 構造 | `roppoh/file-structure`          | React 系 3 アプリ |
 | コロケーション境界                     | `roppoh/no-cross-feature-import` | React 系 3 アプリ |
 | 境界をまたぐ相対 import 禁止           | `roppoh/prefer-alias-import`     | React 系 3 アプリ |
+| .tsx のトップレベル関数は 1 つまで     | `roppoh/one-function-per-tsx`    | React 系 3 アプリ |
 | ファイル 150 行制限                    | `max-lines`                      | React 系 3 アプリ |
 | 関数 100 行制限                        | `max-lines-per-function`         | React 系 3 アプリ |
 
