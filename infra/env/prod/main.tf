@@ -34,3 +34,9 @@ module "dns" {
   zone_name    = "tsar-bmb.org"
   tunnel_cname = module.zero_trust.tunnel_cname
 }
+
+# ----- Pipelines (Discord activity/presence events -> R2 Data Catalog) -----
+module "pipelines" {
+  source     = "../../modules/pipelines"
+  account_id = var.cloudflare_account_id
+}

@@ -62,6 +62,16 @@ spec:
               value: Authorization=Bearer $(OTLP_TOKEN)
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: deployment.environment=prod,service.namespace=discord
+            # ---- Cloudflare Pipelines: activity/presence events -> R2 Data Catalog ----
+            # infra/env/prod (module.pipelines) の terraform output discord_events_ingest_endpoint。
+            # stream ID は機密ではない。
+            - name: PIPELINE_INGEST_ENDPOINT
+              value: "https://3e76c7cd97344c3091816098faed4e4e.ingest.cloudflare.com"
+            - name: PIPELINE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: discord-gateway-proxy
+                  key: pipeline-api-token
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
