@@ -31,6 +31,15 @@ export default defineConfig({
         "roppoh/prefer-alias-import": "error",
       },
     },
+    {
+      // Inertia resolves pages by PascalCase name (c.render('User/Index') ->
+      // App/pages/User/Index.tsx), which conflicts with the repo-wide
+      // Kebab-case filename rule below. Exempt only the pages tree.
+      files: ["apps/web-console/app/pages/**"],
+      rules: {
+        "unicorn/filename-case": "off",
+      },
+    },
   ],
   rules: {
     "eslint/no-unused-vars": "error",

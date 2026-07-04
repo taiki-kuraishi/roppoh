@@ -52,6 +52,10 @@ jobs:
             package: "@roppoh/neo-fujimatsu"
             test_script: test:vrt
             vrt_dir: apps/neo-fujimatsu/test/vrt
+          - app: web-console
+            package: "@roppoh/web-console"
+            test_script: test:vrt
+            vrt_dir: apps/web-console/test/vrt
           - app: roppoh
             package: "@roppoh/roppoh"
             test_script: test:visual

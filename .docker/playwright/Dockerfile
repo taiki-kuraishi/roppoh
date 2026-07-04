@@ -14,6 +14,7 @@ COPY apps/emdash/package.json    ./apps/emdash/
 COPY apps/roppoh/package.json        ./apps/roppoh/
 COPY apps/ura-roppoh/package.json    ./apps/ura-roppoh/
 COPY apps/neo-fujimatsu/package.json ./apps/neo-fujimatsu/
+COPY apps/web-console/package.json   ./apps/web-console/
 
 COPY packages/domain/package.json            ./packages/domain/
 COPY packages/shadcn/package.json            ./packages/shadcn/
