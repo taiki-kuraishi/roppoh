@@ -12,6 +12,8 @@ import (
 
 	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/config"
 	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/gateway"
+	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/handler"
+	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/pipeline"
 	"github.com/tsar-org/roppoh/internal/telemetry"
 )
 
@@ -46,8 +48,23 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	// Build the Discord gateway session from the bot token.
-	session, err := gateway.NewSession(cfg.BotToken, logger)
+	// Buffer and batch activity/presence events to Cloudflare Pipelines. This
+	// defer runs before shutdownTelemetry (registered above) and after
+	// session.Close (registered below), so buffered events are flushed while
+	// the logging pipeline is still up.
+	pipelineClient := pipeline.New(cfg.PipelineEndpoint, cfg.PipelineAPIToken, logger)
+	defer func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := pipelineClient.Shutdown(shutdownCtx); err != nil {
+			logger.Error("failed to shut down pipeline client", "error", err)
+		}
+	}()
+
+	// Build the Discord gateway session from the bot token, wired up to also
+	// report activity/presence events to the pipeline client.
+	handlers := handler.Handlers(pipelineClient, logger)
+	session, err := gateway.NewSession(cfg.BotToken, logger, handlers...)
 	if err != nil {
 		logger.Error("failed to create gateway session", "error", err)
 		return err
