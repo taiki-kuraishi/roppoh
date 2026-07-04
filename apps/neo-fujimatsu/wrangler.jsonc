@@ -41,5 +41,10 @@
     "DISCORD_CLIENT_ID": "1489801501307310202",
     "NODE_ENV": "production",
   },
+  // 実際の値は wrangler secret put で設定 (このファイルには値を書かない)。
+  // 型生成 (wrangler types) が Env に含めるために名前だけ宣言する。
+  "secrets": {
+    "required": ["BETTER_AUTH_SECRET", "DISCORD_CLIENT_SECRET"],
+  },
   "workers_dev": false,
 }

@@ -10,10 +10,13 @@ resources:
   - grafana-tempo.yaml
   - grafana.yaml
   - grafana-alloy.yaml
+  - kube-state-metrics.yaml
+  - dcgm-exporter.yaml
   - argo-workflows.yaml
   - zot.yaml
   - garage.yaml
   - discord-gateway-proxy.yaml
   - discord-gateway-proxy-build.yaml
   - openclaw.yaml
+  - grafana-dashboards.yaml
   - secrets.yaml

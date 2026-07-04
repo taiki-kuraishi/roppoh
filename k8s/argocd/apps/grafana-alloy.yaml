@@ -18,12 +18,49 @@ spec:
         # -----------------------------------------------------------------------
         controller:
           type: daemonset
+          # prometheus.exporter.unix (ホスト OS メトリクス) のプロセス関連コレクタが
+          # ホストの PID namespace を見えるようにするため
+          hostPID: true
+          volumes:
+            extra:
+              - name: host-proc
+                hostPath:
+                  path: /proc
+              - name: host-sys
+                hostPath:
+                  path: /sys
+              - name: host-root
+                hostPath:
+                  path: /
+              # journald の揮発ログ (Storage=volatile 時) 用。永続ログ
+              # (/var/log/journal) は alloy.mounts.varlog (/var/log) で既にカバー済み
+              - name: run-log-journal
+                hostPath:
+                  path: /run/log/journal
+                  type: DirectoryOrCreate
 
         alloy:
           # ホストの /var/log をマウント（Pod ログファイルのテール用）
           mounts:
             varlog: true
             dockercontainers: true # Docker ランタイムのシンボリックリンク追従用
+            # ホスト OS メトリクス (node_exporter 相当) を prometheus.exporter.unix で
+            # 収集するため /proc /sys / をマウント
+            extra:
+              - name: host-proc
+                mountPath: /host/proc
+                readOnly: true
+              - name: host-sys
+                mountPath: /host/sys
+                readOnly: true
+              - name: host-root
+                mountPath: /host/root
+                readOnly: true
+                mountPropagation: HostToContainer
+              # journald の揮発ログ用 (永続ログは mounts.varlog でカバー済み)
+              - name: run-log-journal
+                mountPath: /run/log/journal
+                readOnly: true
 
           # OTLP ポートを Service に公開（Cloudflare Workers からのトレース受信用）
           extraPorts:
@@ -118,15 +155,54 @@ spec:
                 }
               }
 
+              // discovery.relabel.pod_logs.output の __path__ はグロブ (/var/log/pods/*<uid>/*/*.log) を
+              // 含むが、loki.source.file はグロブを展開しない。local.file_match を介して実ファイルパスへ
+              // 展開してから渡す (これが無いと Pod ログが一切 tail されない)。
+              local.file_match "pod_logs" {
+                path_targets = discovery.relabel.pod_logs.output
+              }
+
               // ログファイルをテールして Loki gateway に送信
               loki.source.file "pod_logs" {
-                targets    = discovery.relabel.pod_logs.output
+                targets    = local.file_match.pod_logs.targets
                 forward_to = [loki.write.grafana.receiver]
               }
 
               loki.write "grafana" {
                 endpoint {
                   url = "http://grafana-loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+                }
+              }
+
+              // =================================================================
+              // HOST LOGS: systemd journald (k3s/kubelet/kernel/systemd 等ホスト OS ログ)
+              // path 未指定時は /var/log/journal (永続、mounts.varlog でカバー済み) と
+              // /run/log/journal (揮発、controller.volumes.extra でカバー済み) の両方を
+              // 自動的に探索する
+              // =================================================================
+
+              loki.relabel "journal" {
+                forward_to = []
+
+                rule {
+                  source_labels = ["__journal__systemd_unit"]
+                  target_label  = "unit"
+                }
+                rule {
+                  source_labels = ["__journal_priority_keyword"]
+                  target_label  = "level"
+                }
+                rule {
+                  target_label = "node"
+                  replacement  = env("KUBE_NODE_NAME")
+                }
+              }
+
+              loki.source.journal "host" {
+                forward_to    = [loki.write.grafana.receiver]
+                relabel_rules = loki.relabel.journal.rules
+                labels        = {
+                  job = "systemd-journal",
                 }
               }
 
@@ -162,6 +238,17 @@ spec:
                 rule {
                   target_label = "job"
                   replacement  = "kubelet"
+                }
+                // __address__ が apiserver proxy の同一アドレスに書き換わるため、明示的に
+                // instance/node へノード名を書き込んでおかないと n100/z390 のシリーズが
+                // 衝突する (instance が指定されていれば Prometheus はそれを優先する)。
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "instance"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "node"
                 }
               }
 
@@ -200,6 +287,16 @@ spec:
                   target_label = "job"
                   replacement  = "kubernetes-cadvisor"
                 }
+                // kubelet と同様、apiserver proxy 経由で __address__ が両ノードで
+                // 同一になるため instance/node を明示的に付与する。
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "instance"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "node"
+                }
               }
 
               prometheus.scrape "cadvisor" {
@@ -216,8 +313,411 @@ spec:
 
               prometheus.remote_write "mimir" {
                 endpoint {
-                  url = "http://grafana-mimir-gateway.monitoring.svc.cluster.local/prometheus/api/v1/remote_write"
+                  // 注意: /prometheus は Mimir gateway の読み取り専用クエリ API のプレフィックス。
+                  // push (remote_write) の正しいパスは /api/v1/push (これを /prometheus 配下に
+                  // していたため 404 で全メトリクスが起動以来 1 件も取り込まれていなかった)。
+                  url = "http://grafana-mimir-gateway.monitoring.svc.cluster.local/api/v1/push"
                 }
+              }
+
+              // =================================================================
+              // HOST METRICS: node_exporter 相当のホスト OS メトリクス (自ノードのみ)
+              // controller.hostPID / alloy.mounts.extra (/host/proc, /host/sys,
+              // /host/root) が必要 (values 側で設定済み)
+              // =================================================================
+
+              prometheus.exporter.unix "node" {
+                procfs_path = "/host/proc"
+                sysfs_path  = "/host/sys"
+                rootfs_path = "/host/root"
+
+                disable_collectors = ["ipvs", "btrfs", "infiniband", "xfs", "zfs"]
+
+                filesystem {
+                  fs_types_exclude     = "^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|tmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$"
+                  mount_points_exclude = "^/(dev|proc|run/credentials/.+|sys|var/lib/docker/.+)($|/)"
+                  mount_timeout        = "5s"
+                }
+              }
+
+              // kubelet/cadvisor と同様、ノード名を instance/node に明示する
+              prometheus.relabel "node_exporter" {
+                forward_to = [prometheus.remote_write.mimir.receiver]
+
+                rule {
+                  target_label = "job"
+                  replacement  = "node-exporter"
+                }
+                rule {
+                  target_label = "instance"
+                  replacement  = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  target_label = "node"
+                  replacement  = env("KUBE_NODE_NAME")
+                }
+              }
+
+              prometheus.scrape "node_exporter" {
+                targets         = prometheus.exporter.unix.node.targets
+                scrape_interval = "60s"
+                forward_to      = [prometheus.relabel.node_exporter.receiver]
+              }
+
+              // =================================================================
+              // KUBE-STATE-METRICS: クラスタ状態メトリクス (kube-state-metrics.yaml)
+              // Deployment (レプリカ 1) は discovery.kubernetes "pods" (既存、pod_logs で
+              // 定義済み) から検出し、Pod ログと同じ「自ノードのみ keep」パターンで
+              // 重複スクレイプ (N ノード分の多重書き込み) を防ぐ
+              // =================================================================
+
+              discovery.relabel "kube_state_metrics" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "kube-state-metrics"
+                }
+                // chart は http (8080, メトリクス本体) と metrics (8081, self monitor) の
+                // 2 ポートを公開する。メトリクス本体のみ対象にする
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_name"]
+                  action        = "keep"
+                  regex         = "http"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "kube-state-metrics"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              prometheus.scrape "kube_state_metrics" {
+                targets         = discovery.relabel.kube_state_metrics.output
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
+              // GPU METRICS: DCGM-exporter (z390 限定, dcgm-exporter.yaml)
+              // nvidia.com/gpu=true ノードにしか存在しないため現状は z390 のみが
+              // 対象。将来 GPU ノードが増えても kube-state-metrics と同じ
+              // 「自ノードのみ keep」パターンで多重スクレイプを防ぐ
+              // =================================================================
+
+              discovery.relabel "dcgm_exporter" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "dcgm-exporter"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "9400"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "dcgm-exporter"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              prometheus.scrape "dcgm_exporter" {
+                targets         = discovery.relabel.dcgm_exporter.output
+                scrape_interval = "30s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
+              // APP METRICS: `prometheus.io/scrape: "true"` アノテーション付き Pod を
+              // 汎用的に検出してスクレイプする (kube-prometheus 等で標準的なパターン)。
+              // 対象に追加したいワークロードは Pod テンプレートに以下を付与するだけでよい:
+              //   annotations:
+              //     prometheus.io/scrape: "true"
+              //     prometheus.io/port: "<port>"   # 省略時は Pod のデフォルトポート
+              //     prometheus.io/path: "<path>"   # 省略時は /metrics
+              //
+              // 現時点で annotation が付いているのは traefik (kube-system, k3s 標準
+              // バンドル) のみ。coredns / argocd / zot / garage / Grafana スタック自身は
+              // まだ annotation が無くこの仕組みでは拾えない (追加は別途フォローアップ:
+              // coredns は k3s バンドルのため本リポジトリ管理外、argocd は
+              // k8s/argocd/patches/、zot は metrics extension 有効化+認証除外の検証が
+              // 必要、garage は admin API 設定が必要)
+              // =================================================================
+
+              discovery.relabel "annotated_pods" {
+                targets = discovery.kubernetes.pods.targets
+
+                // このノード上の Pod のみ対象 (DaemonSet 全ノードでの多重スクレイプ防止、
+                // pod_logs/kube_state_metrics と同じパターン)
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+                  action        = "keep"
+                  regex         = "true"
+                }
+                // 終了済みコンテナはスキップ (pod_logs と同じ理由)
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_phase"]
+                  regex         = "Pending|Succeeded|Failed|Completed"
+                  action        = "drop"
+                }
+                // prometheus.io/port が指定されていればアドレスのポートを上書きする
+                rule {
+                  source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+                  action        = "replace"
+                  regex         = `([^:]+)(?::\d+)?;(\d+)`
+                  replacement   = "$1:$2"
+                  target_label  = "__address__"
+                }
+                // prometheus.io/path が指定されていればメトリクスパスを上書きする (既定 /metrics)
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
+                  action        = "replace"
+                  regex         = "(.+)"
+                  target_label  = "__metrics_path__"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+                  separator     = "/"
+                  target_label  = "job"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              prometheus.scrape "annotated_pods" {
+                targets         = discovery.relabel.annotated_pods.output
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
+              // ARGOCD SELF-MONITORING: このクラスタ自体を動かす GitOps エンジン。
+              // argocd namespace の公式マニフェストはアノテーションを持たないため
+              // annotated_pods では拾えない。app.kubernetes.io/name + 既知のメトリクス
+              // ポート番号で明示的に対象化する (KSM/DCGM と同じ「自ノードのみ keep」
+              // パターン)。redis (メトリクス非対応) と notifications-controller
+              // (containerPort 未宣言で discovery.kubernetes からは対象化不可) は対象外
+              // =================================================================
+
+              discovery.relabel "argocd_application_controller" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-application-controller"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "8082"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-application-controller"
+                }
+              }
+
+              discovery.relabel "argocd_server" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-server"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "8083"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-server"
+                }
+              }
+
+              discovery.relabel "argocd_repo_server" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-repo-server"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "8084"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-repo-server"
+                }
+              }
+
+              discovery.relabel "argocd_applicationset_controller" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-applicationset-controller"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_name"]
+                  action        = "keep"
+                  regex         = "metrics"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-applicationset-controller"
+                }
+              }
+
+              discovery.relabel "argocd_dex_server" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-dex-server"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "5558"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-dex-server"
+                }
+              }
+
+              prometheus.scrape "argocd" {
+                targets = array.concat(
+                  discovery.relabel.argocd_application_controller.output,
+                  discovery.relabel.argocd_server.output,
+                  discovery.relabel.argocd_repo_server.output,
+                  discovery.relabel.argocd_applicationset_controller.output,
+                  discovery.relabel.argocd_dex_server.output,
+                )
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
+              // OBSERVABILITY SELF-MONITORING: 可観測性パイプライン自身。
+              // Alloy は各ノードで自分自身の :12345 (HTTP サーバ) を直接スクレイプする
+              // (discovery 不要、常に自ノードのみ)。Grafana は単一 Deployment のため
+              // kube-state-metrics と同じ「自ノードのみ keep」パターンで対象化する。
+              // Mimir/Loki/Tempo は複数コンポーネントに分かれておりメトリクス
+              // self-scrape はフォローアップ課題とする (ログは Loki 側で既にカバー済み)
+              // =================================================================
+
+              prometheus.scrape "alloy_self" {
+                targets = [{
+                  __address__ = "localhost:12345",
+                  job         = "alloy",
+                  node        = env("KUBE_NODE_NAME"),
+                }]
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              discovery.relabel "grafana" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "grafana"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "3000"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "grafana"
+                }
+              }
+
+              prometheus.scrape "grafana" {
+                targets         = discovery.relabel.grafana.output
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
               }
 
               // =================================================================
@@ -243,7 +743,8 @@ spec:
                 }
                 output {
                   traces  = [otelcol.exporter.otlp.tempo.input]
-                  logs    = [otelcol.exporter.loki.grafana.input]
+                  // logs は transform で Loki ラベルヒントを付与してから exporter へ流す
+                  logs    = [otelcol.processor.transform.cf_workers_loki_labels.input]
                   metrics = [otelcol.exporter.prometheus.mimir.input]
                 }
               }
@@ -254,6 +755,24 @@ spec:
                   tls {
                     insecure = true
                   }
+                }
+              }
+
+              // OTLP logs に Loki ラベルヒントを付与する。
+              // otelcol.exporter.loki は resource 属性 `loki.resource.labels` に
+              // 列挙されたキーを Loki ストリームラベルへ昇格させる。service.name を
+              // 指定するとラベル `service_name` が付き、ダッシュボードの
+              // {service_name=~"$service"} で絞り込める(pod ログとの区別にもなる)。
+              otelcol.processor.transform "cf_workers_loki_labels" {
+                error_mode = "ignore"
+                log_statements {
+                  context = "resource"
+                  statements = [
+                    `set(resource.attributes["loki.resource.labels"], "service.name")`,
+                  ]
+                }
+                output {
+                  logs = [otelcol.exporter.loki.grafana.input]
                 }
               }
 

@@ -9,4 +9,15 @@ turbo type-check
 
 turbo build
 
+# Grafana ダッシュボード JSON を検証 (turbo build で生成済み)
+# dashboard-linter は go.mod の replace ディレクティブにより go install/run 不可。
+# mise の github backend でリリースバイナリを取得して実行する
+# (CI では GITHUB_TOKEN によりレート制限を回避)。規約と合わない規則は
+# k8s/monitoring/dashboards/.lint で理由付き除外している。
+for dashboard in k8s/monitoring/dashboards/*.json; do
+  mise x "github:grafana/dashboard-linter@0.2.0" -- \
+    dashboard-linter lint --strict \
+    --config k8s/monitoring/dashboards/.lint "$dashboard"
+done
+
 bun knip

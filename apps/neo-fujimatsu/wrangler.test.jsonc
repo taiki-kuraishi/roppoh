@@ -19,5 +19,10 @@
     "DISCORD_CLIENT_ID": "1489801501307310202",
     "NODE_ENV": "production",
   },
+  // wrangler.jsonc と同様、値は書かず名前だけ宣言する (実値は vitest.config.ts の
+  // test.env / wrangler secret put 側で管理)
+  "secrets": {
+    "required": ["BETTER_AUTH_SECRET", "DISCORD_CLIENT_SECRET"],
+  },
   "workers_dev": false,
 }

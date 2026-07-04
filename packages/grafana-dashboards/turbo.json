@@ -1,0 +1,14 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["tsconfig.json", "src/**", "$TURBO_ROOT$/tsconfig.json"],
+      "outputs": []
+    },
+    "type-check": {
+      "inputs": ["tsconfig.json", "src/**", "$TURBO_ROOT$/tsconfig.json"],
+      "outputs": []
+    }
+  }
+}

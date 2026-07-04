@@ -22,13 +22,5 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: kubeconform (validate)
-        run: |
-          kubeconform \
-            -summary \
-            -ignore-missing-schemas \
-            -ignore-filename-pattern '.*\.sops\.yaml' \
-            -ignore-filename-pattern '.*/patches/.*' \
-            k8s
-      - name: kube-linter (lint)
-        run: kube-linter lint k8s --config .kube-linter.yaml
+      - name: lint k8s (kubeconform, kube-linter)
+        run: mise run lint:k8s
