@@ -27,6 +27,7 @@ export default defineConfig({
         "max-lines-per-function": ["error", { max: 100 }],
         "roppoh/file-structure": "error",
         "roppoh/no-cross-feature-import": "error",
+        "roppoh/one-function-per-tsx": "error",
         "roppoh/prefer-alias-import": "error",
       },
     },
