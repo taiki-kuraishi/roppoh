@@ -32,6 +32,12 @@ spec:
               - name: host-root
                 hostPath:
                   path: /
+              # journald の揮発ログ (Storage=volatile 時) 用。永続ログ
+              # (/var/log/journal) は alloy.mounts.varlog (/var/log) で既にカバー済み
+              - name: run-log-journal
+                hostPath:
+                  path: /run/log/journal
+                  type: DirectoryOrCreate
 
         alloy:
           # ホストの /var/log をマウント（Pod ログファイルのテール用）
@@ -51,6 +57,10 @@ spec:
                 mountPath: /host/root
                 readOnly: true
                 mountPropagation: HostToContainer
+              # journald の揮発ログ用 (永続ログは mounts.varlog でカバー済み)
+              - name: run-log-journal
+                mountPath: /run/log/journal
+                readOnly: true
 
           # OTLP ポートを Service に公開（Cloudflare Workers からのトレース受信用）
           extraPorts:
@@ -161,6 +171,38 @@ spec:
               loki.write "grafana" {
                 endpoint {
                   url = "http://grafana-loki-gateway.monitoring.svc.cluster.local/loki/api/v1/push"
+                }
+              }
+
+              // =================================================================
+              // HOST LOGS: systemd journald (k3s/kubelet/kernel/systemd 等ホスト OS ログ)
+              // path 未指定時は /var/log/journal (永続、mounts.varlog でカバー済み) と
+              // /run/log/journal (揮発、controller.volumes.extra でカバー済み) の両方を
+              // 自動的に探索する
+              // =================================================================
+
+              loki.relabel "journal" {
+                forward_to = []
+
+                rule {
+                  source_labels = ["__journal__systemd_unit"]
+                  target_label  = "unit"
+                }
+                rule {
+                  source_labels = ["__journal_priority_keyword"]
+                  target_label  = "level"
+                }
+                rule {
+                  target_label = "node"
+                  replacement  = env("KUBE_NODE_NAME")
+                }
+              }
+
+              loki.source.journal "host" {
+                forward_to    = [loki.write.grafana.receiver]
+                relabel_rules = loki.relabel.journal.rules
+                labels        = {
+                  job = "systemd-journal",
                 }
               }
 
