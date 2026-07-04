@@ -1,4 +1,3 @@
-import { LogsSortOrder } from "@grafana/grafana-foundation-sdk/common";
 import {
   DashboardBuilder,
   QueryVariableBuilder,
@@ -6,16 +5,9 @@ import {
   VariableRefresh,
   VariableSort,
 } from "@grafana/grafana-foundation-sdk/dashboard";
-import { PanelBuilder as LogsPanel } from "@grafana/grafana-foundation-sdk/logs";
-import {
-  DataqueryBuilder as LokiQuery,
-  LokiQueryDirection,
-} from "@grafana/grafana-foundation-sdk/loki";
-import { PanelBuilder as TablePanel } from "@grafana/grafana-foundation-sdk/table";
-import { SearchTableType, TempoQueryBuilder } from "@grafana/grafana-foundation-sdk/tempo";
-import { PanelBuilder as TimeSeriesPanel } from "@grafana/grafana-foundation-sdk/timeseries";
 
-import { lokiDatasourceRef, tempoDatasourceRef } from "../datasources";
+import { lokiDatasourceRef } from "../datasources";
+import { lokiLogs, lokiTimeseries, tempoSearch } from "../panels";
 
 /**
  * Loki ストリームセレクタ。`service_name` ラベルは grafana-alloy の
@@ -23,64 +15,6 @@ import { lokiDatasourceRef, tempoDatasourceRef } from "../datasources";
  * (k8s/argocd/apps/grafana-alloy.yaml を参照)。$service は Worker 名。
  */
 const SERVICE_SELECTOR = '{service_name=~"$service"}';
-
-// Tempo: TraceQL 検索結果を table パネルで一覧表示する
-const tempoSearch = (opts: { title: string; description: string; traceql: string }) =>
-  new TablePanel()
-    .title(opts.title)
-    .description(opts.description)
-    .datasource(tempoDatasourceRef)
-    // トレース一覧テーブルは単一の数値単位を持たない (unitless)
-    .unit("none")
-    .withTarget(
-      new TempoQueryBuilder()
-        .datasource(tempoDatasourceRef)
-        .refId("A")
-        .queryType("traceql")
-        .tableType(SearchTableType.Traces)
-        .limit(20)
-        .filters([])
-        .query(opts.traceql),
-    );
-
-const lokiTimeseries = (opts: {
-  title: string;
-  description: string;
-  unit: string;
-  expr: string;
-  legend: string;
-}) =>
-  new TimeSeriesPanel()
-    .title(opts.title)
-    .description(opts.description)
-    .datasource(lokiDatasourceRef)
-    .unit(opts.unit)
-    .fillOpacity(10)
-    .withTarget(
-      new LokiQuery()
-        .datasource(lokiDatasourceRef)
-        .refId("A")
-        .expr(opts.expr)
-        .legendFormat(opts.legend),
-    );
-
-const lokiLogs = (opts: { title: string; description: string; expr: string }) =>
-  new LogsPanel()
-    .title(opts.title)
-    .description(opts.description)
-    .datasource(lokiDatasourceRef)
-    .showTime(true)
-    .wrapLogMessage(true)
-    .enableLogDetails(true)
-    .sortOrder(LogsSortOrder.Descending)
-    .withTarget(
-      new LokiQuery()
-        .datasource(lokiDatasourceRef)
-        .refId("A")
-        .expr(opts.expr)
-        .direction(LokiQueryDirection.Backward)
-        .maxLines(200),
-    );
 
 const serviceVariable = new QueryVariableBuilder("service")
   .label("Service")

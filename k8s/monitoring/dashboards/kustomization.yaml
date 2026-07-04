@@ -10,6 +10,30 @@ namespace: monitoring
 # JSON は packages/grafana-dashboards (Foundation SDK) が生成するコード生成物。
 # 追加/更新は `bun run --filter @roppoh/grafana-dashboards build` で行う。
 configMapGenerator:
+  - name: grafana-dashboard-nodes-host
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Nodes
+    files:
+      - nodes-host.json
+  - name: grafana-dashboard-gpu-ollama
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: GPU
+    files:
+      - gpu-ollama.json
+  - name: grafana-dashboard-k8s-cluster-workloads
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Kubernetes
+    files:
+      - k8s-cluster-workloads.json
   - name: grafana-dashboard-k8s-pods
     options:
       labels:
@@ -18,6 +42,46 @@ configMapGenerator:
         grafana_folder: Kubernetes
     files:
       - k8s-nodes-pods.json
+  - name: grafana-dashboard-logs-all-containers
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Logs
+    files:
+      - logs-all-containers.json
+  - name: grafana-dashboard-traefik-ingress
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Applications
+    files:
+      - traefik-ingress.json
+  - name: grafana-dashboard-argocd-gitops
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Applications
+    files:
+      - argocd-gitops.json
+  - name: grafana-dashboard-discord-gateway-proxy
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Applications
+    files:
+      - discord-gateway-proxy.json
+  - name: grafana-dashboard-observability-stack
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Monitoring
+    files:
+      - observability-stack.json
   - name: grafana-dashboard-cf-workers
     options:
       labels:

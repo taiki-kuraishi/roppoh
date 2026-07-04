@@ -26,25 +26,6 @@
       },
       {
         "type": "query",
-        "name": "node",
-        "skipUrlSync": false,
-        "multi": true,
-        "allowCustomValue": true,
-        "includeAll": true,
-        "auto": false,
-        "auto_min": "10s",
-        "auto_count": 30,
-        "label": "Node",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "query": "label_values(up{job=\"kubernetes-cadvisor\"}, node)",
-        "refresh": 2,
-        "sort": 1
-      },
-      {
-        "type": "query",
         "name": "namespace",
         "skipUrlSync": false,
         "multi": true,
@@ -58,39 +39,20 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "query": "label_values(job=\"kubernetes-cadvisor\", container!=\"\", namespace)",
-        "refresh": 2,
-        "sort": 1
-      },
-      {
-        "type": "query",
-        "name": "pod",
-        "skipUrlSync": false,
-        "multi": true,
-        "allowCustomValue": true,
-        "includeAll": true,
-        "auto": false,
-        "auto_min": "10s",
-        "auto_count": 30,
-        "label": "Pod",
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${datasource}"
-        },
-        "query": "label_values(container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", namespace=~\"$namespace\", node=~\"$node\"}, pod)",
+        "query": "label_values(kube_pod_info{job=\"kube-state-metrics\"}, namespace)",
         "refresh": 2,
         "sort": 1
       }
     ]
   },
   "annotations": {},
-  "title": "Kubernetes / Pods & Containers",
-  "uid": "roppoh-k8s-pods",
-  "description": "cAdvisor + kubelet メトリクス (Mimir) による Pod / コンテナ / ノード単位のリソース可視化",
-  "tags": ["generated", "kubernetes", "cadvisor"],
+  "title": "Kubernetes / Cluster & Workload state",
+  "uid": "roppoh-k8s-cluster-workloads",
+  "description": "kube-state-metrics によるクラスタオブジェクトの状態 (Pod restart / Deployment・StatefulSet・DaemonSet の ready-vs-desired / Node / PVC / Job・CronJob / GPU allocatable)",
+  "tags": ["generated", "kubernetes", "kube-state-metrics"],
   "refresh": "30s",
   "time": {
-    "from": "now-6h",
+    "from": "now-24h",
     "to": "now"
   },
   "panels": [
@@ -111,8 +73,8 @@
       "type": "stat",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "Namespaces",
-      "description": "メトリクスを出している namespace 数",
+      "title": "Nodes ready",
+      "description": "Ready 状態の Node 数",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -125,7 +87,7 @@
       },
       "targets": [
         {
-          "expr": "count(count by (namespace) (container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"}))",
+          "expr": "sum(kube_node_status_condition{job=\"kube-state-metrics\", condition=\"Ready\", status=\"true\"})",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -144,8 +106,8 @@
       "type": "stat",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "Running pods",
-      "description": "稼働中の Pod 数 (cAdvisor が観測している実コンテナ持ち)",
+      "title": "Pods not running",
+      "description": "Running/Succeeded 以外の Pod 数 (Pending/Failed/Unknown)",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -158,7 +120,7 @@
       },
       "targets": [
         {
-          "expr": "count(count by (namespace, pod) (container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"}))",
+          "expr": "sum(kube_pod_status_phase{job=\"kube-state-metrics\", namespace=~\"$namespace\", phase!~\"Running|Succeeded\"})",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -177,8 +139,8 @@
       "type": "stat",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "Running containers",
-      "description": "稼働中のコンテナ数",
+      "title": "GPU allocatable (cluster)",
+      "description": "クラスタ全体の nvidia.com/gpu allocatable (現状 z390 に 1)",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -191,7 +153,7 @@
       },
       "targets": [
         {
-          "expr": "count(count by (namespace, pod, container) (container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"}))",
+          "expr": "sum(kube_node_status_allocatable{job=\"kube-state-metrics\", resource=~\".*gpu.*\"})",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -210,8 +172,8 @@
       "type": "stat",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "Cluster CPU (cores)",
-      "description": "選択ノードの CPU 使用量 (コア換算)",
+      "title": "CronJobs",
+      "description": "登録済み CronJob 数",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -224,7 +186,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"}[$__rate_interval]))",
+          "expr": "count(kube_cronjob_next_schedule_time{job=\"kube-state-metrics\", namespace=~\"$namespace\"})",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -240,47 +202,14 @@
       }
     },
     {
-      "type": "stat",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Cluster memory (working set)",
-      "description": "選択ノードのメモリ working set",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "sum(container_memory_working_set_bytes{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"})",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          }
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 19
-      }
-    },
-    {
       "type": "row",
       "collapsed": false,
       "id": 0,
       "panels": [],
-      "title": "By node",
+      "title": "Pod restarts",
       "gridPos": {
         "x": 0,
-        "y": 28,
+        "y": 19,
         "h": 1,
         "w": 24
       }
@@ -289,8 +218,8 @@
       "type": "timeseries",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "CPU usage by node",
-      "description": "ノード別 CPU 使用量 (コア換算)。n100/z390 を区別できる",
+      "title": "Pod restart rate",
+      "description": "namespace 別の Pod restart 増加率",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -306,94 +235,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (node) (rate(container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"}[$__rate_interval]))",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{node}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 29
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Memory (working set) by node",
-      "description": "ノード別メモリ working set",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "sum by (node) (container_memory_working_set_bytes{job=\"kubernetes-cadvisor\", container!=\"\", node=~\"$node\"})",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{node}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 29
-      }
-    },
-    {
-      "type": "row",
-      "collapsed": false,
-      "id": 0,
-      "panels": [],
-      "title": "By namespace",
-      "gridPos": {
-        "x": 0,
-        "y": 38,
-        "h": 1,
-        "w": 24
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "CPU usage by namespace",
-      "description": "namespace 別 CPU 使用量 (コア換算)",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "sum by (namespace) (rate(container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", namespace=~\"$namespace\", node=~\"$node\"}[$__rate_interval]))",
+          "expr": "sum by (namespace) (increase(kube_pod_container_status_restarts_total{job=\"kube-state-metrics\", namespace=~\"$namespace\"}[$__range]))",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -406,213 +248,188 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 39
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Memory (working set) by namespace",
-      "description": "namespace 別メモリ working set",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "sum by (namespace) (container_memory_working_set_bytes{job=\"kubernetes-cadvisor\", container!=\"\", namespace=~\"$namespace\", node=~\"$node\"})",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{namespace}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 39
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Network received by namespace",
-      "description": "namespace 別ネットワーク受信レート",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "sum by (namespace) (rate(container_network_receive_bytes_total{job=\"kubernetes-cadvisor\", namespace=~\"$namespace\", node=~\"$node\"}[$__rate_interval]))",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{namespace}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 48
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Network transmitted by namespace",
-      "description": "namespace 別ネットワーク送信レート",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "sum by (namespace) (rate(container_network_transmit_bytes_total{job=\"kubernetes-cadvisor\", namespace=~\"$namespace\", node=~\"$node\"}[$__rate_interval]))",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{namespace}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 48
-      }
-    },
-    {
-      "type": "row",
-      "collapsed": false,
-      "id": 0,
-      "panels": [],
-      "title": "By pod",
-      "gridPos": {
-        "x": 0,
-        "y": 57,
-        "h": 1,
-        "w": 24
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Top pods by CPU",
-      "description": "CPU 使用量上位 15 Pod (コア換算)",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "topk(15, sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{job=\"kubernetes-cadvisor\", container!=\"\", namespace=~\"$namespace\", pod=~\"$pod\", node=~\"$node\"}[$__rate_interval])))",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{namespace}}/{{pod}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 58
-      }
-    },
-    {
-      "type": "timeseries",
-      "transparent": false,
-      "repeatDirection": "h",
-      "title": "Top pods by memory",
-      "description": "メモリ working set 上位 15 Pod",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${datasource}"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
-          "custom": {
-            "fillOpacity": 10
-          }
-        },
-        "overrides": []
-      },
-      "targets": [
-        {
-          "expr": "topk(15, sum by (namespace, pod) (container_memory_working_set_bytes{job=\"kubernetes-cadvisor\", container!=\"\", namespace=~\"$namespace\", pod=~\"$pod\", node=~\"$node\"}))",
-          "refId": "A",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "legendFormat": "{{namespace}}/{{pod}}"
-        }
-      ],
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 58
+        "y": 20
       }
     },
     {
       "type": "table",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "Pod memory (current)",
-      "description": "現在のメモリ working set (Pod 単位スナップショット)",
+      "title": "Top restarting pods (24h)",
+      "description": "直近の restart 回数が多い Pod",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (namespace, pod, container) (increase(kube_pod_container_status_restarts_total{job=\"kube-state-metrics\", namespace=~\"$namespace\"}[$__range])))",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "format": "table",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "Workload ready vs desired",
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "Deployments: ready vs desired",
+      "description": "Deployment の準備済み/期待レプリカ数",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_available{job=\"kube-state-metrics\", namespace=~\"$namespace\"}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "legendFormat": "{{namespace}}/{{deployment}} ready"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "DaemonSets: ready vs desired",
+      "description": "DaemonSet の準備済み/期待 Pod 数",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_daemonset_status_number_ready{job=\"kube-state-metrics\", namespace=~\"$namespace\"}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "legendFormat": "{{namespace}}/{{daemonset}} ready"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "StatefulSets: ready vs desired",
+      "description": "StatefulSet の準備済み/期待レプリカ数",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "kube_statefulset_status_replicas_ready{job=\"kube-state-metrics\", namespace=~\"$namespace\"}",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "legendFormat": "{{namespace}}/{{statefulset}} ready"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      }
+    },
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "Storage / Jobs",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "table",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "PVC requested capacity",
+      "description": "PersistentVolumeClaim ごとの要求容量",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -625,7 +442,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (namespace, pod, node) (container_memory_working_set_bytes{job=\"kubernetes-cadvisor\", container!=\"\", namespace=~\"$namespace\", pod=~\"$pod\", node=~\"$node\"})",
+          "expr": "kube_persistentvolumeclaim_resource_requests_storage_bytes{job=\"kube-state-metrics\", namespace=~\"$namespace\"}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -640,7 +457,44 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 67
+        "y": 49
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "Job success / failure",
+      "description": "Job の成功/失敗数 (namespace 別)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (kube_job_status_succeeded{job=\"kube-state-metrics\", namespace=~\"$namespace\"})",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "legendFormat": "{{namespace}} / succeeded"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 49
       }
     }
   ]
