@@ -6,8 +6,9 @@ import {
   VariableSort,
 } from "@grafana/grafana-foundation-sdk/dashboard";
 
-import { lokiDatasourceRef } from "../datasources";
-import { lokiLogs, lokiTimeseries, tempoSearch } from "../panels";
+import { lokiDatasourceRef, prometheusDatasourceRef } from "../datasources";
+import { lokiLogs, lokiTimeseries, promTimeseries, tempoSearch } from "../panels";
+import { datasourceVariable } from "../variables";
 
 /**
  * Loki ストリームセレクタ。`service_name` ラベルは grafana-alloy の
@@ -15,6 +16,15 @@ import { lokiLogs, lokiTimeseries, tempoSearch } from "../panels";
  * (k8s/argocd/apps/grafana-alloy.yaml を参照)。$service は Worker 名。
  */
 const SERVICE_SELECTOR = '{service_name=~"$service"}';
+
+/**
+ * Span-metrics (Tempo metrics-generator) の service セレクタ。
+ * $service 変数自体は Loki の service_name から作っているが、値
+ * (roppoh-emdash / neo-fujimatsu) は Tempo 側の `service` ラベルとも一致する
+ * (どちらも OTel resource 属性 service.name が元)。
+ * k8s/argocd/apps/grafana-tempo.yaml で metrics-generator を有効化している。
+ */
+const SPAN_METRICS_SERVICE = 'service=~"$service"';
 
 const serviceVariable = new QueryVariableBuilder("service")
   .label("Service")
@@ -24,6 +34,14 @@ const serviceVariable = new QueryVariableBuilder("service")
   .sort(VariableSort.AlphabeticalAsc)
   .multi(true)
   .includeAll(true);
+
+const redTimeseries = (opts: {
+  title: string;
+  description: string;
+  unit: string;
+  expr: string;
+  legend: string;
+}) => promTimeseries({ ...opts, datasource: prometheusDatasourceRef });
 
 export const cfWorkersOtelDashboard = new DashboardBuilder("Cloudflare Workers / Traces & Logs")
   .uid("roppoh-cf-workers")
@@ -35,7 +53,47 @@ export const cfWorkersOtelDashboard = new DashboardBuilder("Cloudflare Workers /
   .refresh("30s")
   .time({ from: "now-1h", to: "now" })
   .timezone("browser")
+  .withVariable(datasourceVariable)
   .withVariable(serviceVariable)
+
+  .withRow(new RowBuilder("RED metrics (Tempo metrics-generator)"))
+  .withPanel(
+    redTimeseries({
+      title: "Request rate",
+      description: "span-metrics によるリクエスト (span) レート",
+      unit: "reqps",
+      legend: "{{service}} / {{span_name}}",
+      expr: `sum by (service, span_name) (rate(traces_spanmetrics_calls_total{${SPAN_METRICS_SERVICE}}[$__rate_interval]))`,
+    }),
+  )
+  .withPanel(
+    redTimeseries({
+      title: "Error rate",
+      description:
+        "エラーステータスの span レート (status_code の実際の値は要確認: OTel 標準では STATUS_CODE_ERROR)",
+      unit: "reqps",
+      legend: "{{service}} / {{span_name}}",
+      expr: `sum by (service, span_name) (rate(traces_spanmetrics_calls_total{${SPAN_METRICS_SERVICE}, status_code=~".*[Ee][Rr][Rr][Oo][Rr].*"}[$__rate_interval]))`,
+    }),
+  )
+  .withPanel(
+    redTimeseries({
+      title: "Duration (p99)",
+      description: "span-metrics によるレイテンシ (p99)",
+      unit: "s",
+      legend: "{{service}} / {{span_name}}",
+      expr: `histogram_quantile(0.99, sum by (service, span_name, le) (rate(traces_spanmetrics_latency_bucket{${SPAN_METRICS_SERVICE}}[$__rate_interval])))`,
+    }),
+  )
+  .withPanel(
+    redTimeseries({
+      title: "Service graph: request rate (client → server)",
+      description: "サービス間呼び出しのリクエストレート",
+      unit: "reqps",
+      legend: "{{client}} → {{server}}",
+      expr: `sum by (client, server) (rate(traces_service_graph_request_total[$__rate_interval]))`,
+    }),
+  )
 
   .withRow(new RowBuilder("Traces (Tempo)"))
   .withPanel(
