@@ -38,6 +38,10 @@ spec:
           env:
             - name: OLLAMA_HOST
               value: "0.0.0.0:11434"
+            # デフォルト（4096）だと opencode 等の長いシステムプロンプト/ツール定義で溢れるため拡張
+            # 262144 は qwen3.5:9b のネイティブ最大コンテキスト長に合わせた値
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: "262144"
             # 同時にロードするモデルを1つに制限（GPU VRAM 6GB のため節約）
             - name: OLLAMA_MAX_LOADED_MODELS
               value: "1"
