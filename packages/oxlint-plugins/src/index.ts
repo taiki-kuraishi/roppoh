@@ -1,5 +1,6 @@
 import fileStructure from "./rules/file-structure.ts";
 import noCrossFeatureImport from "./rules/no-cross-feature-import.ts";
+import oneFunctionPerTsx from "./rules/one-function-per-tsx.ts";
 import preferAliasImport from "./rules/prefer-alias-import.ts";
 
 const plugin = {
@@ -9,6 +10,7 @@ const plugin = {
   rules: {
     "file-structure": fileStructure,
     "no-cross-feature-import": noCrossFeatureImport,
+    "one-function-per-tsx": oneFunctionPerTsx,
     "prefer-alias-import": preferAliasImport,
   },
 };
