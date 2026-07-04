@@ -1,5 +1,5 @@
 [tools]
-bun = "1.3.12"
+bun = "1.3.14"
 # Keep this version in sync with actions/setup-node@v6 in .github/workflows/bun-ci.yml
 # (required at runtime by npm-installed tools such as oxfmt, whose bin scripts shebang to node)
 node = "24"
