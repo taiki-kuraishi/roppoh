@@ -407,6 +407,88 @@ spec:
               }
 
               // =================================================================
+              // APP METRICS: `prometheus.io/scrape: "true"` アノテーション付き Pod を
+              // 汎用的に検出してスクレイプする (kube-prometheus 等で標準的なパターン)。
+              // 対象に追加したいワークロードは Pod テンプレートに以下を付与するだけでよい:
+              //   annotations:
+              //     prometheus.io/scrape: "true"
+              //     prometheus.io/port: "<port>"   # 省略時は Pod のデフォルトポート
+              //     prometheus.io/path: "<path>"   # 省略時は /metrics
+              //
+              // 現時点で annotation が付いているのは traefik (kube-system, k3s 標準
+              // バンドル) のみ。coredns / argocd / zot / garage / Grafana スタック自身は
+              // まだ annotation が無くこの仕組みでは拾えない (追加は別途フォローアップ:
+              // coredns は k3s バンドルのため本リポジトリ管理外、argocd は
+              // k8s/argocd/patches/、zot は metrics extension 有効化+認証除外の検証が
+              // 必要、garage は admin API 設定が必要)
+              // =================================================================
+
+              discovery.relabel "annotated_pods" {
+                targets = discovery.kubernetes.pods.targets
+
+                // このノード上の Pod のみ対象 (DaemonSet 全ノードでの多重スクレイプ防止、
+                // pod_logs/kube_state_metrics と同じパターン)
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_scrape"]
+                  action        = "keep"
+                  regex         = "true"
+                }
+                // 終了済みコンテナはスキップ (pod_logs と同じ理由)
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_phase"]
+                  regex         = "Pending|Succeeded|Failed|Completed"
+                  action        = "drop"
+                }
+                // prometheus.io/port が指定されていればアドレスのポートを上書きする
+                rule {
+                  source_labels = ["__address__", "__meta_kubernetes_pod_annotation_prometheus_io_port"]
+                  action        = "replace"
+                  regex         = `([^:]+)(?::\d+)?;(\d+)`
+                  replacement   = "$1:$2"
+                  target_label  = "__address__"
+                }
+                // prometheus.io/path が指定されていればメトリクスパスを上書きする (既定 /metrics)
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_annotation_prometheus_io_path"]
+                  action        = "replace"
+                  regex         = "(.+)"
+                  target_label  = "__metrics_path__"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace"]
+                  target_label  = "namespace"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_name"]
+                  target_label  = "pod"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_name"]
+                  target_label  = "container"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_namespace", "__meta_kubernetes_pod_name"]
+                  separator     = "/"
+                  target_label  = "job"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              prometheus.scrape "annotated_pods" {
+                targets         = discovery.relabel.annotated_pods.output
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
               // OTLP RECEIVER: アプリ (discord-gateway-proxy 等) / Cloudflare Workers の
               // traces / logs / metrics を受信
               //   - bearer 認証で incoming Authorization: Bearer <token> を検証
