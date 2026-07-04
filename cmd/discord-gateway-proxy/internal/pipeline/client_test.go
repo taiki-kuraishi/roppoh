@@ -18,25 +18,25 @@ func newTestLogger() *slog.Logger {
 
 func TestClient_EnqueueAndShutdownFlushes(t *testing.T) {
 	var gotAuth string
-	received := make(chan []Event, 1)
+	received := make(chan []VoiceRecord, 1)
 
 	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		gotAuth = r.Header.Get("Authorization")
 
-		var events []Event
-		if err := json.NewDecoder(r.Body).Decode(&events); err != nil {
+		var records []VoiceRecord
+		if err := json.NewDecoder(r.Body).Decode(&records); err != nil {
 			t.Errorf("decode request body: %v", err)
 			return
 		}
-		received <- events
+		received <- records
 	}))
 	defer server.Close()
 
-	client := New(server.URL, "test-token", newTestLogger())
-	client.Enqueue(Event{
-		EventType:  "PRESENCE_UPDATE",
+	client := New[VoiceRecord]("voice_state_update", server.URL, "test-token", newTestLogger())
+	client.Enqueue(VoiceRecord{
 		ReceivedAt: time.Now(),
-		Payload:    map[string]string{"status": "online"},
+		UserID:     "user-1",
+		ChannelID:  "channel-1",
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -46,12 +46,12 @@ func TestClient_EnqueueAndShutdownFlushes(t *testing.T) {
 	}
 
 	select {
-	case events := <-received:
-		if len(events) != 1 {
-			t.Fatalf("received %d events, want 1", len(events))
+	case records := <-received:
+		if len(records) != 1 {
+			t.Fatalf("received %d records, want 1", len(records))
 		}
-		if events[0].EventType != "PRESENCE_UPDATE" {
-			t.Errorf("EventType = %q, want %q", events[0].EventType, "PRESENCE_UPDATE")
+		if records[0].UserID != "user-1" {
+			t.Errorf("UserID = %q, want %q", records[0].UserID, "user-1")
 		}
 	default:
 		t.Fatal("server did not receive a request before Shutdown returned")
@@ -71,10 +71,10 @@ func TestClient_FlushesEarlyAtBatchSize(t *testing.T) {
 
 	// A long flush interval means the only way a batch is sent before
 	// Shutdown is the batchSize=2 threshold.
-	client := newClient(server.URL, "test-token", newTestLogger(), 2, time.Hour, 10)
+	client := newClient[VoiceRecord]("voice_state_update", server.URL, "test-token", newTestLogger(), 2, time.Hour, 10)
 
-	client.Enqueue(Event{EventType: "A", ReceivedAt: time.Now()})
-	client.Enqueue(Event{EventType: "B", ReceivedAt: time.Now()})
+	client.Enqueue(VoiceRecord{UserID: "a", ReceivedAt: time.Now()})
+	client.Enqueue(VoiceRecord{UserID: "b", ReceivedAt: time.Now()})
 
 	deadline := time.Now().Add(2 * time.Second)
 	for atomic.LoadInt32(&requestCount) == 0 {
@@ -100,12 +100,12 @@ func TestClient_EnqueueDoesNotBlockWhenQueueFull(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newClient(server.URL, "test-token", newTestLogger(), 1, time.Hour, 1)
+	client := newClient[VoiceRecord]("voice_state_update", server.URL, "test-token", newTestLogger(), 1, time.Hour, 1)
 
 	done := make(chan struct{})
 	go func() {
 		for range 10 {
-			client.Enqueue(Event{EventType: "event", ReceivedAt: time.Now()})
+			client.Enqueue(VoiceRecord{UserID: "user", ReceivedAt: time.Now()})
 		}
 		close(done)
 	}()

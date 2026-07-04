@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/pipeline"
 )
 
 func TestVoiceStateHandler(t *testing.T) {
-	enq := &fakeEnqueuer{}
+	enq := &fakeEnqueuer[pipeline.VoiceRecord]{}
 	handle := newVoiceStateHandler(enq)
 
 	handle(nil, &discordgo.VoiceStateUpdate{
@@ -20,29 +22,21 @@ func TestVoiceStateHandler(t *testing.T) {
 		},
 	})
 
-	if len(enq.events) != 1 {
-		t.Fatalf("got %d events, want 1", len(enq.events))
+	if len(enq.records) != 1 {
+		t.Fatalf("got %d records, want 1", len(enq.records))
 	}
 
-	event := enq.events[0]
-	if event.EventType != "VOICE_STATE_UPDATE" {
-		t.Errorf("EventType = %q, want VOICE_STATE_UPDATE", event.EventType)
+	record := enq.records[0]
+	if record.GuildID != "guild-1" {
+		t.Errorf("GuildID = %q, want guild-1", record.GuildID)
 	}
-	if event.GuildID != "guild-1" {
-		t.Errorf("GuildID = %q, want guild-1", event.GuildID)
+	if record.UserID != "user-1" {
+		t.Errorf("UserID = %q, want user-1", record.UserID)
 	}
-	if event.UserID != "user-1" {
-		t.Errorf("UserID = %q, want user-1", event.UserID)
+	if record.ChannelID != "channel-1" {
+		t.Errorf("ChannelID = %q, want channel-1", record.ChannelID)
 	}
-
-	payload, ok := event.Payload.(VoicePayload)
-	if !ok {
-		t.Fatalf("Payload type = %T, want VoicePayload", event.Payload)
-	}
-	if payload.ChannelID != "channel-1" {
-		t.Errorf("ChannelID = %q, want channel-1", payload.ChannelID)
-	}
-	if !payload.SelfMute {
+	if !record.SelfMute {
 		t.Error("SelfMute = false, want true")
 	}
 }

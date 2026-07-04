@@ -8,22 +8,36 @@ import (
 )
 
 const (
-	// defaultBatchSize caps how many events accumulate before a batch is sent
-	// early, staying well under the Pipelines 5 MB per-request ingest limit.
+	// defaultBatchSize caps how many records accumulate before a batch is
+	// sent early, staying well under the Pipelines 5 MB per-request ingest
+	// limit.
 	defaultBatchSize = 100
-	// defaultFlushInterval bounds how long an event can sit buffered before
+	// defaultFlushInterval bounds how long a record can sit buffered before
 	// being sent, even if defaultBatchSize hasn't been reached.
 	defaultFlushInterval = 5 * time.Second
-	// defaultQueueSize is the channel buffer; once full, Enqueue drops events
-	// instead of blocking the discordgo event-dispatch goroutine.
+	// defaultQueueSize is the channel buffer; once full, Enqueue drops
+	// records instead of blocking the discordgo event-dispatch goroutine.
 	defaultQueueSize = 1000
 	// sendTimeout bounds a single HTTP POST to the ingest endpoint.
 	sendTimeout = 10 * time.Second
 )
 
-// Client buffers Events and flushes them as JSON array batches to a
-// Cloudflare Pipelines HTTP ingest endpoint.
-type Client struct {
+// Shutdowner is the type-erased half of Client's contract, letting callers
+// collect Client[T] instances of different T into a single slice to shut
+// down together.
+type Shutdowner interface {
+	Shutdown(ctx context.Context) error
+}
+
+// Client buffers records of a single type T and flushes them as JSON array
+// batches to a Cloudflare Pipelines HTTP ingest endpoint. One Client maps to
+// exactly one stream/table, which is what lets T stay a concrete type
+// instead of "any": the compiler rejects enqueuing the wrong record shape
+// into the wrong table.
+type Client[T any] struct {
+	// name identifies this client in logs (e.g. "presence_update"); it does
+	// not affect the wire format.
+	name          string
 	endpoint      string
 	token         string
 	httpClient    *http.Client
@@ -31,27 +45,28 @@ type Client struct {
 	batchSize     int
 	flushInterval time.Duration
 
-	queue chan Event
+	queue chan T
 	done  chan struct{}
 }
 
 // New creates a Client and starts its background batching goroutine. Callers
-// must call Shutdown to flush buffered events before the process exits.
-func New(endpoint, token string, logger *slog.Logger) *Client {
-	return newClient(endpoint, token, logger, defaultBatchSize, defaultFlushInterval, defaultQueueSize)
+// must call Shutdown to flush buffered records before the process exits.
+func New[T any](name, endpoint, token string, logger *slog.Logger) *Client[T] {
+	return newClient[T](name, endpoint, token, logger, defaultBatchSize, defaultFlushInterval, defaultQueueSize)
 }
 
 // newClient is the fully-parameterized constructor used by New and by tests
 // that need a smaller batch size, interval, or queue to stay fast.
-func newClient(endpoint, token string, logger *slog.Logger, batchSize int, flushInterval time.Duration, queueSize int) *Client {
-	c := &Client{
+func newClient[T any](name, endpoint, token string, logger *slog.Logger, batchSize int, flushInterval time.Duration, queueSize int) *Client[T] {
+	c := &Client[T]{
+		name:          name,
 		endpoint:      endpoint,
 		token:         token,
 		httpClient:    &http.Client{Timeout: sendTimeout},
 		logger:        logger,
 		batchSize:     batchSize,
 		flushInterval: flushInterval,
-		queue:         make(chan Event, queueSize),
+		queue:         make(chan T, queueSize),
 		done:          make(chan struct{}),
 	}
 
@@ -60,20 +75,20 @@ func newClient(endpoint, token string, logger *slog.Logger, batchSize int, flush
 	return c
 }
 
-// Enqueue buffers an event for delivery. It never blocks: if the internal
-// queue is full, the event is dropped and logged, protecting discordgo's
+// Enqueue buffers a record for delivery. It never blocks: if the internal
+// queue is full, the record is dropped and logged, protecting discordgo's
 // event-dispatch goroutine from backpressure.
-func (c *Client) Enqueue(event Event) {
+func (c *Client[T]) Enqueue(record T) {
 	select {
-	case c.queue <- event:
+	case c.queue <- record:
 	default:
-		c.logger.Warn("pipeline queue full, dropping event", slog.String("event_type", event.EventType))
+		c.logger.Warn("pipeline queue full, dropping record", slog.String("stream", c.name))
 	}
 }
 
-// Shutdown stops accepting new events, flushes any buffered ones, and waits
+// Shutdown stops accepting new records, flushes any buffered ones, and waits
 // for the background goroutine to exit or ctx to be done.
-func (c *Client) Shutdown(ctx context.Context) error {
+func (c *Client[T]) Shutdown(ctx context.Context) error {
 	close(c.queue)
 
 	select {
