@@ -23,7 +23,7 @@
     "@tanstack/react-query": "catalog:",
     "better-auth": "catalog:",
     "drizzle-orm": "0.45.2",
-    "hono": "4.12.23",
+    "hono": "4.12.25",
     "jotai": "2.20.0",
     "lucide-react": "1.16.0",
     "nuqs": "2.8.9",
