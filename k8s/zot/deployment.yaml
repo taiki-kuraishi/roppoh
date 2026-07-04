@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: zot
     app.kubernetes.io/managed-by: argocd
 spec:
-  # ストレージは R2 のため複数レプリカも可だが、dedupe ローカルキャッシュ整合のため単一に。
+  # ストレージは Garage(S3 互換、クラスタ内)のため、dedupe ローカルキャッシュ整合のため単一レプリカに固定。
   replicas: 1
   strategy:
     type: Recreate
@@ -37,7 +37,7 @@ spec:
               containerPort: 5000
               protocol: TCP
           envFrom:
-            # R2(S3) 認証情報: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+            # Garage(S3 互換)認証情報: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
             - secretRef:
                 name: zot-object-storage
           # 認証有効時 /v2/ は匿名で 401 を返しうるため HTTP probe は使わず TCP で死活監視
