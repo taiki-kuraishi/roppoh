@@ -40,6 +40,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "zot.tsar-bmb.org"
         service  = "http://zot.zot.svc.cluster.local:5000"
       },
+      {
+        hostname = "openclaw.tsar-bmb.org"
+        service  = "http://openclaw.openclaw.svc.cluster.local:18789"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"
