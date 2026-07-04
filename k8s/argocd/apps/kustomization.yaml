@@ -15,4 +15,5 @@ resources:
   - garage.yaml
   - discord-gateway-proxy.yaml
   - discord-gateway-proxy-build.yaml
+  - openclaw.yaml
   - secrets.yaml

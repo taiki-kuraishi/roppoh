@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openclaw-config
+  namespace: openclaw
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/managed-by: argocd
+data:
+  # OpenClaw の設定は JSON5(コメント・末尾カンマ許容)。
+  # 既存 k8s/ollama を LLM バックエンドに使い、外部 API キーを不要にする。
+  # opencode 等が既に qwen3.5:9b を主モデルとして使っているため(GPU VRAM 6GB / 同時ロード1つ制限)、
+  # 同じモデルを使ってモデル切替によるロード競合を避ける。
+  openclaw.json: |
+    {
+      models: {
+        providers: {
+          ollama: {
+            baseUrl: "http://ollama.ollama.svc.cluster.local:11434",
+            // ネイティブ Ollama API。/v1 を付けると OpenAI 互換モードになり tool calling が不安定になるため付けない
+            api: "ollama",
+            // Ollama自体はAPIキー不要だが、OpenClaw の設定上ダミー値が必要
+            apiKey: "ollama-local",
+            timeoutSeconds: 300,
+            models: [
+              {
+                id: "qwen3.5:9b",
+                name: "qwen3.5:9b",
+              },
+            ],
+          },
+        },
+      },
+      agents: {
+        list: [
+          {
+            id: "main",
+            default: true,
+            model: { primary: "ollama/qwen3.5:9b" },
+            // 非力なローカルモデル向けにツール/コンテキストを絞り安定化
+            experimental: { localModelLean: true },
+          },
+        ],
+      },
+      // channels.discord は未設定(後日 Secret に discord-bot-token を追加して有効化)
+    }
+  AGENTS.md: |
+    # OpenClaw Agent Instructions
+
+    このエージェントは roppoh クラスタ上でセルフホストされています。
+    LLM バックエンドはクラスタ内 Ollama(qwen3.5:9b)です。
