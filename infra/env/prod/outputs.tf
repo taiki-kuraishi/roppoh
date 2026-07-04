@@ -9,3 +9,24 @@ output "ollama_service_token_client_secret" {
   value       = module.zero_trust.ollama_service_token_client_secret
   sensitive   = true
 }
+
+output "presence_update_ingest_endpoint" {
+  description = "HTTP ingest endpoint for live PresenceUpdate events"
+  value       = module.pipelines.presence_update_ingest_endpoint
+}
+
+output "guild_presence_snapshot_ingest_endpoint" {
+  description = "HTTP ingest endpoint for the GuildCreate startup presence snapshot"
+  value       = module.pipelines.guild_presence_snapshot_ingest_endpoint
+}
+
+output "voice_state_update_ingest_endpoint" {
+  description = "HTTP ingest endpoint for VoiceStateUpdate events"
+  value       = module.pipelines.voice_state_update_ingest_endpoint
+}
+
+output "discord_events_ingest_token" {
+  description = "Bearer token (Pipelines Send) for discord-gateway-proxy's HTTP ingest requests, shared across all three streams"
+  value       = module.pipelines.discord_events_ingest_token
+  sensitive   = true
+}
