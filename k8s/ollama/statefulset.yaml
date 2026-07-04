@@ -38,6 +38,12 @@ spec:
           env:
             - name: OLLAMA_HOST
               value: "0.0.0.0:11434"
+            # デフォルト（4096）だと opencode 等の長いシステムプロンプト/ツール定義で溢れるため拡張
+            # 262144（ネイティブ最大）だと GPU VRAM 6GB に収まらず大半がCPUオフロードされ
+            # 生成速度が実用に耐えないほど低下する（実測 5〜9 tokens/s）。実機スイープの結果、
+            # 32768 は元のエラー原因(9061トークン)に3倍以上の余裕を持ちつつ速度低下を抑えられる値
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: "32768"
             # 同時にロードするモデルを1つに制限（GPU VRAM 6GB のため節約）
             - name: OLLAMA_MAX_LOADED_MODELS
               value: "1"

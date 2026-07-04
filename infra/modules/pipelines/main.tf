@@ -10,7 +10,8 @@ resource "cloudflare_r2_data_catalog" "roppoh_discord_events" {
 }
 
 # ----- Sink token: R2 object write + Data Catalog write -----
-# Used by the pipeline sink itself (Cloudflare-managed, not exposed to the app).
+# Used by the pipeline sinks themselves (Cloudflare-managed, not exposed to
+# the app). Shared across all three tables below.
 data "cloudflare_account_api_token_permission_groups_list" "r2_bucket_item_write" {
   account_id = var.account_id
   name       = "Workers R2 Storage Bucket Item Write"
@@ -36,6 +37,7 @@ resource "cloudflare_account_token" "discord_events_sink" {
 }
 
 # ----- Ingest token: HTTP ingest auth for discord-gateway-proxy -----
+# Account-scoped, so shared across all three streams below.
 data "cloudflare_account_api_token_permission_groups_list" "pipelines_send" {
   account_id = var.account_id
   name       = "Pipelines Send"
@@ -54,36 +56,40 @@ resource "cloudflare_account_token" "discord_events_ingest" {
   }]
 }
 
-# ----- Stream: HTTP ingest for discord-gateway-proxy activity/presence events -----
-# Streams and sinks share a single Pipelines-wide name space, so their names
-# must differ even though they belong to the same logical pipeline.
-resource "cloudflare_pipeline_stream" "discord_events" {
+# =====================================================================
+# presence_update: live discordgo.PresenceUpdate events. One row per
+# activity (see internal/handler.presenceRecords); a presence with no
+# activity is one row with the activity_* columns NULL.
+# =====================================================================
+
+resource "cloudflare_pipeline_stream" "presence_update" {
   account_id = var.account_id
-  name       = "discord_events_stream"
+  name       = "presence_update_stream"
   format     = { type = "json" }
 
   schema = {
     fields = [
-      { name = "event_type", type = "string", required = true },
       { name = "received_at", type = "timestamp", required = true },
-      { name = "guild_id", type = "string", required = false },
-      { name = "user_id", type = "string", required = false },
-      { name = "payload", type = "json", required = true },
+      { name = "guild_id", type = "string", required = true },
+      { name = "user_id", type = "string", required = true },
+      { name = "status", type = "string", required = false },
+      { name = "client_desktop", type = "string", required = false },
+      { name = "client_mobile", type = "string", required = false },
+      { name = "client_web", type = "string", required = false },
+      { name = "activity_name", type = "string", required = false },
+      { name = "activity_type", type = "int64", required = false },
+      { name = "activity_state", type = "string", required = false },
+      { name = "activity_details", type = "string", required = false },
     ]
   }
 
-  http = {
-    enabled        = true
-    authentication = true
-    cors           = {}
-  }
+  http           = { enabled = true, authentication = true, cors = {} }
   worker_binding = { enabled = false }
 }
 
-# ----- Sink: write to R2 Data Catalog as Iceberg (Parquet) -----
-resource "cloudflare_pipeline_sink" "discord_events" {
+resource "cloudflare_pipeline_sink" "presence_update" {
   account_id = var.account_id
-  name       = "discord_events_sink"
+  name       = "presence_update_sink"
   type       = "r2_data_catalog"
   format     = { type = "parquet" }
   schema     = { fields = [] }
@@ -92,14 +98,116 @@ resource "cloudflare_pipeline_sink" "discord_events" {
     account_id = var.account_id
     bucket     = cloudflare_r2_bucket.roppoh_discord_events.name
     namespace  = "discord"
-    table_name = "events"
+    table_name = "presence_update_events"
     token      = cloudflare_account_token.discord_events_sink.value
   }
 }
 
-# ----- Pipeline: connect stream to sink -----
-resource "cloudflare_pipeline" "discord_events" {
+resource "cloudflare_pipeline" "presence_update" {
   account_id = var.account_id
-  name       = "discord_events"
-  sql        = "INSERT INTO ${cloudflare_pipeline_sink.discord_events.name} SELECT * FROM ${cloudflare_pipeline_stream.discord_events.name}"
+  name       = "presence_update"
+  sql        = "INSERT INTO ${cloudflare_pipeline_sink.presence_update.name} SELECT * FROM ${cloudflare_pipeline_stream.presence_update.name}"
+}
+
+# =====================================================================
+# guild_presence_snapshot: presence snapshot delivered once per guild on
+# every GUILD_CREATE (gateway session start/resume). Same row shape as
+# presence_update, kept in a separate table to distinguish "state as of
+# reconnect" from live updates.
+# =====================================================================
+
+resource "cloudflare_pipeline_stream" "guild_presence_snapshot" {
+  account_id = var.account_id
+  name       = "guild_presence_snapshot_stream"
+  format     = { type = "json" }
+
+  schema = {
+    fields = [
+      { name = "received_at", type = "timestamp", required = true },
+      { name = "guild_id", type = "string", required = true },
+      { name = "user_id", type = "string", required = true },
+      { name = "status", type = "string", required = false },
+      { name = "client_desktop", type = "string", required = false },
+      { name = "client_mobile", type = "string", required = false },
+      { name = "client_web", type = "string", required = false },
+      { name = "activity_name", type = "string", required = false },
+      { name = "activity_type", type = "int64", required = false },
+      { name = "activity_state", type = "string", required = false },
+      { name = "activity_details", type = "string", required = false },
+    ]
+  }
+
+  http           = { enabled = true, authentication = true, cors = {} }
+  worker_binding = { enabled = false }
+}
+
+resource "cloudflare_pipeline_sink" "guild_presence_snapshot" {
+  account_id = var.account_id
+  name       = "guild_presence_snapshot_sink"
+  type       = "r2_data_catalog"
+  format     = { type = "parquet" }
+  schema     = { fields = [] }
+
+  config = {
+    account_id = var.account_id
+    bucket     = cloudflare_r2_bucket.roppoh_discord_events.name
+    namespace  = "discord"
+    table_name = "guild_presence_snapshot_events"
+    token      = cloudflare_account_token.discord_events_sink.value
+  }
+}
+
+resource "cloudflare_pipeline" "guild_presence_snapshot" {
+  account_id = var.account_id
+  name       = "guild_presence_snapshot"
+  sql        = "INSERT INTO ${cloudflare_pipeline_sink.guild_presence_snapshot.name} SELECT * FROM ${cloudflare_pipeline_stream.guild_presence_snapshot.name}"
+}
+
+# =====================================================================
+# voice_state_update: discordgo.VoiceStateUpdate events.
+# =====================================================================
+
+resource "cloudflare_pipeline_stream" "voice_state_update" {
+  account_id = var.account_id
+  name       = "voice_state_update_stream"
+  format     = { type = "json" }
+
+  schema = {
+    fields = [
+      { name = "received_at", type = "timestamp", required = true },
+      { name = "guild_id", type = "string", required = true },
+      { name = "user_id", type = "string", required = true },
+      { name = "channel_id", type = "string", required = false },
+      { name = "session_id", type = "string", required = false },
+      { name = "self_mute", type = "bool", required = false },
+      { name = "self_deaf", type = "bool", required = false },
+      { name = "mute", type = "bool", required = false },
+      { name = "deaf", type = "bool", required = false },
+    ]
+  }
+
+  http           = { enabled = true, authentication = true, cors = {} }
+  worker_binding = { enabled = false }
+}
+
+resource "cloudflare_pipeline_sink" "voice_state_update" {
+  account_id = var.account_id
+  name       = "voice_state_update_sink"
+  type       = "r2_data_catalog"
+  format     = { type = "parquet" }
+  schema     = { fields = [] }
+
+  config = {
+    account_id = var.account_id
+    bucket     = cloudflare_r2_bucket.roppoh_discord_events.name
+    namespace  = "discord"
+    table_name = "voice_state_update_events"
+    token      = cloudflare_account_token.discord_events_sink.value
+  }
+}
+
+resource "cloudflare_pipeline" "voice_state_update" {
+  account_id = var.account_id
+  name       = "voice_state_update"
+  sql        = "INSERT INTO ${cloudflare_pipeline_sink.voice_state_update.name} SELECT * FROM ${cloudflare_pipeline_stream.voice_state_update.name}"
 }

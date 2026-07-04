@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/pipeline"
 )
 
 func TestGuildCreateHandler_SeedsPresenceSnapshot(t *testing.T) {
-	enq := &fakeEnqueuer{}
+	enq := &fakeEnqueuer[pipeline.PresenceRecord]{}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handle := newGuildCreateHandler(enq, logger)
 
@@ -23,32 +25,30 @@ func TestGuildCreateHandler_SeedsPresenceSnapshot(t *testing.T) {
 		},
 	})
 
-	if len(enq.events) != 2 {
-		t.Fatalf("got %d events, want 2", len(enq.events))
+	// Neither presence has an activity, so it's one record per presence.
+	if len(enq.records) != 2 {
+		t.Fatalf("got %d records, want 2", len(enq.records))
 	}
 
 	for i, wantUserID := range []string{"user-1", "user-2"} {
-		event := enq.events[i]
-		if event.EventType != "PRESENCE_UPDATE" {
-			t.Errorf("event[%d].EventType = %q, want PRESENCE_UPDATE", i, event.EventType)
+		record := enq.records[i]
+		if record.GuildID != "guild-1" {
+			t.Errorf("records[%d].GuildID = %q, want guild-1", i, record.GuildID)
 		}
-		if event.GuildID != "guild-1" {
-			t.Errorf("event[%d].GuildID = %q, want guild-1", i, event.GuildID)
-		}
-		if event.UserID != wantUserID {
-			t.Errorf("event[%d].UserID = %q, want %q", i, event.UserID, wantUserID)
+		if record.UserID != wantUserID {
+			t.Errorf("records[%d].UserID = %q, want %q", i, record.UserID, wantUserID)
 		}
 	}
 }
 
 func TestGuildCreateHandler_NoPresences(t *testing.T) {
-	enq := &fakeEnqueuer{}
+	enq := &fakeEnqueuer[pipeline.PresenceRecord]{}
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	handle := newGuildCreateHandler(enq, logger)
 
 	handle(nil, &discordgo.GuildCreate{Guild: &discordgo.Guild{ID: "guild-1"}})
 
-	if len(enq.events) != 0 {
-		t.Fatalf("got %d events, want 0", len(enq.events))
+	if len(enq.records) != 0 {
+		t.Fatalf("got %d records, want 0", len(enq.records))
 	}
 }
