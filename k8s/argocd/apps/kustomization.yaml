@@ -2,9 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - argocd.yaml
-  - renovate.yaml
   - cloudflared.yaml
   - ollama.yaml
+  - nvidia-device-plugin.yaml
   - grafana-loki.yaml
   - grafana-mimir.yaml
   - grafana-tempo.yaml

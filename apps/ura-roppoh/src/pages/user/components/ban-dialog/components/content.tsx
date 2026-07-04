@@ -1,3 +1,4 @@
+/* oxlint-disable roppoh/one-function-per-tsx -- コンポーネント分割リファクタリングは後続対応 */
 import type { useUser } from "@roppoh/better-auth-query/query";
 
 import { useBanUser, useUnbanUser } from "@roppoh/better-auth-query/mutation";
