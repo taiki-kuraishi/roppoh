@@ -531,6 +531,196 @@ spec:
               }
 
               // =================================================================
+              // ARGOCD SELF-MONITORING: このクラスタ自体を動かす GitOps エンジン。
+              // argocd namespace の公式マニフェストはアノテーションを持たないため
+              // annotated_pods では拾えない。app.kubernetes.io/name + 既知のメトリクス
+              // ポート番号で明示的に対象化する (KSM/DCGM と同じ「自ノードのみ keep」
+              // パターン)。redis (メトリクス非対応) と notifications-controller
+              // (containerPort 未宣言で discovery.kubernetes からは対象化不可) は対象外
+              // =================================================================
+
+              discovery.relabel "argocd_application_controller" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-application-controller"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "8082"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-application-controller"
+                }
+              }
+
+              discovery.relabel "argocd_server" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-server"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "8083"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-server"
+                }
+              }
+
+              discovery.relabel "argocd_repo_server" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-repo-server"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "8084"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-repo-server"
+                }
+              }
+
+              discovery.relabel "argocd_applicationset_controller" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-applicationset-controller"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_name"]
+                  action        = "keep"
+                  regex         = "metrics"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-applicationset-controller"
+                }
+              }
+
+              discovery.relabel "argocd_dex_server" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "argocd-dex-server"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "5558"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "argocd-dex-server"
+                }
+              }
+
+              prometheus.scrape "argocd" {
+                targets = array.concat(
+                  discovery.relabel.argocd_application_controller.output,
+                  discovery.relabel.argocd_server.output,
+                  discovery.relabel.argocd_repo_server.output,
+                  discovery.relabel.argocd_applicationset_controller.output,
+                  discovery.relabel.argocd_dex_server.output,
+                )
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
+              // OBSERVABILITY SELF-MONITORING: 可観測性パイプライン自身。
+              // Alloy は各ノードで自分自身の :12345 (HTTP サーバ) を直接スクレイプする
+              // (discovery 不要、常に自ノードのみ)。Grafana は単一 Deployment のため
+              // kube-state-metrics と同じ「自ノードのみ keep」パターンで対象化する。
+              // Mimir/Loki/Tempo は複数コンポーネントに分かれておりメトリクス
+              // self-scrape はフォローアップ課題とする (ログは Loki 側で既にカバー済み)
+              // =================================================================
+
+              prometheus.scrape "alloy_self" {
+                targets = [{
+                  __address__ = "localhost:12345",
+                  job         = "alloy",
+                  node        = env("KUBE_NODE_NAME"),
+                }]
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              discovery.relabel "grafana" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "grafana"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_number"]
+                  action        = "keep"
+                  regex         = "3000"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "grafana"
+                }
+              }
+
+              prometheus.scrape "grafana" {
+                targets         = discovery.relabel.grafana.output
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
               // OTLP RECEIVER: アプリ (discord-gateway-proxy 等) / Cloudflare Workers の
               // traces / logs / metrics を受信
               //   - bearer 認証で incoming Authorization: Bearer <token> を検証
