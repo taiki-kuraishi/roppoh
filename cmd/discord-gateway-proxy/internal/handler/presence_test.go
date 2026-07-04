@@ -4,10 +4,12 @@ import (
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/pipeline"
 )
 
-func TestPresenceHandler(t *testing.T) {
-	enq := &fakeEnqueuer{}
+func TestPresenceHandler_OneActivity(t *testing.T) {
+	enq := &fakeEnqueuer[pipeline.PresenceRecord]{}
 	handle := newPresenceHandler(enq)
 
 	handle(nil, &discordgo.PresenceUpdate{
@@ -22,38 +24,63 @@ func TestPresenceHandler(t *testing.T) {
 		GuildID: "guild-1",
 	})
 
-	if len(enq.events) != 1 {
-		t.Fatalf("got %d events, want 1", len(enq.events))
+	if len(enq.records) != 1 {
+		t.Fatalf("got %d records, want 1", len(enq.records))
 	}
 
-	event := enq.events[0]
-	if event.EventType != "PRESENCE_UPDATE" {
-		t.Errorf("EventType = %q, want PRESENCE_UPDATE", event.EventType)
+	record := enq.records[0]
+	if record.GuildID != "guild-1" {
+		t.Errorf("GuildID = %q, want guild-1", record.GuildID)
 	}
-	if event.GuildID != "guild-1" {
-		t.Errorf("GuildID = %q, want guild-1", event.GuildID)
+	if record.UserID != "user-1" {
+		t.Errorf("UserID = %q, want user-1", record.UserID)
 	}
-	if event.UserID != "user-1" {
-		t.Errorf("UserID = %q, want user-1", event.UserID)
+	if record.Status != "online" {
+		t.Errorf("Status = %q, want online", record.Status)
 	}
-
-	payload, ok := event.Payload.(PresencePayload)
-	if !ok {
-		t.Fatalf("Payload type = %T, want PresencePayload", event.Payload)
+	if record.ClientDesktop != "online" {
+		t.Errorf("ClientDesktop = %q, want online", record.ClientDesktop)
 	}
-	if payload.Status != "online" {
-		t.Errorf("Status = %q, want online", payload.Status)
+	if record.ActivityName == nil || *record.ActivityName != "Apex Legends" {
+		t.Errorf("ActivityName = %v, want Apex Legends", record.ActivityName)
 	}
-	if payload.ClientStatus.Desktop != "online" {
-		t.Errorf("ClientStatus.Desktop = %q, want online", payload.ClientStatus.Desktop)
-	}
-	if len(payload.Activities) != 1 || payload.Activities[0].Name != "Apex Legends" {
-		t.Errorf("Activities = %+v, want one activity named Apex Legends", payload.Activities)
+	if record.ActivityType == nil || *record.ActivityType != int(discordgo.ActivityTypeGame) {
+		t.Errorf("ActivityType = %v, want %d", record.ActivityType, discordgo.ActivityTypeGame)
 	}
 }
 
-func TestPresenceHandler_NoUser(t *testing.T) {
-	enq := &fakeEnqueuer{}
+func TestPresenceHandler_MultipleActivities(t *testing.T) {
+	enq := &fakeEnqueuer[pipeline.PresenceRecord]{}
+	handle := newPresenceHandler(enq)
+
+	handle(nil, &discordgo.PresenceUpdate{
+		Presence: discordgo.Presence{
+			User:   &discordgo.User{ID: "user-1"},
+			Status: discordgo.StatusOnline,
+			Activities: []*discordgo.Activity{
+				{Name: "Apex Legends", Type: discordgo.ActivityTypeGame},
+				{Name: "ばいちゃ", Type: discordgo.ActivityTypeCustom},
+			},
+		},
+		GuildID: "guild-1",
+	})
+
+	if len(enq.records) != 2 {
+		t.Fatalf("got %d records, want 2 (one per activity)", len(enq.records))
+	}
+	for i, wantName := range []string{"Apex Legends", "ばいちゃ"} {
+		if got := enq.records[i].ActivityName; got == nil || *got != wantName {
+			t.Errorf("records[%d].ActivityName = %v, want %q", i, got, wantName)
+		}
+		// Every record from the same presence shares the non-activity fields.
+		if enq.records[i].UserID != "user-1" {
+			t.Errorf("records[%d].UserID = %q, want user-1", i, enq.records[i].UserID)
+		}
+	}
+}
+
+func TestPresenceHandler_NoActivity(t *testing.T) {
+	enq := &fakeEnqueuer[pipeline.PresenceRecord]{}
 	handle := newPresenceHandler(enq)
 
 	handle(nil, &discordgo.PresenceUpdate{
@@ -61,10 +88,15 @@ func TestPresenceHandler_NoUser(t *testing.T) {
 		GuildID:  "guild-1",
 	})
 
-	if len(enq.events) != 1 {
-		t.Fatalf("got %d events, want 1", len(enq.events))
+	if len(enq.records) != 1 {
+		t.Fatalf("got %d records, want 1", len(enq.records))
 	}
-	if got := enq.events[0].UserID; got != "" {
+
+	record := enq.records[0]
+	if got := record.UserID; got != "" {
 		t.Errorf("UserID = %q, want empty when Presence.User is nil", got)
+	}
+	if record.ActivityName != nil || record.ActivityType != nil || record.ActivityState != nil || record.ActivityDetails != nil {
+		t.Errorf("Activity* = %+v, want all nil (SQL NULL) when there are no activities", record)
 	}
 }

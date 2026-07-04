@@ -8,73 +8,55 @@ import (
 	"github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/pipeline"
 )
 
-// PresencePayload is the normalized shape sent to Pipelines for a
-// PRESENCE_UPDATE event: only the fields activity/online-offline monitoring
-// needs, decoupled from discordgo's own (much larger) Presence struct so the
-// wire schema stays stable across discordgo upgrades.
-type PresencePayload struct {
-	Status       string              `json:"status"`
-	ClientStatus ClientStatusPayload `json:"client_status"`
-	Activities   []ActivityPayload   `json:"activities"`
-}
-
-// ClientStatusPayload reports which client surfaces (if any) a user is
-// online from.
-type ClientStatusPayload struct {
-	Desktop string `json:"desktop,omitempty"`
-	Mobile  string `json:"mobile,omitempty"`
-	Web     string `json:"web,omitempty"`
-}
-
-// ActivityPayload is a normalized discordgo.Activity: the game/stream/custom
-// status name plus the two free-text fields Discord rich presence exposes.
-type ActivityPayload struct {
-	Name    string `json:"name"`
-	Type    int    `json:"type"`
-	State   string `json:"state,omitempty"`
-	Details string `json:"details,omitempty"`
-}
-
 // newPresenceHandler returns a discordgo handler that enqueues a
-// pipeline.Event for every PRESENCE_UPDATE.
-func newPresenceHandler(enq Enqueuer) func(*discordgo.Session, *discordgo.PresenceUpdate) {
+// pipeline.PresenceRecord for every activity in every PRESENCE_UPDATE.
+func newPresenceHandler(enq Enqueuer[pipeline.PresenceRecord]) func(*discordgo.Session, *discordgo.PresenceUpdate) {
 	return func(_ *discordgo.Session, p *discordgo.PresenceUpdate) {
-		enq.Enqueue(presenceEvent(p.GuildID, &p.Presence))
+		for _, record := range presenceRecords(p.GuildID, &p.Presence) {
+			enq.Enqueue(record)
+		}
 	}
 }
 
-// presenceEvent builds the pipeline.Event envelope for a single presence
-// snapshot. It is shared by the live PresenceUpdate handler and the
-// GuildCreate startup-snapshot handler, which both report the same shape.
-func presenceEvent(guildID string, presence *discordgo.Presence) pipeline.Event {
+// presenceRecords expands a single discordgo.Presence into one
+// pipeline.PresenceRecord per activity, since Cloudflare Pipelines SQL has
+// no UNNEST to flatten the activities array at query time. A presence with
+// zero activities still produces exactly one record, with the Activity*
+// fields left nil (SQL NULL).
+//
+// It is shared by the live PresenceUpdate handler above and the GuildCreate
+// startup-snapshot handler (guild.go), which report the same shape into
+// different tables.
+func presenceRecords(guildID string, presence *discordgo.Presence) []pipeline.PresenceRecord {
 	var userID string
 	if presence.User != nil {
 		userID = presence.User.ID
 	}
 
-	activities := make([]ActivityPayload, 0, len(presence.Activities))
-	for _, a := range presence.Activities {
-		activities = append(activities, ActivityPayload{
-			Name:    a.Name,
-			Type:    int(a.Type),
-			State:   a.State,
-			Details: a.Details,
-		})
+	base := pipeline.PresenceRecord{
+		ReceivedAt:    time.Now(),
+		GuildID:       guildID,
+		UserID:        userID,
+		Status:        string(presence.Status),
+		ClientDesktop: string(presence.ClientStatus.Desktop),
+		ClientMobile:  string(presence.ClientStatus.Mobile),
+		ClientWeb:     string(presence.ClientStatus.Web),
 	}
 
-	return pipeline.Event{
-		EventType:  "PRESENCE_UPDATE",
-		ReceivedAt: time.Now(),
-		GuildID:    guildID,
-		UserID:     userID,
-		Payload: PresencePayload{
-			Status: string(presence.Status),
-			ClientStatus: ClientStatusPayload{
-				Desktop: string(presence.ClientStatus.Desktop),
-				Mobile:  string(presence.ClientStatus.Mobile),
-				Web:     string(presence.ClientStatus.Web),
-			},
-			Activities: activities,
-		},
+	if len(presence.Activities) == 0 {
+		return []pipeline.PresenceRecord{base}
 	}
+
+	records := make([]pipeline.PresenceRecord, 0, len(presence.Activities))
+	for _, a := range presence.Activities {
+		record := base
+		name, activityType, state, details := a.Name, int(a.Type), a.State, a.Details
+		record.ActivityName = &name
+		record.ActivityType = &activityType
+		record.ActivityState = &state
+		record.ActivityDetails = &details
+		records = append(records, record)
+	}
+
+	return records
 }

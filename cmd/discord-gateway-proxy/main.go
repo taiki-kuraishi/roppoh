@@ -48,22 +48,31 @@ func run(ctx context.Context) error {
 		return err
 	}
 
-	// Buffer and batch activity/presence events to Cloudflare Pipelines. This
-	// defer runs before shutdownTelemetry (registered above) and after
-	// session.Close (registered below), so buffered events are flushed while
-	// the logging pipeline is still up.
-	pipelineClient := pipeline.New(cfg.PipelineEndpoint, cfg.PipelineAPIToken, logger)
+	// Buffer and batch activity/presence records to their respective
+	// Cloudflare Pipelines streams. This defer runs before shutdownTelemetry
+	// (registered above) and after session.Close (registered below), so
+	// buffered records are flushed while the logging pipeline is still up.
+	presenceClient := pipeline.New[pipeline.PresenceRecord]("presence_update", cfg.PresenceUpdateEndpoint, cfg.PipelineAPIToken, logger)
+	snapshotClient := pipeline.New[pipeline.PresenceRecord]("guild_presence_snapshot", cfg.GuildPresenceSnapshotEndpoint, cfg.PipelineAPIToken, logger)
+	voiceClient := pipeline.New[pipeline.VoiceRecord]("voice_state_update", cfg.VoiceStateUpdateEndpoint, cfg.PipelineAPIToken, logger)
+	pipelineClients := []pipeline.Shutdowner{presenceClient, snapshotClient, voiceClient}
 	defer func() {
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := pipelineClient.Shutdown(shutdownCtx); err != nil {
-			logger.Error("failed to shut down pipeline client", "error", err)
+		for _, c := range pipelineClients {
+			if err := c.Shutdown(shutdownCtx); err != nil {
+				logger.Error("failed to shut down pipeline client", "error", err)
+			}
 		}
 	}()
 
 	// Build the Discord gateway session from the bot token, wired up to also
-	// report activity/presence events to the pipeline client.
-	handlers := handler.Handlers(pipelineClient, logger)
+	// report activity/presence records to the pipeline clients.
+	handlers := handler.Handlers(handler.Enqueuers{
+		Presence: presenceClient,
+		Snapshot: snapshotClient,
+		Voice:    voiceClient,
+	}, logger)
 	session, err := gateway.NewSession(cfg.BotToken, logger, handlers...)
 	if err != nil {
 		logger.Error("failed to create gateway session", "error", err)

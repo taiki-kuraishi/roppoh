@@ -1,13 +1,11 @@
 package handler
 
-import "github.com/tsar-org/roppoh/cmd/discord-gateway-proxy/internal/pipeline"
-
-// fakeEnqueuer records every event handed to it, so tests can assert on the
-// pipeline.Events a handler produces without a real pipeline.Client.
-type fakeEnqueuer struct {
-	events []pipeline.Event
+// fakeEnqueuer records every record handed to it, so tests can assert on
+// what a handler produces without a real pipeline.Client.
+type fakeEnqueuer[T any] struct {
+	records []T
 }
 
-func (f *fakeEnqueuer) Enqueue(event pipeline.Event) {
-	f.events = append(f.events, event)
+func (f *fakeEnqueuer[T]) Enqueue(record T) {
+	f.records = append(f.records, record)
 }

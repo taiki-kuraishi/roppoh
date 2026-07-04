@@ -10,24 +10,24 @@ import (
 	"time"
 )
 
-// run batches events off the queue and flushes them on size or interval
+// run batches records off the queue and flushes them on size or interval
 // thresholds until Shutdown closes the queue.
-func (c *Client) run() {
+func (c *Client[T]) run() {
 	defer close(c.done)
 
 	ticker := time.NewTicker(c.flushInterval)
 	defer ticker.Stop()
 
-	batch := make([]Event, 0, c.batchSize)
+	batch := make([]T, 0, c.batchSize)
 	for {
 		select {
-		case event, ok := <-c.queue:
+		case record, ok := <-c.queue:
 			if !ok {
 				c.flush(batch)
 				return
 			}
 
-			batch = append(batch, event)
+			batch = append(batch, record)
 			if len(batch) >= c.batchSize {
 				batch = c.flushAndReset(batch)
 			}
@@ -40,7 +40,7 @@ func (c *Client) run() {
 
 // flushAndReset sends batch if non-empty and returns a fresh slice reusing
 // its capacity.
-func (c *Client) flushAndReset(batch []Event) []Event {
+func (c *Client[T]) flushAndReset(batch []T) []T {
 	c.flush(batch)
 	return batch[:0]
 }
@@ -48,14 +48,14 @@ func (c *Client) flushAndReset(batch []Event) []Event {
 // flush POSTs batch to the ingest endpoint as a JSON array. Failures are
 // logged, not retried: losing a batch of presence/voice telemetry is
 // acceptable, blocking the process is not.
-func (c *Client) flush(batch []Event) {
+func (c *Client[T]) flush(batch []T) {
 	if len(batch) == 0 {
 		return
 	}
 
 	body, err := json.Marshal(batch)
 	if err != nil {
-		c.logger.Error("marshal pipeline batch", slog.String("error", err.Error()))
+		c.logger.Error("marshal pipeline batch", slog.String("stream", c.name), slog.String("error", err.Error()))
 		return
 	}
 
@@ -64,14 +64,15 @@ func (c *Client) flush(batch []Event) {
 
 	if err := c.send(ctx, body); err != nil {
 		c.logger.Error("send pipeline batch",
-			slog.Int("event_count", len(batch)),
+			slog.String("stream", c.name),
+			slog.Int("record_count", len(batch)),
 			slog.String("error", err.Error()),
 		)
 	}
 }
 
 // send performs the HTTP POST to the ingest endpoint.
-func (c *Client) send(ctx context.Context, body []byte) error {
+func (c *Client[T]) send(ctx context.Context, body []byte) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)

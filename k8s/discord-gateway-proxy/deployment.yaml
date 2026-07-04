@@ -63,10 +63,14 @@ spec:
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: deployment.environment=prod,service.namespace=discord
             # ---- Cloudflare Pipelines: activity/presence events -> R2 Data Catalog ----
-            # infra/env/prod (module.pipelines) の terraform output discord_events_ingest_endpoint。
-            # stream ID は機密ではない。
-            - name: PIPELINE_INGEST_ENDPOINT
-              value: "https://3e76c7cd97344c3091816098faed4e4e.ingest.cloudflare.com"
+            # infra/env/prod (module.pipelines) の terraform output *_ingest_endpoint。
+            # stream ID は機密ではない。token は3ストリーム共通(account スコープ)。
+            - name: PRESENCE_UPDATE_INGEST_ENDPOINT
+              value: "https://REPLACE_WITH_PRESENCE_STREAM_ID.ingest.cloudflare.com"
+            - name: GUILD_PRESENCE_SNAPSHOT_INGEST_ENDPOINT
+              value: "https://REPLACE_WITH_SNAPSHOT_STREAM_ID.ingest.cloudflare.com"
+            - name: VOICE_STATE_UPDATE_INGEST_ENDPOINT
+              value: "https://REPLACE_WITH_VOICE_STREAM_ID.ingest.cloudflare.com"
             - name: PIPELINE_API_TOKEN
               valueFrom:
                 secretKeyRef:
