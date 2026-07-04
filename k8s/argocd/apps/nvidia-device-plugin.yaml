@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: renovate
+  name: nvidia-device-plugin
   namespace: argocd
   annotations:
     notifications.argoproj.io/subscribe.on-app-deployed.github: ""
@@ -10,10 +10,10 @@ spec:
   source:
     repoURL: https://github.com/taiki-kuraishi/roppoh
     targetRevision: main
-    path: k8s/renovate
+    path: k8s/nvidia-device-plugin
   destination:
     server: https://kubernetes.default.svc
-    namespace: renovate
+    namespace: nvidia-device-plugin
   syncPolicy:
     automated:
       prune: true
