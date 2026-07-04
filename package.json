@@ -12,6 +12,7 @@
       "@better-auth/passkey": "1.6.9",
       "better-auth": "1.6.9",
       "@cloudflare/vite-plugin": "1.31.0",
+      "@grafana/grafana-foundation-sdk": "11.6.0-cogv0.0.x.1769699379",
       "@hono/inertia": "0.7.0",
       "@inertiajs/react": "3.6.0",
       "@ssgoi/react": "5.2.0",

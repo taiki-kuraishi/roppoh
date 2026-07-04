@@ -1,0 +1,19 @@
+{
+  "name": "@roppoh/grafana-dashboards",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "bun run ./src/generate.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@grafana/grafana-foundation-sdk": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:"
+  }
+}

@@ -5,6 +5,11 @@ set -euo pipefail
 
 # patches/ holds Kustomize strategic-merge patches (partial resources);
 # skip them so kubeconform doesn't reject them for missing required fields.
-kubeconform -summary -ignore-missing-schemas -ignore-filename-pattern 'patches/' k8s
+# dashboards/ holds generated Grafana dashboard JSON (not k8s manifests);
+# skip them so kubeconform doesn't try to validate them as resources.
+kubeconform -summary -ignore-missing-schemas \
+  -ignore-filename-pattern 'patches/' \
+  -ignore-filename-pattern 'dashboards/' \
+  k8s
 
 kube-linter lint k8s --config .kube-linter.yaml

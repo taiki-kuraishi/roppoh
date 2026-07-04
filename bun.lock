@@ -250,6 +250,16 @@
         "typescript": "catalog:",
       },
     },
+    "packages/grafana-dashboards": {
+      "name": "@roppoh/grafana-dashboards",
+      "version": "0.0.0",
+      "dependencies": {
+        "@grafana/grafana-foundation-sdk": "catalog:",
+      },
+      "peerDependencies": {
+        "typescript": "catalog:",
+      },
+    },
     "packages/oxlint-plugins": {
       "name": "@roppoh/oxlint-plugins",
       "version": "0.0.0",
@@ -290,6 +300,7 @@
     "@better-auth/oauth-provider": "1.6.9",
     "@better-auth/passkey": "1.6.9",
     "@cloudflare/vite-plugin": "1.31.0",
+    "@grafana/grafana-foundation-sdk": "11.6.0-cogv0.0.x.1769699379",
     "@hono/inertia": "0.7.0",
     "@inertiajs/react": "3.6.0",
     "@playwright/test": "1.56.0",
@@ -770,6 +781,8 @@
 
     "@fontsource-variable/inter": ["@fontsource-variable/inter@5.2.8", "", {}, "sha512-kOfP2D+ykbcX/P3IFnokOhVRNoTozo5/JxhAIVYLpea/UBmCQ/YWPBfWIDuBImXX/15KH+eKh4xpEUyS2sQQGQ=="],
 
+    "@grafana/grafana-foundation-sdk": ["@grafana/grafana-foundation-sdk@11.6.0-cogv0.0.x.1769699379", "", { "dependencies": { "tslib": "^2.6.2" } }, "sha512-kCE8BenAAOjFC5baHIPWy9lepzs6Z7GgJ0FoBO0ZNxBnNuka0VTEV18UX9DLMXcfSrITqY3yzwkq0L0E/Sf61g=="],
+
     "@hexagon/base64": ["@hexagon/base64@1.1.28", "", {}, "sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw=="],
 
     "@hono/inertia": ["@hono/inertia@0.7.0", "", { "peerDependencies": { "hono": ">=4.0.0", "vite": ">=5.0.0" }, "optionalPeers": ["vite"] }, "sha512-gt8ozy+MDDOLJRwev9N4d91AoYC729V/QSf7MEtZpc8pXHDHG30G2onm0vFMwA3heO5DAlPmnRSYDR1JqXBPaw=="],
@@ -1205,6 +1218,8 @@
     "@roppoh/domain": ["@roppoh/domain@workspace:packages/domain"],
 
     "@roppoh/emdash": ["@roppoh/emdash@workspace:apps/emdash"],
+
+    "@roppoh/grafana-dashboards": ["@roppoh/grafana-dashboards@workspace:packages/grafana-dashboards"],
 
     "@roppoh/neo-fujimatsu": ["@roppoh/neo-fujimatsu@workspace:apps/neo-fujimatsu"],
 

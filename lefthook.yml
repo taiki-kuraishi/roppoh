@@ -54,6 +54,7 @@ pre-commit:
         -ignore-missing-schemas
         -ignore-filename-pattern=.*\.sops\.yaml
         -ignore-filename-pattern=.*/patches/.*
+        -ignore-filename-pattern=.*/dashboards/.*
         k8s
     kube-linter:
       glob: "k8s/**/*.{yml,yaml}"

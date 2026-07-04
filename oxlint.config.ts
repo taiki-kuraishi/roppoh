@@ -40,6 +40,14 @@ export default defineConfig({
         "unicorn/filename-case": "off",
       },
     },
+    {
+      // Foundation SDK の DashboardBuilder/VariableBuilder は配列ではなく
+      // 独自の .sort() を持つため、Array 前提の unicorn/no-array-sort は誤検知する
+      files: ["packages/grafana-dashboards/**"],
+      rules: {
+        "unicorn/no-array-sort": "off",
+      },
+    },
   ],
   rules: {
     "eslint/no-unused-vars": "error",
