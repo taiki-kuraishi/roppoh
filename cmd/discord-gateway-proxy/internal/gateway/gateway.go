@@ -12,9 +12,12 @@ import (
 )
 
 // NewSession creates a discordgo session that logs every non-privileged gateway
-// event. The caller is responsible for calling Open() and Close() on the
+// event. handlers are additional discordgo event handlers (e.g. from
+// internal/handler) registered alongside the built-in logging handlers below;
+// each must match the func(*discordgo.Session, *T) signature AddHandler
+// expects. The caller is responsible for calling Open() and Close() on the
 // returned session.
-func NewSession(token string, logger *slog.Logger) (*discordgo.Session, error) {
+func NewSession(token string, logger *slog.Logger, handlers ...any) (*discordgo.Session, error) {
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
 		return nil, fmt.Errorf("create discord session: %w", err)
@@ -48,6 +51,12 @@ func NewSession(token string, logger *slog.Logger) (*discordgo.Session, error) {
 			slog.Int("guild_count", len(ready.Guilds)),
 		)
 	})
+
+	// Register caller-supplied handlers (e.g. internal/handler's
+	// activity/presence tracking) alongside the built-in ones above.
+	for _, h := range handlers {
+		session.AddHandler(h)
+	}
 
 	return session, nil
 }
