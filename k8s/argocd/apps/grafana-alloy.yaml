@@ -18,12 +18,39 @@ spec:
         # -----------------------------------------------------------------------
         controller:
           type: daemonset
+          # prometheus.exporter.unix (ホスト OS メトリクス) のプロセス関連コレクタが
+          # ホストの PID namespace を見えるようにするため
+          hostPID: true
+          volumes:
+            extra:
+              - name: host-proc
+                hostPath:
+                  path: /proc
+              - name: host-sys
+                hostPath:
+                  path: /sys
+              - name: host-root
+                hostPath:
+                  path: /
 
         alloy:
           # ホストの /var/log をマウント（Pod ログファイルのテール用）
           mounts:
             varlog: true
             dockercontainers: true # Docker ランタイムのシンボリックリンク追従用
+            # ホスト OS メトリクス (node_exporter 相当) を prometheus.exporter.unix で
+            # 収集するため /proc /sys / をマウント
+            extra:
+              - name: host-proc
+                mountPath: /host/proc
+                readOnly: true
+              - name: host-sys
+                mountPath: /host/sys
+                readOnly: true
+              - name: host-root
+                mountPath: /host/root
+                readOnly: true
+                mountPropagation: HostToContainer
 
           # OTLP ポートを Service に公開（Cloudflare Workers からのトレース受信用）
           extraPorts:
@@ -249,6 +276,50 @@ spec:
                   // していたため 404 で全メトリクスが起動以来 1 件も取り込まれていなかった)。
                   url = "http://grafana-mimir-gateway.monitoring.svc.cluster.local/api/v1/push"
                 }
+              }
+
+              // =================================================================
+              // HOST METRICS: node_exporter 相当のホスト OS メトリクス (自ノードのみ)
+              // controller.hostPID / alloy.mounts.extra (/host/proc, /host/sys,
+              // /host/root) が必要 (values 側で設定済み)
+              // =================================================================
+
+              prometheus.exporter.unix "node" {
+                procfs_path = "/host/proc"
+                sysfs_path  = "/host/sys"
+                rootfs_path = "/host/root"
+
+                disable_collectors = ["ipvs", "btrfs", "infiniband", "xfs", "zfs"]
+
+                filesystem {
+                  fs_types_exclude     = "^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|tmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$"
+                  mount_points_exclude = "^/(dev|proc|run/credentials/.+|sys|var/lib/docker/.+)($|/)"
+                  mount_timeout        = "5s"
+                }
+              }
+
+              // kubelet/cadvisor と同様、ノード名を instance/node に明示する
+              prometheus.relabel "node_exporter" {
+                forward_to = [prometheus.remote_write.mimir.receiver]
+
+                rule {
+                  target_label = "job"
+                  replacement  = "node-exporter"
+                }
+                rule {
+                  target_label = "instance"
+                  replacement  = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  target_label = "node"
+                  replacement  = env("KUBE_NODE_NAME")
+                }
+              }
+
+              prometheus.scrape "node_exporter" {
+                targets         = prometheus.exporter.unix.node.targets
+                scrape_interval = "60s"
+                forward_to      = [prometheus.relabel.node_exporter.receiver]
               }
 
               // =================================================================
