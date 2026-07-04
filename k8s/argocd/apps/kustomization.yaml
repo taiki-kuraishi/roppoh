@@ -10,6 +10,7 @@ resources:
   - grafana-tempo.yaml
   - grafana.yaml
   - grafana-alloy.yaml
+  - kube-state-metrics.yaml
   - argo-workflows.yaml
   - zot.yaml
   - garage.yaml

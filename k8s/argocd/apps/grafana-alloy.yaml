@@ -323,6 +323,49 @@ spec:
               }
 
               // =================================================================
+              // KUBE-STATE-METRICS: クラスタ状態メトリクス (kube-state-metrics.yaml)
+              // Deployment (レプリカ 1) は discovery.kubernetes "pods" (既存、pod_logs で
+              // 定義済み) から検出し、Pod ログと同じ「自ノードのみ keep」パターンで
+              // 重複スクレイプ (N ノード分の多重書き込み) を防ぐ
+              // =================================================================
+
+              discovery.relabel "kube_state_metrics" {
+                targets = discovery.kubernetes.pods.targets
+
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  action        = "keep"
+                  regex         = env("KUBE_NODE_NAME")
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+                  action        = "keep"
+                  regex         = "kube-state-metrics"
+                }
+                // chart は http (8080, メトリクス本体) と metrics (8081, self monitor) の
+                // 2 ポートを公開する。メトリクス本体のみ対象にする
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_container_port_name"]
+                  action        = "keep"
+                  regex         = "http"
+                }
+                rule {
+                  target_label = "job"
+                  replacement  = "kube-state-metrics"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_pod_node_name"]
+                  target_label  = "node"
+                }
+              }
+
+              prometheus.scrape "kube_state_metrics" {
+                targets         = discovery.relabel.kube_state_metrics.output
+                scrape_interval = "60s"
+                forward_to      = [prometheus.remote_write.mimir.receiver]
+              }
+
+              // =================================================================
               // OTLP RECEIVER: アプリ (discord-gateway-proxy 等) / Cloudflare Workers の
               // traces / logs / metrics を受信
               //   - bearer 認証で incoming Authorization: Bearer <token> を検証
