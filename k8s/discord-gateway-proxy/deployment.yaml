@@ -66,11 +66,11 @@ spec:
             # infra/env/prod (module.pipelines) の terraform output *_ingest_endpoint。
             # stream ID は機密ではない。token は3ストリーム共通(account スコープ)。
             - name: PRESENCE_UPDATE_INGEST_ENDPOINT
-              value: "https://REPLACE_WITH_PRESENCE_STREAM_ID.ingest.cloudflare.com"
+              value: "https://366575e479b844a0bdbebb1ff74af001.ingest.cloudflare.com"
             - name: GUILD_PRESENCE_SNAPSHOT_INGEST_ENDPOINT
-              value: "https://REPLACE_WITH_SNAPSHOT_STREAM_ID.ingest.cloudflare.com"
+              value: "https://c8877a06251e47f8a24571cef3711d5c.ingest.cloudflare.com"
             - name: VOICE_STATE_UPDATE_INGEST_ENDPOINT
-              value: "https://REPLACE_WITH_VOICE_STREAM_ID.ingest.cloudflare.com"
+              value: "https://fadcb79abf784e99ac90e18c6968ed43.ingest.cloudflare.com"
             - name: PIPELINE_API_TOKEN
               valueFrom:
                 secretKeyRef:
