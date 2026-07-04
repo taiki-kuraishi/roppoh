@@ -118,9 +118,16 @@ spec:
                 }
               }
 
+              // discovery.relabel.pod_logs.output の __path__ はグロブ (/var/log/pods/*<uid>/*/*.log) を
+              // 含むが、loki.source.file はグロブを展開しない。local.file_match を介して実ファイルパスへ
+              // 展開してから渡す (これが無いと Pod ログが一切 tail されない)。
+              local.file_match "pod_logs" {
+                path_targets = discovery.relabel.pod_logs.output
+              }
+
               // ログファイルをテールして Loki gateway に送信
               loki.source.file "pod_logs" {
-                targets    = discovery.relabel.pod_logs.output
+                targets    = local.file_match.pod_logs.targets
                 forward_to = [loki.write.grafana.receiver]
               }
 
@@ -163,6 +170,17 @@ spec:
                   target_label = "job"
                   replacement  = "kubelet"
                 }
+                // __address__ が apiserver proxy の同一アドレスに書き換わるため、明示的に
+                // instance/node へノード名を書き込んでおかないと n100/z390 のシリーズが
+                // 衝突する (instance が指定されていれば Prometheus はそれを優先する)。
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "instance"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "node"
+                }
               }
 
               prometheus.scrape "kubelet" {
@@ -200,6 +218,16 @@ spec:
                   target_label = "job"
                   replacement  = "kubernetes-cadvisor"
                 }
+                // kubelet と同様、apiserver proxy 経由で __address__ が両ノードで
+                // 同一になるため instance/node を明示的に付与する。
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "instance"
+                }
+                rule {
+                  source_labels = ["__meta_kubernetes_node_name"]
+                  target_label  = "node"
+                }
               }
 
               prometheus.scrape "cadvisor" {
@@ -216,7 +244,10 @@ spec:
 
               prometheus.remote_write "mimir" {
                 endpoint {
-                  url = "http://grafana-mimir-gateway.monitoring.svc.cluster.local/prometheus/api/v1/remote_write"
+                  // 注意: /prometheus は Mimir gateway の読み取り専用クエリ API のプレフィックス。
+                  // push (remote_write) の正しいパスは /api/v1/push (これを /prometheus 配下に
+                  // していたため 404 で全メトリクスが起動以来 1 件も取り込まれていなかった)。
+                  url = "http://grafana-mimir-gateway.monitoring.svc.cluster.local/api/v1/push"
                 }
               }
 
