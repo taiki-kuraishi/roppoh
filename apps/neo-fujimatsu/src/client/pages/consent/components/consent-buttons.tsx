@@ -4,13 +4,11 @@ import { Button } from "@roppoh/shadcn/components/ui/button";
 import { CardFooter } from "@roppoh/shadcn/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useTransition } from "react";
-import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { authClient } from "@/client/libs/better-auth";
 
 export function ConsentBtns() {
-  const navigate = useNavigate();
   const [isPending, startTransition] = useTransition();
 
   return (
@@ -23,7 +21,7 @@ export function ConsentBtns() {
             });
 
             if (res.data?.redirect && res.data.url) {
-              await navigate(res.data.url);
+              globalThis.location.href = res.data.url;
               return;
             }
             toast.error("Failed to authorize");
@@ -40,7 +38,7 @@ export function ConsentBtns() {
               accept: false,
             });
             if (res.data?.redirect && res.data.url) {
-              await navigate(res.data.url);
+              globalThis.location.href = res.data.url;
               return;
             }
             toast.error("Failed to cancel");
