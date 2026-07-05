@@ -48,6 +48,24 @@ spec:
           env:
             - name: HERMES_DASHBOARD
               value: "1"
+            # ダッシュボードは非 loopback バインド時に認証ゲートが必須(未設定だと
+            # bind 自体を拒否する)。Cloudflare Tunnel 経由で外部公開するため、
+            # username/password(Basic Auth)プロバイダーを有効化する。
+            - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: dashboard-basic-auth-username
+            - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: dashboard-basic-auth-password
+            - name: HERMES_DASHBOARD_BASIC_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: dashboard-basic-auth-secret
             # gateway run はデフォルトでは OpenAI 互換 API サーバーを起動しないため、
             # 明示的に有効化しないと readinessProbe/livenessProbe の対象である
             # /health(8642)が永遠に listen されない。
