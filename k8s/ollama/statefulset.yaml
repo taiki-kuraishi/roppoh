@@ -7,7 +7,10 @@ metadata:
     app.kubernetes.io/name: ollama
     app.kubernetes.io/managed-by: argocd
 spec:
-  replicas: 1
+  # GPU(RTX 3050 6GB)は1基のみで llama-cpp と排他。巨大 MoE を --cpu-moe で動かす
+  # llama-cpp(k8s/llama-cpp)へ GPU を譲るため 0 にスケールダウンして常駐を止める。
+  # モデルデータ(PVC)と本 manifest は残すため、切り戻しは replicas を 1 に戻すだけでよい。
+  replicas: 0
   serviceName: ollama
   selector:
     matchLabels:

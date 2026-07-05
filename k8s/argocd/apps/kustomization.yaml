@@ -4,6 +4,7 @@ resources:
   - argocd.yaml
   - cloudflared.yaml
   - ollama.yaml
+  - llama-cpp.yaml
   - nvidia-device-plugin.yaml
   - grafana-loki.yaml
   - grafana-mimir.yaml
