@@ -44,6 +44,14 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "openclaw.tsar-bmb.org"
         service  = "http://openclaw.openclaw.svc.cluster.local:18789"
       },
+      {
+        hostname = "hermes.tsar-bmb.org"
+        service  = "http://hermes-agent.hermes-agent.svc.cluster.local:8642"
+      },
+      {
+        hostname = "hermes-dashboard.tsar-bmb.org"
+        service  = "http://hermes-agent.hermes-agent.svc.cluster.local:9119"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"

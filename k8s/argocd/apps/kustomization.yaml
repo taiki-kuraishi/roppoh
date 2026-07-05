@@ -18,6 +18,7 @@ resources:
   - discord-gateway-proxy.yaml
   - discord-gateway-proxy-build.yaml
   - openclaw.yaml
+  - hermes-agent.yaml
   - grafana-dashboards.yaml
   - secrets.yaml
   - traefik.yaml
