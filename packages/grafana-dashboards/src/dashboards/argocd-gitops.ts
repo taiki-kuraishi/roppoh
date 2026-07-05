@@ -119,13 +119,18 @@ export const argocdGitopsDashboard = new DashboardBuilder("Applications / ArgoCD
     lokiLogs({
       title: "argocd-application-controller logs",
       description: "sync/reconcile のイベントログ (JSON 構造化)",
-      expr: '{namespace="argocd", container="application-controller"} | json',
+      // コンテナ名は Pod 内の実際の container 名 (spec.containers[].name) と
+      // 一致させる必要がある。job 名 "argocd-application-controller" とは別物。
+      expr: '{namespace="argocd", container="argocd-application-controller"} | json',
     }),
   )
   .withPanel(
     lokiLogs({
       title: "argocd error logs (all components)",
       description: "argocd namespace 全体の error ログ",
-      expr: '{namespace="argocd"} | json | level="error"',
+      // 一部コンポーネント (argocd-notifications-controller 等) は msg 内の
+      // 改行が未エスケープな不正 JSON を出すため、`| json` だと __error__ が
+      // 付いて level ラベル抽出に失敗する。生ログへの文字列マッチで代替する。
+      expr: '{namespace="argocd"} |~ `"level":"(error|fatal)"`',
     }),
   );

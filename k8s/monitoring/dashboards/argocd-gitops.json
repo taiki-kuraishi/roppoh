@@ -396,7 +396,7 @@
       },
       "targets": [
         {
-          "expr": "{namespace=\"argocd\", container=\"application-controller\"} | json",
+          "expr": "{namespace=\"argocd\", container=\"argocd-application-controller\"} | json",
           "refId": "A",
           "datasource": {
             "type": "loki",
@@ -436,7 +436,7 @@
       },
       "targets": [
         {
-          "expr": "{namespace=\"argocd\"} | json | level=\"error\"",
+          "expr": "{namespace=\"argocd\"} |~ `\"level\":\"(error|fatal)\"`",
           "refId": "A",
           "datasource": {
             "type": "loki",

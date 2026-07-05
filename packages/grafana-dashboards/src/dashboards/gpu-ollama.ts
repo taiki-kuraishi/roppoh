@@ -121,11 +121,14 @@ export const gpuOllamaDashboard = new DashboardBuilder("GPU / Ollama (z390)")
   )
   .withPanel(
     timeseries({
-      title: "XID errors",
-      description: "直近発生した XID エラー (GPU の異常を示す)",
+      title: "PCIe replay errors",
+      description:
+        "PCIe リプレイ回数の累積 (GPU-ホスト間通信エラーの異常を示す)。" +
+        " DCGM_FI_DEV_XID_ERRORS はこの dcgm-exporter 構成では収集されない" +
+        " (コンシューマ向け GeForce では NVML 経由の XID フィールド自体が非対応) ため代替",
       unit: "short",
       legend: "{{gpu}}",
-      expr: `DCGM_FI_DEV_XID_ERRORS{${DCGM}}`,
+      expr: `DCGM_FI_DEV_PCIE_REPLAY_COUNTER{${DCGM}}`,
     }),
   )
 

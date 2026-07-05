@@ -384,8 +384,8 @@
       "type": "timeseries",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "XID errors",
-      "description": "直近発生した XID エラー (GPU の異常を示す)",
+      "title": "PCIe replay errors",
+      "description": "PCIe リプレイ回数の累積 (GPU-ホスト間通信エラーの異常を示す)。 DCGM_FI_DEV_XID_ERRORS はこの dcgm-exporter 構成では収集されない (コンシューマ向け GeForce では NVML 経由の XID フィールド自体が非対応) ため代替",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -401,7 +401,7 @@
       },
       "targets": [
         {
-          "expr": "DCGM_FI_DEV_XID_ERRORS{job=\"dcgm-exporter\"}",
+          "expr": "DCGM_FI_DEV_PCIE_REPLAY_COUNTER{job=\"dcgm-exporter\"}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
