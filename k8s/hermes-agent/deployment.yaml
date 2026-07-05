@@ -94,6 +94,11 @@ spec:
                 secretKeyRef:
                   name: hermes-agent
                   key: telegram-bot-token
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: github-token
           securityContext:
             # 公式イメージの entrypoint は root で起動して /opt/data を chown した後、
             # 内部で UID 10000(hermes)へ setuid/setgid して降格する仕組みのため、
