@@ -39,7 +39,7 @@ data:
           ${llama-server}
           -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
           --cpu-moe
-          -c 16384
+          -c 32768
 
       # --- 実験用スロット(コメントを外す/編集して試す。初回リクエスト時に DL される) ---
       # ※ モデル用 PVC(40Gi)の空きに注意。大きな GGUF を複数常駐させると溢れる。
