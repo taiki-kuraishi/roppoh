@@ -1,0 +1,17 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: openclaw-view
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/managed-by: argocd
+# roppoh-agent (Discord経由) がクラスタ全体のリソースを read-only で参照できるようにする。
+# 組み込み view ClusterRole は Secret の中身を含まないため、認証情報の漏えいリスクはない。
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: openclaw
+    namespace: openclaw
