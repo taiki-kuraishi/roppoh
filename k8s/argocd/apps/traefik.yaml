@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/taiki-kuraishi/roppoh
+    targetRevision: main
+    path: k8s/traefik
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -28,10 +28,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          package-manager-cache: false
       - uses: ./.github/actions/setup-bun
       - uses: ./.github/actions/setup-turbo
       - run: bun --bun oxlint --deny-warnings --format=github

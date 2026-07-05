@@ -40,6 +40,10 @@ spec:
             - lan
             - --port
             - "18789"
+            # models/agents/gateway.mode は Git 管理しない(Control UI
+            # ダッシュボードから設定する前提のため)。config が空の状態でも
+            # 起動できるようにする。
+            - --allow-unconfigured
           ports:
             - name: http
               containerPort: 18789
@@ -87,23 +91,11 @@ spec:
             # HOME 全体を永続化(state/workspace/.openclaw)。readOnlyRootFilesystem のため必須。
             - name: home
               mountPath: /home/node
-            # openclaw.json / AGENTS.md は ConfigMap 由来を読み取り専用でオーバーレイ
-            - name: config
-              mountPath: /home/node/.openclaw/openclaw.json
-              subPath: openclaw.json
-              readOnly: true
-            - name: config
-              mountPath: /home/node/.openclaw/AGENTS.md
-              subPath: AGENTS.md
-              readOnly: true
             - name: tmp
               mountPath: /tmp
       volumes:
         - name: home
           persistentVolumeClaim:
             claimName: openclaw
-        - name: config
-          configMap:
-            name: openclaw-config
         - name: tmp
           emptyDir: {}

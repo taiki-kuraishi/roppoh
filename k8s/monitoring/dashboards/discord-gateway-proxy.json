@@ -30,7 +30,11 @@
   "title": "Applications / discord-gateway-proxy",
   "uid": "roppoh-discord-gateway-proxy",
   "description": "discord-gateway-proxy (z390) のログと Go runtime メトリクス。ビジネスメトリクス/トレースは現状未計装",
-  "tags": ["generated", "applications", "discord-gateway-proxy"],
+  "tags": [
+    "generated",
+    "applications",
+    "discord-gateway-proxy"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-6h",
@@ -238,7 +242,7 @@
       },
       "targets": [
         {
-          "expr": "go_goroutine_count{service_name=\"discord-gateway-proxy\"}",
+          "expr": "go_goroutine_count{job=\"discord/discord-gateway-proxy\"}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
@@ -259,7 +263,7 @@
       "transparent": false,
       "repeatDirection": "h",
       "title": "Memory used",
-      "description": "Go ランタイムが使用するメモリ (go.memory.used)",
+      "description": "Go ランタイムが使用するメモリ (go.memory.used, 内訳: go_memory_type)",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -275,13 +279,13 @@
       },
       "targets": [
         {
-          "expr": "go_memory_used_bytes{service_name=\"discord-gateway-proxy\"}",
+          "expr": "go_memory_used_bytes{job=\"discord/discord-gateway-proxy\"}",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "legendFormat": "memory"
+          "legendFormat": "{{go_memory_type}}"
         }
       ],
       "gridPos": {
@@ -295,15 +299,15 @@
       "type": "timeseries",
       "transparent": false,
       "repeatDirection": "h",
-      "title": "GC cycles",
-      "description": "GC 実行回数のレート (go.memory.gc.cycles)",
+      "title": "Heap allocation rate",
+      "description": "ヒープアロケーションのレート (go.memory.allocated)。GC 実行回数 (cycles) 自体は go.opentelemetry.io/contrib/instrumentation/runtime が現状エクスポートしないため、 GC 負荷の代理指標として用いる",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "Bps",
           "custom": {
             "fillOpacity": 10
           }
@@ -312,13 +316,13 @@
       },
       "targets": [
         {
-          "expr": "rate(go_memory_gc_cycles_total{service_name=\"discord-gateway-proxy\"}[$__rate_interval])",
+          "expr": "rate(go_memory_allocated_bytes_total{job=\"discord/discord-gateway-proxy\"}[$__rate_interval])",
           "refId": "A",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "legendFormat": "gc"
+          "legendFormat": "allocated"
         }
       ],
       "gridPos": {

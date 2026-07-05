@@ -84,7 +84,9 @@ export const k8sClusterWorkloadsDashboard = new DashboardBuilder(
       title: "CronJobs",
       description: "登録済み CronJob 数",
       unit: "short",
-      expr: `count(kube_cronjob_next_schedule_time{${KSM}, namespace=~"$namespace"})`,
+      // CronJob が 0 件の場合 count() は空ベクトルを返し stat パネルが
+      // No Data になる。or vector(0) で 0 件を明示的に表示する
+      expr: `count(kube_cronjob_next_schedule_time{${KSM}, namespace=~"$namespace"}) or vector(0)`,
     }),
   )
 

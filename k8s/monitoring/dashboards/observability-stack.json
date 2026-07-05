@@ -30,7 +30,11 @@
   "title": "Monitoring / Observability stack",
   "uid": "roppoh-observability-stack",
   "description": "可観測性パイプライン自身 (Alloy/Grafana) の健全性。Mimir/Loki/Tempo のメトリクス self-scrape はフォローアップ課題",
-  "tags": ["generated", "monitoring", "self-monitoring"],
+  "tags": [
+    "generated",
+    "monitoring",
+    "self-monitoring"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-6h",

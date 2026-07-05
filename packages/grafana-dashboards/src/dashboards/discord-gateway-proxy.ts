@@ -17,9 +17,20 @@ import { datasourceVariable } from "../variables";
  * OTLP メトリクスは semconv v1.41.0 (go.goroutine.count 等、ドット区切り) で
  * 送信され、Alloy の otelcol.exporter.prometheus がドット→アンダースコア
  * 変換 + 単位サフィックス付与を行う (add_metric_suffixes 既定 true)。
- * 単位サフィックスの正確な形は実機の Grafana Explore で要確認。
+ *
+ * ラベルは service_name ではなく job になる点に注意: deployment.yaml の
+ * OTEL_RESOURCE_ATTRIBUTES に service.namespace=discord を設定しているため、
+ * otelcol.exporter.prometheus が job="discord/discord-gateway-proxy"
+ * ({namespace}/{name} 形式) を生成し、単独の service_name ラベルは付与されない
+ * (実機の Mimir で確認済み)。
+ *
+ * go.opentelemetry.io/contrib/instrumentation/runtime v0.69.0 が実際にエクス
+ * ポートするメトリクスは go.memory.{used,limit,allocated,allocations,gc.goal},
+ * go.goroutine.count, go.processor.limit, go.config.gogc の8種のみで、GC
+ * 実行回数 (cycles) は含まれない (OTEL_GO_X_DEPRECATED_RUNTIME_METRICS=true
+ * で有効化される非推奨セットにのみ runtime.go.gc.count として存在)。
  */
-const SERVICE_NAME = 'service_name="discord-gateway-proxy"';
+const JOB = 'job="discord/discord-gateway-proxy"';
 
 const timeseries = (opts: {
   title: string;
@@ -84,24 +95,27 @@ export const discordGatewayProxyDashboard = new DashboardBuilder(
       description: "稼働中の goroutine 数 (go.goroutine.count)",
       unit: "short",
       legend: "goroutines",
-      expr: `go_goroutine_count{${SERVICE_NAME}}`,
+      expr: `go_goroutine_count{${JOB}}`,
     }),
   )
   .withPanel(
     timeseries({
       title: "Memory used",
-      description: "Go ランタイムが使用するメモリ (go.memory.used)",
+      description: "Go ランタイムが使用するメモリ (go.memory.used, 内訳: go_memory_type)",
       unit: "bytes",
-      legend: "memory",
-      expr: `go_memory_used_bytes{${SERVICE_NAME}}`,
+      legend: "{{go_memory_type}}",
+      expr: `go_memory_used_bytes{${JOB}}`,
     }),
   )
   .withPanel(
     timeseries({
-      title: "GC cycles",
-      description: "GC 実行回数のレート (go.memory.gc.cycles)",
-      unit: "short",
-      legend: "gc",
-      expr: `rate(go_memory_gc_cycles_total{${SERVICE_NAME}}[$__rate_interval])`,
+      title: "Heap allocation rate",
+      description:
+        "ヒープアロケーションのレート (go.memory.allocated)。GC 実行回数 (cycles) 自体は" +
+        " go.opentelemetry.io/contrib/instrumentation/runtime が現状エクスポートしないため、" +
+        " GC 負荷の代理指標として用いる",
+      unit: "Bps",
+      legend: "allocated",
+      expr: `rate(go_memory_allocated_bytes_total{${JOB}}[$__rate_interval])`,
     }),
   );

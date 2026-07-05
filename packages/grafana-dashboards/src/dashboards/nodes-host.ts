@@ -11,6 +11,10 @@ import { datasourceVariable, nodeVariable } from "../variables";
  * ホスト /proc /sys / を読み、job="node-exporter" ラベルで Mimir に送る
  * (k8s/argocd/apps/grafana-alloy.yaml を参照)。instance/node には
  * KUBE_NODE_NAME が明示されているため per-node の内訳が可能。
+ *
+ * 電力 (node_rapl_*_joules_total) は追加設定不要で両ノードから既に取得できている
+ * (Intel RAPL, /sys/class/powercap 経由)。GPU 電力は dcgm-exporter 側
+ * (DCGM_FI_DEV_POWER_USAGE) で gpu-ollama ダッシュボードに既にある。
  */
 const JOB = 'job="node-exporter"';
 
@@ -81,6 +85,14 @@ export const nodesHostDashboard = new DashboardBuilder("Nodes / Host OS")
       expr: `time() - node_boot_time_seconds{${JOB}, node=~"$node"}`,
     }),
   )
+  .withPanel(
+    stat({
+      title: "CPU power (package)",
+      description: "Intel RAPL package ドメインの平均消費電力",
+      unit: "watt",
+      expr: `rate(node_rapl_package_joules_total{${JOB}, node=~"$node"}[$__rate_interval])`,
+    }),
+  )
 
   .withRow(new RowBuilder("CPU & Load"))
   .withPanel(
@@ -99,6 +111,22 @@ export const nodesHostDashboard = new DashboardBuilder("Nodes / Host OS")
       unit: "short",
       legend: "{{node}} / 1m",
       expr: `node_load1{${JOB}, node=~"$node"}`,
+    }),
+  )
+
+  .withRow(new RowBuilder("Power"))
+  .withPanel(
+    timeseries({
+      title: "CPU power by RAPL domain",
+      description:
+        "Intel RAPL ドメイン別の消費電力 (package = CPU パッケージ全体、core/dram/uncore は内訳。" +
+        "内訳ドメインは CPU 世代により有無が異なる)",
+      unit: "watt",
+      legend: "{{node}} / {{domain}}",
+      expr: `label_replace(rate(node_rapl_package_joules_total{${JOB}, node=~"$node"}[$__rate_interval]), "domain", "package", "", "")
+        or label_replace(rate(node_rapl_core_joules_total{${JOB}, node=~"$node"}[$__rate_interval]), "domain", "core", "", "")
+        or label_replace(rate(node_rapl_dram_joules_total{${JOB}, node=~"$node"}[$__rate_interval]), "domain", "dram", "", "")
+        or label_replace(rate(node_rapl_uncore_joules_total{${JOB}, node=~"$node"}[$__rate_interval]), "domain", "uncore", "", "")`,
     }),
   )
 
