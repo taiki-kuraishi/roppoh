@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llama-cpp-config
+  namespace: llama-cpp
+  labels:
+    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/managed-by: argocd
+data:
+  # llama-swap の設定。単一 GPU(RTX 3050 6GB)上で複数モデルを on-demand スワップする。
+  # リクエストされた model 名(= 下記 models の各キー)に応じて llama-server プロセスを
+  # 起動/停止する。GPU は1基のみのため、新しいモデルが要求されると llama-swap が
+  # 実行中のモデルを自動停止してから起動する(デフォルトの swap 挙動)。
+  # 別モデルを試したいときは models にブロックを1つ足す(またはコメントを外す)だけでよく、
+  # StatefulSet の書き換え/再デプロイは不要。hermes/openclaw はエンドポイント固定のまま
+  # model 名を変えるだけで切り替わる。
+  config.yaml: |
+    # モデル DL(初回 -hf, 最大約20GB)がヘルスチェックで中断されないよう長めに取る
+    healthCheckTimeout: 3600
+    logLevel: info
+    # ${PORT} マクロの起点。各モデルに一意ポートを自動割当
+    startPort: 10001
+
+    # 全モデル共通の llama-server フラグ(MoE 固有の --cpu-moe はモデル側に置く)
+    macros:
+      llama-server: >
+        /app/llama-server
+        --host 127.0.0.1 --port ${PORT}
+        -ngl 99 -fa on --jinja
+        -ctk q8_0 -ctv q8_0
+
+    models:
+      # 現用モデル(hermes の default)。MoE 34.66B / アクティブ約3B。
+      # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
+      # ttl: 最後のリクエストから3600秒アイドルで自動アンロードし GPU を解放する。
+      qwen3.5-35b-a3b:
+        ttl: 3600
+        cmd: >
+          ${llama-server}
+          -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
+          --cpu-moe
+          -c 16384
+
+      # --- 実験用スロット(コメントを外す/編集して試す。初回リクエスト時に DL される) ---
+      # ※ モデル用 PVC(40Gi)の空きに注意。大きな GGUF を複数常駐させると溢れる。
+      # qwen3-30b-a3b:
+      #   ttl: 3600
+      #   cmd: >
+      #     ${llama-server}
+      #     -hf unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF:Q4_K_M
+      #     --cpu-moe
+      #     -c 16384

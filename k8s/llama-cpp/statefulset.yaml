@@ -16,6 +16,12 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: llama-cpp
+      annotations:
+        # config.yaml は subPath マウントのため ConfigMap 更新では稼働中 Pod に反映されない。
+        # configmap.yaml の内容ハッシュを埋め、変更時に更新することで ArgoCD 同期時に
+        # ローリング再起動を強制する。更新方法:
+        # shasum -a 256 k8s/llama-cpp/configmap.yaml | cut -c1-12
+        roppoh.dev/config-hash: "c10bcff80c16"
     spec:
       # GPU 搭載ノード(z390 / RTX 3050 6GB)にのみスケジュール
       nodeSelector:
@@ -30,51 +36,26 @@ spec:
       containers:
         - name: llama-cpp
           # 【自己更新】このイメージタグは Renovate が更新する
-          image: ghcr.io/ggml-org/llama.cpp:server-cuda-b9870
-          # ENTRYPOINT は llama-server。引数のみ渡す。
-          # ── 巨大 MoE を 6GB VRAM で動かす中核戦略 ────────────────────────────
-          # Qwen3.5-35B-A3B(総34.66B / アクティブ約3B の MoE)を、
-          #   -ngl 99      : 全レイヤーを GPU 指定(attention・共有重み・KV を GPU に載せる)
-          #   --cpu-moe    : ただし MoE エキスパート重み(約18GB)は CPU RAM に退避
-          # という組み合わせで動かす。VRAM には非エキスパート重み(~2GB)+ KV(~0.7GB)
-          # + 計算バッファ(~0.7GB)= 実測 ~3.4GB のみ載り 6GB に収まる。エキスパートは
-          # 256個中トークンあたり8個(+共有)しか活性化しないため、CPU(i5-9600K / DDR4)でも
-          # 実効 10〜20 tok/s を狙える。Ollama は「レイヤー単位」の粗いオフロードしか持たず
-          # attention までも CPU に落ちて 5〜9 tok/s に低下していた(k8s/ollama の統計コメント参照)。
+          # llama-swap(モデルスワップ・プロキシ)+ llama-server を同梱した CUDA イメージ。
+          # タグ形式は v<llama-swap版>-cuda-b<llama.cpp版>。
+          image: ghcr.io/mostlygeek/llama-swap:v235-cuda-b9870
+          # llama-swap をプロキシとして起動。実際の推論は config に定義した各モデルの
+          # llama-server 子プロセスが on-demand で担う(詳細は configmap.yaml)。
+          command:
+            - /app/llama-swap
           args:
-            # HuggingFace から GGUF を自動取得(LLAMA_CACHE=/data/models に永続キャッシュ)
-            - -hf
-            - unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
-            # OpenAI 互換 /v1/models が返す id。hermes-agent の model.default と一致させる
-            - --alias
-            - qwen3.5-35b-a3b
-            - -ngl
-            - "99"
-            - --cpu-moe
-            # Flash Attention(KV 量子化の前提。コンテキストが伸びるほど VRAM を節約)
-            - -fa
-            - "on"
-            # コンテキスト長。hermes の長いシステムプロンプト/ツール定義(実測 ~9061 トークン)に
-            # 余裕を持たせつつ 6GB に収める値。VRAM にはまだ余裕があり実機で 32768 まで引き上げ可
-            - -c
-            - "16384"
-            # KV キャッシュを q8_0 に量子化して VRAM 消費を削減(f16 の約半分)
-            - -ctk
-            - q8_0
-            - -ctv
-            - q8_0
-            # モデル同梱の Jinja チャットテンプレートを使用(Qwen3.5 の chat/tool 整形に必須)
-            - --jinja
-            - --host
-            - 0.0.0.0
-            - --port
-            - "8080"
+            - -config
+            - /app/config.yaml
+            - --listen
+            - :8080
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
           env:
-            # -hf のダウンロード先。PVC 上に置き Pod 再作成でも再 DL しない
+            # llama-server(子プロセス)の -hf ダウンロード先。PVC 上に置き再 DL を防ぐ。
+            # 環境変数は子プロセスに継承される。旧 StatefulSet と同じパスのため
+            # ダウンロード済みの qwen3.5-35b-a3b をそのまま再利用できる。
             - name: LLAMA_CACHE
               value: /data/models
             # 非 root 実行のため HOME を書き込み可能な emptyDir に向ける
@@ -96,33 +77,37 @@ spec:
               memory: 26Gi
               # GPU 1基を占有(RTX 3050 6GB)。ollama とは排他(GPU は1基のみ)
               nvidia.com/gpu: 1
-          # 初回起動は GGUF(約20GB)のダウンロード + ロードで時間がかかるため、
-          # startupProbe で最大 60 分の猶予を与えてから liveness/readiness を有効化する
+          # llama-swap プロキシ自体は即時起動する(モデルは on-demand ロード)。
+          # プロキシが listen しているかを TCP で確認する。モデルのロード完了は
+          # llama-swap の healthCheckTimeout(config.yaml)側が担保する。
           startupProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: 8080
-            periodSeconds: 15
-            failureThreshold: 240
+            periodSeconds: 5
+            failureThreshold: 24
           readinessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: 8080
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: 8080
             periodSeconds: 30
             failureThreshold: 3
           volumeMounts:
             - name: models
               mountPath: /data/models
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
             - name: tmp
               mountPath: /tmp
             - name: home
               mountPath: /home/llama
       volumes:
+        - name: config
+          configMap:
+            name: llama-cpp-config
         - name: tmp
           emptyDir: {}
         - name: home
