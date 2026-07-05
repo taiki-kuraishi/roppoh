@@ -7,49 +7,12 @@ metadata:
     app.kubernetes.io/name: openclaw
     app.kubernetes.io/managed-by: argocd
 data:
-  # OpenClaw の設定は JSON5(コメント・末尾カンマ許容)。
-  # 既存 k8s/ollama を LLM バックエンドに使い、外部 API キーを不要にする。
-  # opencode 等が既に qwen3.5:9b を主モデルとして使っているため(GPU VRAM 6GB / 同時ロード1つ制限)、
-  # 同じモデルを使ってモデル切替によるロード競合を避ける。
-  openclaw.json: |
-    {
-      // 通常は `openclaw onboard` が対話的に設定するが、非対話の k8s デプロイでは
-      // 実行されないため、gateway.mode を明示しないと起動時に
-      // "existing config is missing gateway.mode" で拒否される。
-      gateway: {
-        mode: "local",
-      },
-      models: {
-        providers: {
-          ollama: {
-            baseUrl: "http://ollama.ollama.svc.cluster.local:11434",
-            // ネイティブ Ollama API。/v1 を付けると OpenAI 互換モードになり tool calling が不安定になるため付けない
-            api: "ollama",
-            // Ollama自体はAPIキー不要だが、OpenClaw の設定上ダミー値が必要
-            apiKey: "ollama-local",
-            timeoutSeconds: 300,
-            models: [
-              {
-                id: "qwen3.5:9b",
-                name: "qwen3.5:9b",
-              },
-            ],
-          },
-        },
-      },
-      agents: {
-        list: [
-          {
-            id: "main",
-            default: true,
-            model: { primary: "ollama/qwen3.5:9b" },
-            // 非力なローカルモデル向けにツール/コンテキストを絞り安定化
-            experimental: { localModelLean: true },
-          },
-        ],
-      },
-      // channels.discord は未設定(後日 Secret に discord-bot-token を追加して有効化)
-    }
+  # openclaw.json は意図的にここで管理しない。
+  # OpenClaw は onboard/Control UI ダッシュボードでの対話的な設定変更を前提とした
+  # アプリで、config を Git 管理の読み取り専用ファイルにすると
+  # gateway.mode 未設定や ConfigMap subPath の権限問題など、この前提と衝突する
+  # バグを繰り返し引き起こす。models/agents(Ollama バックエンド, qwen3.5:9b)や
+  # gateway.mode は初回デプロイ後に Control UI ダッシュボードから設定すること。
   AGENTS.md: |
     # OpenClaw Agent Instructions
 
