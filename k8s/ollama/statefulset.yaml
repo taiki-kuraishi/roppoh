@@ -44,6 +44,12 @@ spec:
             # 32768 は元のエラー原因(9061トークン)に3倍以上の余裕を持ちつつ速度低下を抑えられる値
             - name: OLLAMA_CONTEXT_LENGTH
               value: "32768"
+            # Flash Attention を有効化（コンテキストが伸びるほどメモリ使用量を削減）
+            - name: OLLAMA_FLASH_ATTENTION
+              value: "1"
+            # KVキャッシュを量子化してVRAM消費を削減（デフォルトはf16）
+            - name: OLLAMA_KV_CACHE_TYPE
+              value: "q4_0"
             # 同時にロードするモデルを1つに制限（GPU VRAM 6GB のため節約）
             - name: OLLAMA_MAX_LOADED_MODELS
               value: "1"
