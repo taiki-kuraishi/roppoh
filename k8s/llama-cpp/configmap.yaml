@@ -32,6 +32,9 @@ data:
     models:
       # 現用モデル(hermes の default)。MoE 34.66B / アクティブ約3B。
       # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
+      # --no-mmap: エキスパートを CPU に退避する構成では llama.cpp が明示的に推奨。
+      #   mmap のページフォルト経路を避け、全重み(~20GB)を RAM に常駐させて生成を高速化する
+      #   (空き RAM 26GB に収まる。トレードオフはコールドスタート時のロードがやや遅い点)。
       # ttl: 最後のリクエストから3600秒アイドルで自動アンロードし GPU を解放する。
       qwen3.5-35b-a3b:
         ttl: 3600
@@ -39,6 +42,7 @@ data:
           ${llama-server}
           -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
           --cpu-moe
+          --no-mmap
           -c 32768
 
       # --- 実験用スロット(コメントを外す/編集して試す。初回リクエスト時に DL される) ---
