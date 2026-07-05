@@ -49,7 +49,11 @@
   "title": "Nodes / Host OS",
   "uid": "roppoh-nodes-host",
   "description": "node_exporter 相当 (prometheus.exporter.unix) によるホスト OS メトリクス (n100/z390)",
-  "tags": ["generated", "nodes", "node-exporter"],
+  "tags": [
+    "generated",
+    "nodes",
+    "node-exporter"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-6h",

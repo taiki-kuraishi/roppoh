@@ -30,7 +30,12 @@
   "title": "GPU / Ollama (z390)",
   "uid": "roppoh-gpu-ollama",
   "description": "z390 の GPU 使用率/VRAM/温度/電力 (DCGM-exporter) と Ollama コンテナのリソース使用状況",
-  "tags": ["generated", "gpu", "ollama", "dcgm"],
+  "tags": [
+    "generated",
+    "gpu",
+    "ollama",
+    "dcgm"
+  ],
   "refresh": "15s",
   "time": {
     "from": "now-6h",
