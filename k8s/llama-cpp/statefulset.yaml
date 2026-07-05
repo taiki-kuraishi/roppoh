@@ -21,7 +21,7 @@ spec:
         # configmap.yaml の内容ハッシュを埋め、変更時に更新することで ArgoCD 同期時に
         # ローリング再起動を強制する。更新方法:
         # shasum -a 256 k8s/llama-cpp/configmap.yaml | cut -c1-12
-        roppoh.dev/config-hash: "77209675eb63"
+        roppoh.dev/config-hash: "5b14bfab82b2"
     spec:
       # GPU 搭載ノード(z390 / RTX 3050 6GB)にのみスケジュール
       nodeSelector:
