@@ -30,7 +30,12 @@
   "title": "Applications / ArgoCD (GitOps)",
   "uid": "roppoh-argocd-gitops",
   "description": "ArgoCD 自身の Application 同期状態/health、リコンサイル頻度、repo-server の Git 操作",
-  "tags": ["generated", "applications", "argocd", "gitops"],
+  "tags": [
+    "generated",
+    "applications",
+    "argocd",
+    "gitops"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-24h",

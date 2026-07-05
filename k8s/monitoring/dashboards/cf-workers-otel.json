@@ -49,7 +49,11 @@
   "title": "Cloudflare Workers / Traces & Logs",
   "uid": "roppoh-cf-workers",
   "description": "Cloudflare Workers の OTel トレース (Tempo) とログ (Loki)。service 変数で Worker を切り替え。",
-  "tags": ["generated", "cloudflare", "otel"],
+  "tags": [
+    "generated",
+    "cloudflare",
+    "otel"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-1h",

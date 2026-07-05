@@ -49,7 +49,11 @@
   "title": "Kubernetes / Cluster & Workload state",
   "uid": "roppoh-k8s-cluster-workloads",
   "description": "kube-state-metrics によるクラスタオブジェクトの状態 (Pod restart / Deployment・StatefulSet・DaemonSet の ready-vs-desired / Node / PVC / Job・CronJob / GPU allocatable)",
-  "tags": ["generated", "kubernetes", "kube-state-metrics"],
+  "tags": [
+    "generated",
+    "kubernetes",
+    "kube-state-metrics"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-24h",

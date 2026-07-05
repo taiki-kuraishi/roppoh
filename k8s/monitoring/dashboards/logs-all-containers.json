@@ -69,7 +69,11 @@
   "title": "Logs / All containers",
   "uid": "roppoh-logs-all-containers",
   "description": "全 namespace/Pod/コンテナのログ (Loki, pod-tail)。Cloudflare Workers の OTLP ログは Cloudflare フォルダの cf-workers-otel を参照",
-  "tags": ["generated", "logs", "loki"],
+  "tags": [
+    "generated",
+    "logs",
+    "loki"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-1h",
