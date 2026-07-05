@@ -66,3 +66,21 @@ resource "cloudflare_dns_record" "openclaw" {
   proxied = true
   ttl     = 1
 }
+
+resource "cloudflare_dns_record" "hermes" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "hermes.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "hermes_dashboard" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "hermes-dashboard.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
