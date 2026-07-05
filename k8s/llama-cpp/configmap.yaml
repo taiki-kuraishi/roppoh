@@ -22,15 +22,16 @@ data:
     startPort: 10001
 
     # 全モデル共通の llama-server フラグ(MoE 固有の --cpu-moe はモデル側に置く)
-    # -b/-ub 2048: 大きいプロンプトの prefill を高速化する。ubatch を既定 512 から広げると
-    #   CPU 上のエキスパート行列演算のバッチ効率が上がり、大プロンプトの TTFT を短縮できる。
+    # -b/-ub 4096: 大きいプロンプトの prefill を高速化する。ubatch を既定 512 から広げると
+    #   CPU 上のエキスパート行列演算のバッチ効率が上がり、大プロンプトの TTFT を大幅短縮できる
+    #   (実測: 512→2048 で prefill 約3倍、12k トークン cold が 186s→59s)。4096 で更に上限を拡張。
     macros:
       llama-server: >
         /app/llama-server
         --host 127.0.0.1 --port ${PORT}
         -ngl 99 -fa on --jinja
         -ctk q8_0 -ctv q8_0
-        -b 2048 -ub 2048
+        -b 4096 -ub 4096
 
     models:
       # 現用モデル(hermes の default)。MoE 34.66B / アクティブ約3B。
