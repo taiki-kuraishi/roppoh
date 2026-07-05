@@ -235,6 +235,39 @@
       }
     },
     {
+      "type": "stat",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "CPU power (package)",
+      "description": "Intel RAPL package ドメインの平均消費電力",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "rate(node_rapl_package_joules_total{job=\"node-exporter\", node=~\"$node\"}[$__rate_interval])",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      }
+    },
+    {
       "type": "row",
       "collapsed": false,
       "id": 0,
@@ -326,10 +359,60 @@
       "collapsed": false,
       "id": 0,
       "panels": [],
-      "title": "Memory",
+      "title": "Power",
       "gridPos": {
         "x": 0,
         "y": 38,
+        "h": 1,
+        "w": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "transparent": false,
+      "repeatDirection": "h",
+      "title": "CPU power by RAPL domain",
+      "description": "Intel RAPL ドメイン別の消費電力 (package = CPU パッケージ全体、core/dram/uncore は内訳。内訳ドメインは CPU 世代により有無が異なる)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "expr": "label_replace(rate(node_rapl_package_joules_total{job=\"node-exporter\", node=~\"$node\"}[$__rate_interval]), \"domain\", \"package\", \"\", \"\")\n        or label_replace(rate(node_rapl_core_joules_total{job=\"node-exporter\", node=~\"$node\"}[$__rate_interval]), \"domain\", \"core\", \"\", \"\")\n        or label_replace(rate(node_rapl_dram_joules_total{job=\"node-exporter\", node=~\"$node\"}[$__rate_interval]), \"domain\", \"dram\", \"\", \"\")\n        or label_replace(rate(node_rapl_uncore_joules_total{job=\"node-exporter\", node=~\"$node\"}[$__rate_interval]), \"domain\", \"uncore\", \"\", \"\")",
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "legendFormat": "{{node}} / {{domain}}"
+        }
+      ],
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      }
+    },
+    {
+      "type": "row",
+      "collapsed": false,
+      "id": 0,
+      "panels": [],
+      "title": "Memory",
+      "gridPos": {
+        "x": 0,
+        "y": 48,
         "h": 1,
         "w": 24
       }
@@ -368,7 +451,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 39
+        "y": 49
       }
     },
     {
@@ -405,7 +488,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 39
+        "y": 49
       }
     },
     {
@@ -416,7 +499,7 @@
       "title": "Disk",
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 58,
         "h": 1,
         "w": 24
       }
@@ -455,7 +538,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 49
+        "y": 59
       }
     },
     {
@@ -492,7 +575,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 49
+        "y": 59
       }
     },
     {
@@ -503,7 +586,7 @@
       "title": "Network",
       "gridPos": {
         "x": 0,
-        "y": 58,
+        "y": 68,
         "h": 1,
         "w": 24
       }
@@ -542,7 +625,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 59
+        "y": 69
       }
     },
     {
@@ -579,7 +662,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 59
+        "y": 69
       }
     },
     {
@@ -616,7 +699,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 68
+        "y": 78
       }
     }
   ]

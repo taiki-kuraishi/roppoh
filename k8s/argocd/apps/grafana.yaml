@@ -55,6 +55,13 @@ spec:
                 url: http://grafana-mimir-gateway.monitoring.svc.cluster.local/prometheus
                 access: proxy
                 isDefault: true
+                jsonData:
+                  # 各 exporter の scrape_interval (node-exporter/kubelet/cadvisor 等,
+                  # grafana-alloy.yaml 参照) は 60s。未設定だと Grafana はデフォルト 15s と
+                  # 仮定して $__rate_interval = max($__interval+scrape_interval, 4*scrape_interval)
+                  # を計算するため、rate() に必要な最小ウィンドウ (4*60s=240s) を下回り
+                  # rate()/irate()/increase() を使う全パネルが No Data になっていた。
+                  timeInterval: "60s"
 
               - name: Tempo
                 type: tempo
