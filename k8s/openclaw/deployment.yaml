@@ -68,6 +68,16 @@ spec:
                 secretKeyRef:
                   name: openclaw
                   key: discord-bot-token
+            # GitHub App(roppoh-agent 用)。App ID/Installation ID は機密ではないため平文。
+            - name: GITHUB_APP_ID
+              value: "4221710"
+            - name: GITHUB_APP_INSTALLATION_ID
+              value: "144549550"
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw
+                  key: github-app-private-key
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -98,9 +108,15 @@ spec:
               mountPath: /home/node
             - name: tmp
               mountPath: /tmp
+            - name: scripts
+              mountPath: /home/node/.local/scripts/gh-app-token.js
+              subPath: gh-app-token.js
       volumes:
         - name: home
           persistentVolumeClaim:
             claimName: openclaw
         - name: tmp
           emptyDir: {}
+        - name: scripts
+          configMap:
+            name: openclaw-scripts
