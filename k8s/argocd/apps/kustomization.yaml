@@ -20,3 +20,4 @@ resources:
   - openclaw.yaml
   - grafana-dashboards.yaml
   - secrets.yaml
+  - traefik.yaml
