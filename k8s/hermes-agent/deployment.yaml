@@ -48,6 +48,18 @@ spec:
           env:
             - name: HERMES_DASHBOARD
               value: "1"
+            # gateway run はデフォルトでは OpenAI 互換 API サーバーを起動しないため、
+            # 明示的に有効化しないと readinessProbe/livenessProbe の対象である
+            # /health(8642)が永遠に listen されない。
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: "0.0.0.0"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: api-server-key
             # Discord のユーザー ID 自体は機密情報ではないため平文で保持する
             - name: DISCORD_ALLOWED_USERS
               value: "1449989981262184468"
