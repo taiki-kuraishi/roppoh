@@ -12,6 +12,6 @@ data:
   # memories/skills/sessions/logs 等の他の永続データは上書きしない。
   config.yaml: |
     model:
-      default: "qwen3.5:4b"
+      default: "qwen3.5:9b"
       provider: custom
       base_url: "http://ollama.ollama.svc.cluster.local:11434/v1"
