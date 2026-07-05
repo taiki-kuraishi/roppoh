@@ -87,7 +87,11 @@
   "title": "Kubernetes / Pods & Containers",
   "uid": "roppoh-k8s-pods",
   "description": "cAdvisor + kubelet メトリクス (Mimir) による Pod / コンテナ / ノード単位のリソース可視化",
-  "tags": ["generated", "kubernetes", "cadvisor"],
+  "tags": [
+    "generated",
+    "kubernetes",
+    "cadvisor"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-6h",

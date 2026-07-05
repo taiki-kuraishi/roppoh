@@ -30,7 +30,11 @@
   "title": "Applications / discord-gateway-proxy",
   "uid": "roppoh-discord-gateway-proxy",
   "description": "discord-gateway-proxy (z390) のログと Go runtime メトリクス。ビジネスメトリクス/トレースは現状未計装",
-  "tags": ["generated", "applications", "discord-gateway-proxy"],
+  "tags": [
+    "generated",
+    "applications",
+    "discord-gateway-proxy"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-6h",

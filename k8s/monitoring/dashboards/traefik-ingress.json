@@ -30,7 +30,11 @@
   "title": "Applications / Traefik ingress",
   "uid": "roppoh-traefik-ingress",
   "description": "Traefik (k3s 標準 ingress) のリクエストレート/レイテンシ/ステータス",
-  "tags": ["generated", "applications", "traefik"],
+  "tags": [
+    "generated",
+    "applications",
+    "traefik"
+  ],
   "refresh": "30s",
   "time": {
     "from": "now-6h",
