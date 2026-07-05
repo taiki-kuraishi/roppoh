@@ -86,6 +86,14 @@ spec:
                 secretKeyRef:
                   name: hermes-agent
                   key: discord-bot-token
+            # Telegram のユーザー ID 自体は機密情報ではないため平文で保持する
+            - name: TELEGRAM_ALLOWED_USERS
+              value: "8820609558"
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: telegram-bot-token
           securityContext:
             # 公式イメージの entrypoint は root で起動して /opt/data を chown した後、
             # 内部で UID 10000(hermes)へ setuid/setgid して降格する仕組みのため、
