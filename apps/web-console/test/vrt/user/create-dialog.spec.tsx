@@ -1,26 +1,56 @@
-import { expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { setAuthenticated } from "../helpers/auth";
-import { adminSessionHandler, baseHandlers } from "../helpers/session-handlers";
+import { createBetterAuthHandler } from "../helpers/create-better-auth-handler";
+import { createLoggedInUser } from "../helpers/create-logged-in-user";
+import { baseHandlers } from "../helpers/discovery-handler";
+import { seedUsers } from "../helpers/seed";
+import { TestBetterAuthDatabase } from "../helpers/test-better-auth-database";
 import { testWithMswMock } from "../helpers/test-with-msw-mock";
 import { setTheme } from "../helpers/theme";
-import { listUsersHandler } from "./fixtures";
 
 // Proves the nuqs ?dialog=create URL state (decision #9, vendored
 // @nuqs/adapter-inertia) opens the dialog on direct navigation, without a
 // Server round trip.
-const handlers = [...baseHandlers, adminSessionHandler, listUsersHandler];
+test.describe("vrt /user create dialog", () => {
+  const testAuth = new TestBetterAuthDatabase();
+  test.beforeEach(async () => testAuth.begin());
+  test.afterEach(() => testAuth.cleanup());
 
-testWithMswMock(handlers)("vrt /user create dialog dark", async ({ page }) => {
-  await setAuthenticated(page);
-  await setTheme({ page, theme: "dark" });
-  await page.goto("/user?dialog=create", { waitUntil: "networkidle" });
-  await expect(page).toHaveScreenshot({ fullPage: true });
-});
+  const handlers = [...baseHandlers, createBetterAuthHandler(testAuth)];
 
-testWithMswMock(handlers)("vrt /user create dialog light", async ({ page }) => {
-  await setAuthenticated(page);
-  await setTheme({ page, theme: "light" });
-  await page.goto("/user?dialog=create", { waitUntil: "networkidle" });
-  await expect(page).toHaveScreenshot({ fullPage: true });
+  testWithMswMock(handlers)("dark", async ({ context, page }) => {
+    // Arrange
+    const auth = await testAuth.getTestBetterAuth();
+    await createLoggedInUser({
+      auth,
+      context,
+      user: { email: "admin@example.com", name: "Admin User", role: "admin" },
+    });
+    await seedUsers(auth);
+    await setTheme({ page, theme: "dark" });
+
+    // Act
+    await page.goto("/user?dialog=create", { waitUntil: "networkidle" });
+
+    // Assert
+    await expect(page).toHaveScreenshot({ fullPage: true });
+  });
+
+  testWithMswMock(handlers)("light", async ({ context, page }) => {
+    // Arrange
+    const auth = await testAuth.getTestBetterAuth();
+    await createLoggedInUser({
+      auth,
+      context,
+      user: { email: "admin@example.com", name: "Admin User", role: "admin" },
+    });
+    await seedUsers(auth);
+    await setTheme({ page, theme: "light" });
+
+    // Act
+    await page.goto("/user?dialog=create", { waitUntil: "networkidle" });
+
+    // Assert
+    await expect(page).toHaveScreenshot({ fullPage: true });
+  });
 });
