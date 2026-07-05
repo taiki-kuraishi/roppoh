@@ -52,6 +52,20 @@ data:
           --reasoning off
           -c 32768
 
+      # 長文コンテキスト版。VRAM を稼ぐため mmproj を外し KV を q4 に落とし、その分を
+      # コンテキスト長に回す(初回 prefill は非常に遅くなる。長い履歴を保持したい用途向け)。
+      # macro は使わず個別指定(KV 量子化・mmproj・ubatch が本番と異なるため)。
+      qwen3.5-35b-a3b-longctx:
+        ttl: 600
+        cmd: >
+          /app/llama-server --host 127.0.0.1 --port ${PORT}
+          -ngl 99 -fa on --jinja
+          -ctk q4_0 -ctv q4_0
+          -b 2048 -ub 2048
+          -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
+          --cpu-moe --reasoning off --no-mmproj
+          -c 131072
+
       # --- 実験用スロット(コメントを外す/編集して試す。初回リクエスト時に DL される) ---
       # ※ モデル用 PVC(40Gi)の空きに注意。大きな GGUF を複数常駐させると溢れる。
       # qwen3-30b-a3b:
