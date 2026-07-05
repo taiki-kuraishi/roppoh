@@ -13,6 +13,12 @@ data:
   # 同じモデルを使ってモデル切替によるロード競合を避ける。
   openclaw.json: |
     {
+      // 通常は `openclaw onboard` が対話的に設定するが、非対話の k8s デプロイでは
+      // 実行されないため、gateway.mode を明示しないと起動時に
+      // "existing config is missing gateway.mode" で拒否される。
+      gateway: {
+        mode: "local",
+      },
       models: {
         providers: {
           ollama: {
