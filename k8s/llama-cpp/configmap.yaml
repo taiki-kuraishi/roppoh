@@ -36,12 +36,16 @@ data:
       #   生成が約4%遅くなり、かつ回収不可な匿名メモリを ~20GB 占有したため採用しない(#522 で
       #   検証・revert 済み)。mmap 有効(file-backed page cache)の方が速く省メモリだった。
       # ttl: 最後のリクエストから3600秒アイドルで自動アンロードし GPU を解放する。
+      # --reasoning off: qwen3.5 は thinking モデルで、既定(auto)だと簡単な質問でも大量の
+      #   思考トークンを生成し応答が遅くなる。hermes/openclaw とも思考は不要なため、サーバ側で
+      #   既定 enable_thinking=false を強制し、生成後半の無駄な思考トークンを抑える。
       qwen3.5-35b-a3b:
         ttl: 3600
         cmd: >
           ${llama-server}
           -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
           --cpu-moe
+          --reasoning off
           -c 32768
 
       # --- 実験用スロット(コメントを外す/編集して試す。初回リクエスト時に DL される) ---
