@@ -13,6 +13,9 @@ export default defineConfig({
     "packages/shadcn/src",
     "**/worker-configuration.d.ts",
     "packages/domain/src",
+    // K8s/ 配下の configMapGenerator ソース(コンテナ内で standalone 実行する
+    // スクリプト。アプリコードの規約は適用対象外)
+    "k8s/**",
   ],
   jsPlugins: ["@roppoh/oxlint-plugins"],
   options: {

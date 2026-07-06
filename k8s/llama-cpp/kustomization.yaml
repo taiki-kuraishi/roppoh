@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llama-cpp
+
+resources:
+  - namespace.yaml
+  - service.yaml
+  - statefulset.yaml
+
+# ConfigMap はデフォルトのハッシュサフィックス付き命名を使う(disableNameSuffixHash
+# は使わない)。内容変更時に生成される ConfigMap 名が変わり、NameReference
+# transformer が下記 StatefulSet の volumes[].configMap.name を自動的に新しい
+# 名前へ書き換えるため、ArgoCD 同期時に自動でローリング再起動が起きる。
+configMapGenerator:
+  - name: llama-cpp-config
+    files:
+      - files/config.yaml
