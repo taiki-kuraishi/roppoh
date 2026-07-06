@@ -17,7 +17,21 @@ macros:
     -b 4096 -ub 4096
 
 models:
-  # 現用モデル(hermes の default)。MoE 34.66B / アクティブ約3B。
+  # 現用モデル(hermes の default)。HauhauCS による Qwen3.5-35B-A3B の
+  # Uncensored/Aggressive ファインチューン。量子化設定は下記 qwen3.5-35b-a3b-longctx
+  # と同じもの(KV q4, mmproj 無効, 長コンテキスト)を流用する。
+  qwen3.5-35b-a3b-hauhaucs-aggressive:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf HauhauCS/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive:Q4_K_M
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 131072
+
+  # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
   # ※ --no-mmap は llama.cpp が起動時に推奨するが、実機(XMP 有効・DDR4 帯域向上後)では
   #   生成が約4%遅くなり、かつ回収不可な匿名メモリを ~20GB 占有したため採用しない(#522 で
@@ -48,13 +62,3 @@ models:
       -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
       --cpu-moe --reasoning auto --no-mmproj
       -c 131072
-
-  # --- 実験用スロット(コメントを外す/編集して試す。初回リクエスト時に DL される) ---
-  # ※ モデル用 PVC(40Gi)の空きに注意。大きな GGUF を複数常駐させると溢れる。
-  # qwen3-30b-a3b:
-  #   ttl: 3600
-  #   cmd: >
-  #     ${llama-server}
-  #     -hf unsloth/Qwen3-30B-A3B-Instruct-2507-GGUF:Q4_K_M
-  #     --cpu-moe
-  #     -c 16384

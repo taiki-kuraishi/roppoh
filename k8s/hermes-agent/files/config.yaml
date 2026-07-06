@@ -4,6 +4,6 @@
 # このファイルのみ subPath で PVC 上の /opt/data/config.yaml に個別マウントし、
 # memories/skills/sessions/logs 等の他の永続データは上書きしない。
 model:
-  default: "qwen3.5-35b-a3b"
+  default: "qwen3.5-35b-a3b-hauhaucs-aggressive"
   provider: custom
   base_url: "http://llama-cpp.llama-cpp.svc.cluster.local:8080/v1"
