@@ -6,7 +6,9 @@ export default {
     css: (text: string) => [...text.matchAll(/(?<=@)import[^;]+/g)].join("\n"),
   },
   entry: [],
-  ignore: [],
+  // K8s/ 配下の configMapGenerator ソースはコンテナ内で standalone 実行する
+  // スクリプトで、JS/TS の依存グラフには含まれない
+  ignore: ["k8s/**"],
   ignoreBinaries: [".*"],
   ignoreDependencies: [],
   project: [],

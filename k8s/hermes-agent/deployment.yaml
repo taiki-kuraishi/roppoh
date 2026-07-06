@@ -26,12 +26,6 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: hermes-agent
-      annotations:
-        # config.yaml は subPath マウントのため ConfigMap を更新しても稼働中 Pod には
-        # 反映されない(hot-reload されない)。configmap.yaml の内容ハッシュをここに埋め、
-        # 設定変更時にこの値を更新することで ArgoCD 同期時にローリング再起動を強制する。
-        # 更新方法: shasum -a 256 k8s/hermes-agent/configmap.yaml | cut -c1-12
-        roppoh.dev/config-hash: "803f71b86f3a"
     spec:
       containers:
         - name: hermes-agent
