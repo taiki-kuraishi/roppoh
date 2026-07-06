@@ -158,10 +158,6 @@ url = "https://unofficial-builds.nodejs.org/download/release/v24.16.0/node-v24.1
 checksum = "sha256:39189dab4eeb15706c424af0ac08a3044c9e48f7db12a7d77f6b7aafc7dd5df6"
 url = "https://nodejs.org/dist/v24.16.0/node-v24.16.0-darwin-arm64.tar.gz"
 
-[[tools."npm:oxfmt"]]
-version = "0.56.0"
-backend = "npm:oxfmt"
-
 [[tools."npm:turbo"]]
 version = "2.9.9"
 backend = "npm:turbo"
