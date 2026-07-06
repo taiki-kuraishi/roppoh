@@ -1,0 +1,145 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hermes-agent
+  namespace: hermes-agent
+  labels:
+    app.kubernetes.io/name: hermes-agent
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # 公式イメージの entrypoint は root で起動して /opt/data を chown した後、
+    # 内部で UID 10000(hermes)へ setuid/setgid して降格する仕組みのため、
+    # readOnlyRootFilesystem/runAsNonRoot は設定できない(deployment.yaml 内の
+    # securityContext コメントも参照)。
+    ignore-check.kube-linter.io/no-read-only-root-fs: "official image entrypoint chowns /opt/data as root before dropping to uid 10000"
+    ignore-check.kube-linter.io/run-as-non-root: "official image entrypoint must start as root to chown /opt/data and setuid to hermes(10000)"
+spec:
+  # Gateway は単一プロセス + 永続 state(PVC) 前提のため必ず単一 Pod。
+  # ローリング更新で新旧 Pod が同時に PVC を掴むのを避けるため Recreate を使う。
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hermes-agent
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hermes-agent
+      annotations:
+        # config.yaml は subPath マウントのため ConfigMap を更新しても稼働中 Pod には
+        # 反映されない(hot-reload されない)。configmap.yaml の内容ハッシュをここに埋め、
+        # 設定変更時にこの値を更新することで ArgoCD 同期時にローリング再起動を強制する。
+        # 更新方法: shasum -a 256 k8s/hermes-agent/configmap.yaml | cut -c1-12
+        roppoh.dev/config-hash: "803f71b86f3a"
+    spec:
+      containers:
+        - name: hermes-agent
+          # 【自己更新】このタグは Renovate が更新する
+          image: nousresearch/hermes-agent:v2026.6.5
+          # command は指定しない: 公式イメージの ENTRYPOINT は s6-overlay の /init
+          # (chown → UID 10000 降格 → main-wrapper.sh)であり、command で上書きすると
+          # 単体では存在しない "gateway" バイナリを直接 exec しようとして起動に失敗する。
+          # "gateway run" は entrypoint への引数として渡す。
+          args:
+            - gateway
+            - run
+          ports:
+            - name: api
+              containerPort: 8642
+              protocol: TCP
+            - name: dashboard
+              containerPort: 9119
+              protocol: TCP
+          env:
+            - name: HERMES_DASHBOARD
+              value: "1"
+            # ダッシュボードは非 loopback バインド時に認証ゲートが必須(未設定だと
+            # bind 自体を拒否する)。Cloudflare Tunnel 経由で外部公開するため、
+            # username/password(Basic Auth)プロバイダーを有効化する。
+            - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: dashboard-basic-auth-username
+            - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: dashboard-basic-auth-password
+            - name: HERMES_DASHBOARD_BASIC_AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: dashboard-basic-auth-secret
+            # gateway run はデフォルトでは OpenAI 互換 API サーバーを起動しないため、
+            # 明示的に有効化しないと readinessProbe/livenessProbe の対象である
+            # /health(8642)が永遠に listen されない。
+            - name: API_SERVER_ENABLED
+              value: "true"
+            - name: API_SERVER_HOST
+              value: "0.0.0.0"
+            - name: API_SERVER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: api-server-key
+            # Discord のユーザー ID 自体は機密情報ではないため平文で保持する
+            - name: DISCORD_ALLOWED_USERS
+              value: "1449989981262184468"
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: discord-bot-token
+            # Telegram のユーザー ID 自体は機密情報ではないため平文で保持する
+            - name: TELEGRAM_ALLOWED_USERS
+              value: "8820609558"
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: telegram-bot-token
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-agent
+                  key: github-token
+          securityContext:
+            # 公式イメージの entrypoint は root で起動して /opt/data を chown した後、
+            # 内部で UID 10000(hermes)へ setuid/setgid して降格する仕組みのため、
+            # runAsNonRoot/runAsUser/readOnlyRootFilesystem/capabilities.drop は設定しない
+            # (設定すると chown・setuid に必要な権限が失われ起動に失敗する)。
+            allowPrivilegeEscalation: false
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8642
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8642
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /opt/data
+            - name: config
+              mountPath: /opt/data/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hermes-agent
+        - name: config
+          configMap:
+            name: hermes-agent-config

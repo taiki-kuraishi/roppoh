@@ -49,6 +49,15 @@ resource "cloudflare_dns_record" "ollama" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "llama_cpp" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "llama-cpp.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "zot" {
   zone_id = data.cloudflare_zone.this.zone_id
   name    = "zot.${var.zone_name}"
@@ -61,6 +70,24 @@ resource "cloudflare_dns_record" "zot" {
 resource "cloudflare_dns_record" "openclaw" {
   zone_id = data.cloudflare_zone.this.zone_id
   name    = "openclaw.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "hermes" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "hermes.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "hermes_dashboard" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "hermes-dashboard.${var.zone_name}"
   type    = "CNAME"
   content = var.tunnel_cname
   proxied = true

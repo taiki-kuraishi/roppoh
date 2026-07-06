@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: llama-cpp
+  namespace: llama-cpp
+  labels:
+    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/managed-by: argocd
+spec:
+  replicas: 1
+  serviceName: llama-cpp
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llama-cpp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llama-cpp
+      annotations:
+        # config.yaml は subPath マウントのため ConfigMap 更新では稼働中 Pod に反映されない。
+        # configmap.yaml の内容ハッシュを埋め、変更時に更新することで ArgoCD 同期時に
+        # ローリング再起動を強制する。更新方法:
+        # shasum -a 256 k8s/llama-cpp/configmap.yaml | cut -c1-12
+        roppoh.dev/config-hash: "729a1ec02d43"
+    spec:
+      # GPU 搭載ノード(z390 / RTX 3050 6GB)にのみスケジュール
+      nodeSelector:
+        nvidia.com/gpu: "true"
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: llama-cpp
+          # 【自己更新】このイメージタグは Renovate が更新する
+          # llama-swap(モデルスワップ・プロキシ)+ llama-server を同梱した CUDA イメージ。
+          # タグ形式は v<llama-swap版>-cuda-b<llama.cpp版>。
+          image: ghcr.io/mostlygeek/llama-swap:v235-cuda-b9870
+          # llama-swap をプロキシとして起動。実際の推論は config に定義した各モデルの
+          # llama-server 子プロセスが on-demand で担う(詳細は configmap.yaml)。
+          command:
+            - /app/llama-swap
+          args:
+            - -config
+            - /app/config.yaml
+            - --listen
+            - :8080
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            # llama-server(子プロセス)の -hf ダウンロード先。PVC 上に置き再 DL を防ぐ。
+            # 環境変数は子プロセスに継承される。旧 StatefulSet と同じパスのため
+            # ダウンロード済みの qwen3.5-35b-a3b をそのまま再利用できる。
+            - name: LLAMA_CACHE
+              value: /data/models
+            # 非 root 実行のため HOME を書き込み可能な emptyDir に向ける
+            - name: HOME
+              value: /home/llama
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 500m
+              memory: 4Gi
+            limits:
+              # CPU limit は設定しない(MoE のエキスパート計算は CPU 律速。全 6 コアを使わせる)
+              # memory limit はノード全体(約30GB)を巻き込む OOM を防ぐ上限。エキスパートは
+              # mmap(reclaimable な file page cache)なので通常この上限には達しない
+              memory: 26Gi
+              # GPU 1基を占有(RTX 3050 6GB)。ollama とは排他(GPU は1基のみ)
+              nvidia.com/gpu: 1
+          # llama-swap プロキシ自体は即時起動する(モデルは on-demand ロード)。
+          # プロキシが listen しているかを TCP で確認する。モデルのロード完了は
+          # llama-swap の healthCheckTimeout(config.yaml)側が担保する。
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            - name: models
+              mountPath: /data/models
+            - name: config
+              mountPath: /app/config.yaml
+              subPath: config.yaml
+            - name: tmp
+              mountPath: /tmp
+            - name: home
+              mountPath: /home/llama
+      volumes:
+        - name: config
+          configMap:
+            name: llama-cpp-config
+        - name: tmp
+          emptyDir: {}
+        - name: home
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: models
+      spec:
+        storageClassName: local-path
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 40Gi

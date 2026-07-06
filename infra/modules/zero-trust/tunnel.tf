@@ -37,12 +37,24 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         service  = "http://ollama.ollama.svc.cluster.local:11434"
       },
       {
+        hostname = "llama-cpp.tsar-bmb.org"
+        service  = "http://llama-cpp.llama-cpp.svc.cluster.local:8080"
+      },
+      {
         hostname = "zot.tsar-bmb.org"
         service  = "http://zot.zot.svc.cluster.local:5000"
       },
       {
         hostname = "openclaw.tsar-bmb.org"
         service  = "http://openclaw.openclaw.svc.cluster.local:18789"
+      },
+      {
+        hostname = "hermes.tsar-bmb.org"
+        service  = "http://hermes-agent.hermes-agent.svc.cluster.local:8642"
+      },
+      {
+        hostname = "hermes-dashboard.tsar-bmb.org"
+        service  = "http://hermes-agent.hermes-agent.svc.cluster.local:9119"
       },
       # fallback rule (required: must be last and have no hostname)
       {
