@@ -26,15 +26,23 @@ jobs:
             roppoh:
               - 'apps/roppoh/**'
               - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
             ura-roppoh:
               - 'apps/ura-roppoh/**'
               - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
             emdash:
               - 'apps/emdash/**'
               - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
             neo-fujimatsu:
               - 'apps/neo-fujimatsu/**'
               - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
 
   deploy-roppoh:
     runs-on: ubuntu-latest
@@ -44,7 +52,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-bun
-      - run: bun run --filter @roppoh/roppoh build
+      - run: bun run build
+        working-directory: apps/roppoh
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -60,7 +69,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-bun
-      - run: bun run --filter @roppoh/ura-roppoh build
+      - run: bun run build
+        working-directory: apps/ura-roppoh
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -76,7 +86,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-bun
-      - run: bun run --filter @roppoh/emdash build
+      - run: bun run build
+        working-directory: apps/emdash
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -92,7 +103,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-bun
-      - run: bun run --filter @roppoh/neo-fujimatsu build
+      - run: bun run build
+        working-directory: apps/neo-fujimatsu
       - uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
