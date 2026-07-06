@@ -14,7 +14,7 @@ pre-commit:
     oxfmt:
       stage_fixed: true
       exclude: "**/*.png"
-      run: mise exec -- oxfmt
+      run: mise exec -- bun run oxfmt
     oxlint:
       stage_fixed: true
       run: mise exec -- bun run oxlint

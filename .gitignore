@@ -40,9 +40,6 @@ mise.local.toml
 playwright-report
 test-results
 
-# zed
-.zed/settings.json
-
 # sops
 .env.keys
 *.env.sops.yaml.dec
