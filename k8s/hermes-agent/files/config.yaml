@@ -7,3 +7,11 @@ model:
   default: "qwen3.5-35b-a3b-hauhaucs-aggressive"
   provider: custom
   base_url: "http://llama-cpp.llama-cpp.svc.cluster.local:8080/v1"
+
+# Context7 MCP: ライブラリ/フレームワークの最新ドキュメントを取得する。
+# リモート HTTP 方式(サブプロセス不要)。APIキーはコンテナ環境変数から解決される。
+mcp_servers:
+  context7:
+    url: "https://mcp.context7.com/mcp"
+    headers:
+      CONTEXT7_API_KEY: "${MCP_CONTEXT7_API_KEY}"
