@@ -27,21 +27,25 @@ jobs:
               - 'apps/roppoh/**'
               - 'packages/**'
               - 'bun.lock'
+              - 'mise.toml'
               - 'mise.lock'
             ura-roppoh:
               - 'apps/ura-roppoh/**'
               - 'packages/**'
               - 'bun.lock'
+              - 'mise.toml'
               - 'mise.lock'
             emdash:
               - 'apps/emdash/**'
               - 'packages/**'
               - 'bun.lock'
+              - 'mise.toml'
               - 'mise.lock'
             neo-fujimatsu:
               - 'apps/neo-fujimatsu/**'
               - 'packages/**'
               - 'bun.lock'
+              - 'mise.toml'
               - 'mise.lock'
 
   deploy-roppoh:
