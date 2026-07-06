@@ -1,0 +1,14 @@
+{
+  "formatter": {
+    "language_server": { "name": "oxfmt" }
+  },
+  "language_servers": ["...", "!eslint", "!biome"],
+  "lsp": {
+    "terraform-ls": {
+      "binary": {
+        "path": "/Users/t_kuraishi/.local/share/mise/installs/tflint/latest/tflint",
+        "arguments": ["--langserver"]
+      }
+    }
+  }
+}
