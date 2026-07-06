@@ -17,6 +17,7 @@ jobs:
       ura-roppoh: ${{ steps.filter.outputs['ura-roppoh'] }}
       emdash: ${{ steps.filter.outputs.emdash }}
       neo-fujimatsu: ${{ steps.filter.outputs.neo-fujimatsu }}
+      web-console: ${{ steps.filter.outputs['web-console'] }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
@@ -40,6 +41,11 @@ jobs:
               - 'mise.toml'
             neo-fujimatsu:
               - 'apps/neo-fujimatsu/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+            web-console:
+              - 'apps/web-console/**'
               - 'packages/**'
               - 'bun.lock'
               - 'mise.toml'
@@ -110,4 +116,21 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/neo-fujimatsu
+          command: deploy
+
+  deploy-web-console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs['web-console'] == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/web-console
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/web-console
           command: deploy
