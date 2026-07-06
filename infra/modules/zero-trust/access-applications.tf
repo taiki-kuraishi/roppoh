@@ -141,26 +141,6 @@ resource "cloudflare_zero_trust_access_application" "dokploy" {
   ]
 }
 
-# ----- Cloudflare Access: openclaw -----
-resource "cloudflare_zero_trust_access_application" "openclaw" {
-  account_id                 = var.account_id
-  name                       = "openclaw"
-  domain                     = "openclaw.tsar-bmb.org"
-  type                       = "self_hosted"
-  session_duration           = "730h"
-  http_only_cookie_attribute = false
-  auto_redirect_to_identity  = false
-  enable_binding_cookie      = false
-  options_preflight_bypass   = false
-
-  policies = [
-    {
-      id         = var.kuraishi_only_policy_id
-      precedence = 1
-    },
-  ]
-}
-
 # ----- Cloudflare Access: n100 -----
 resource "cloudflare_zero_trust_access_application" "n100" {
   account_id                 = var.account_id
