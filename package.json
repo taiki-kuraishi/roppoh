@@ -18,6 +18,7 @@
       "@types/react": "19.2.14",
       "@types/react-dom": "19.2.3",
       "drizzle-kit": "0.31.8",
+      "oxfmt": "0.56.0",
       "oxlint": "1.67.0",
       "react": "19.2.7",
       "react-dom": "19.2.7",
@@ -34,6 +35,7 @@
   "type": "module",
   "scripts": {
     "type-check": "tsc --noEmit",
+    "oxfmt": "oxfmt",
     "oxlint": "oxlint",
     "knip": "knip --config='knip.config.ts'"
   },
@@ -41,6 +43,7 @@
     "@roppoh/oxlint-plugins": "workspace:*",
     "@types/node": "25.9.4",
     "knip": "latest",
+    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "0.23.0",
     "turbo": "2.10.0"

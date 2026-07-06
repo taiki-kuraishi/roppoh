@@ -1,6 +1,6 @@
 [tools]
 bun = "1.3.14"
-# required at runtime by npm-installed tools such as oxfmt, whose bin scripts shebang to node
+# required at runtime by npm-installed tools such as turbo/dev3000, whose bin scripts shebang to node
 node = "24"
 # Keep this version in sync with the go directive in go.mod
 go = "1.26.4"
@@ -14,7 +14,6 @@ tflint = "0.63.1"
 sops = "3.13.1"
 age = "1.3.1"
 "npm:dev3000" = "0.0.175"
-"npm:oxfmt" = "0.56.0"
 
 [env]
 SOPS_AGE_KEY_FILE = "{{env.HOME}}/.config/sops/age/keys.txt"
@@ -28,4 +27,4 @@ npm.bun = true
 lockfile = true
 
 [tasks.format]
-run = "oxfmt"
+run = "bun run oxfmt"
