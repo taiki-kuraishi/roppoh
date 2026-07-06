@@ -1,3 +1,9 @@
+output "github_actions_workers_deploy_token" {
+  description = "Cloudflare API token for GitHub Actions Workers deploy (set as CLOUDFLARE_API_TOKEN repo secret)"
+  value       = module.api_token.github_actions_workers_deploy_token
+  sensitive   = true
+}
+
 output "ollama_service_token_client_id" {
   description = "CF-Access-Client-Id header value for Ollama API access"
   value       = module.zero_trust.ollama_service_token_client_id

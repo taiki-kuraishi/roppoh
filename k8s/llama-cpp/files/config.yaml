@@ -1,0 +1,64 @@
+# モデル DL(初回 -hf, 最大約20GB)がヘルスチェックで中断されないよう長めに取る
+healthCheckTimeout: 3600
+logLevel: info
+# ${PORT} マクロの起点。各モデルに一意ポートを自動割当
+startPort: 10001
+
+# 全モデル共通の llama-server フラグ(MoE 固有の --cpu-moe はモデル側に置く)
+# -b/-ub 4096: 大きいプロンプトの prefill を高速化する。ubatch を既定 512 から広げると
+#   CPU 上のエキスパート行列演算のバッチ効率が上がり、大プロンプトの TTFT を大幅短縮できる
+#   (実測: 512→2048 で prefill 約3倍、12k トークン cold が 186s→59s)。4096 で更に上限を拡張。
+macros:
+  llama-server: >
+    /app/llama-server
+    --host 127.0.0.1 --port ${PORT}
+    -ngl 99 -fa on --jinja
+    -ctk q8_0 -ctv q8_0
+    -b 4096 -ub 4096
+
+models:
+  # 現用モデル(hermes の default)。HauhauCS による Qwen3.5-35B-A3B の
+  # Uncensored/Aggressive ファインチューン。量子化設定は下記 qwen3.5-35b-a3b-longctx
+  # と同じもの(KV q4, mmproj 無効, 長コンテキスト)を流用する。
+  qwen3.5-35b-a3b-hauhaucs-aggressive:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf HauhauCS/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive:Q4_K_M
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 131072
+
+  # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
+  # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
+  # ※ --no-mmap は llama.cpp が起動時に推奨するが、実機(XMP 有効・DDR4 帯域向上後)では
+  #   生成が約4%遅くなり、かつ回収不可な匿名メモリを ~20GB 占有したため採用しない(#522 で
+  #   検証・revert 済み)。mmap 有効(file-backed page cache)の方が速く省メモリだった。
+  # ttl: 最後のリクエストから3600秒アイドルで自動アンロードし GPU を解放する。
+  # --reasoning auto: テンプレート/クライアント指定に従う(qwen3.5 は既定で thinking 有効)。
+  #   クライアント側が enable_thinking=false を送ればオフにできる。
+  qwen3.5-35b-a3b:
+    ttl: 3600
+    cmd: >
+      ${llama-server}
+      -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
+      --cpu-moe
+      --reasoning auto
+      -c 32768
+
+  # 長文コンテキスト版。VRAM を稼ぐため mmproj を外し KV を q4 に落とし、その分を
+  # コンテキスト長に回す(初回 prefill は非常に遅くなる。長い履歴を保持したい用途向け)。
+  # macro は使わず個別指定(KV 量子化・mmproj・ubatch が本番と異なるため)。
+  qwen3.5-35b-a3b-longctx:
+    # hermes の常用モデルのため 3600s 常駐(頻繁なアンロード/再ロードを避ける)
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 131072

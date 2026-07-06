@@ -16,6 +16,12 @@ module "kv" {
   account_id = var.cloudflare_account_id
 }
 
+# ----- API Token (GitHub Actions Workers deploy) -----
+module "api_token" {
+  source     = "../../modules/api-token"
+  account_id = var.cloudflare_account_id
+}
+
 # ----- Secrets Store -----
 module "secrets_store" {
   source     = "../../modules/secrets-store"
