@@ -10,6 +10,43 @@
   "argocd": {
     "fileMatch": ["k8s/argocd/apps/.+\\.ya?ml$"]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^\\.docker/playwright/Dockerfile$"],
+      "matchStrings": ["FROM mcr\\.microsoft\\.com/playwright:v(?<currentValue>[\\d.]+)-noble"],
+      "depNameTemplate": "@playwright/test",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^\\.docker/playwright/Dockerfile$"],
+      "matchStrings": ["COPY --from=oven/bun:(?<currentValue>[\\d.]+) "],
+      "depNameTemplate": "bun",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^package\\.json$"],
+      "matchStrings": ["\"packageManager\":\\s*\"bun@(?<currentValue>[\\d.]+)\""],
+      "depNameTemplate": "bun",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^mise\\.toml$"],
+      "matchStrings": ["\"npm:turbo\"\\s*=\\s*\"(?<currentValue>[\\d.]+)\""],
+      "depNameTemplate": "turbo",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^\\.docker/discord-gateway-proxy/Dockerfile$"],
+      "matchStrings": ["FROM golang:(?<currentValue>[\\d.]+)-bookworm"],
+      "depNameTemplate": "go",
+      "datasourceTemplate": "golang-version"
+    }
+  ],
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch"],
@@ -18,7 +55,8 @@
     },
     {
       "matchManagers": ["github-actions"],
-      "addLabels": ["github-actions"]
+      "addLabels": ["github-actions"],
+      "automerge": true
     },
     {
       "matchManagers": ["npm", "bun"],
@@ -27,11 +65,13 @@
     },
     {
       "matchManagers": ["dockerfile"],
-      "addLabels": ["docker"]
+      "addLabels": ["docker"],
+      "automerge": true
     },
     {
       "matchManagers": ["docker-compose"],
-      "addLabels": ["docker-compose"]
+      "addLabels": ["docker-compose"],
+      "automerge": true
     },
     {
       "matchManagers": ["kubernetes"],
@@ -51,7 +91,18 @@
     },
     {
       "matchPackageNames": ["bun"],
-      "groupName": "bun"
+      "groupName": "bun",
+      "automerge": true
+    },
+    {
+      "matchPackageNames": ["@playwright/test", "playwright"],
+      "groupName": "playwright",
+      "automerge": true
+    },
+    {
+      "matchDepNames": ["go"],
+      "matchDatasources": ["golang-version"],
+      "groupName": "go"
     },
     {
       "matchManagers": ["npm", "bun"],
