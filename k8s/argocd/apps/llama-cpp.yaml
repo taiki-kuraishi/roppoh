@@ -14,9 +14,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: llama-cpp
+  # NOTE: 公式ベースモデル(qwen3.6/gemma4)追加検証のため一時的に automated sync を
+  # 無効化している。作業完了後に復元すること。
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
