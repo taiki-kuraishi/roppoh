@@ -14,9 +14,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: hermes-agent
-  # NOTE: gemma4/qwen3.6 モデル比較ベンチ実施中、GPU/CPU競合を避けるため hermes-agent を
-  # scale 0 で停止している。selfHeal に戻されないよう automated sync も一時無効化。
-  # 作業完了後に復元すること。
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
