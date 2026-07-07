@@ -14,9 +14,9 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: llama-cpp
+  # NOTE: -nkvo(KVキャッシュのCPU RAM配置)によるcontext拡張検証中、config.yaml を
+  # 直接 kubectl apply で差し替えるため一時的に automated sync を無効化している。
+  # 作業完了後に復元すること。
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
