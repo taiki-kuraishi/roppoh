@@ -20,6 +20,18 @@ models:
   # 現用モデル(hermes の default)。HauhauCS による Qwen3.5-35B-A3B の
   # Uncensored/Aggressive ファインチューン。量子化設定は下記 qwen3.5-35b-a3b-longctx
   # と同じもの(KV q4, mmproj 無効, 長コンテキスト)を流用する。
+  #
+  # 2026-07 ベンチ結果(z390: i5-9600K / DDR4 32GB / RTX 3050 6GB, 実施記録は
+  # PR参照): --cpu-moe(全40層のMoEエキスパートをCPUへ)から --n-cpu-moe 36
+  # (先頭36層のみCPU、残り4層はGPU)に変更。VRAM実測に2.6GiB の余剰があり、
+  # 4層分(~1.9GiB)なら c=131072 のまま安全に載せられる上限だった
+  # (35以下=CUDA OOMでプロセスクラッシュ、confirmed via S1-S3 全ステージ)。
+  #   - S1 短文warm tg: 25.68 → 27.71 tok/s (+7.9%)
+  #   - S2 cold ~8k TTFT: 172.0s → 29.5s (-83%、prefillの一部がGPU化された効果)
+  #   - S3 cold ~32k TTFT: 191.3s → 172.5s (-10%)
+  # 量子化・モデル重みは変更していないため品質は現行と同一。
+  # (--cache-reuse 256 も検証したが素の連続会話では効果差なし。デフォルトの
+  # プロンプトキャッシュで既に追記 turn の TTFT は ~0.8s まで下がるため見送り)
   qwen3.5-35b-a3b-hauhaucs-aggressive:
     ttl: 3600
     cmd: >
@@ -28,7 +40,7 @@ models:
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
       -hf HauhauCS/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive:Q4_K_M
-      --cpu-moe --reasoning auto --no-mmproj
+      --n-cpu-moe 36 --reasoning auto --no-mmproj
       -c 131072
 
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
