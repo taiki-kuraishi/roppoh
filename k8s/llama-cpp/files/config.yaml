@@ -68,6 +68,23 @@ models:
       --n-cpu-moe 36 --reasoning auto --no-mmproj
       -c 131072
 
+  # Qwen3.6-35B-A3B 公式 base model(unsloth GGUF、検閲あり)。アーキテクチャは
+  # HauhauCS 版と同じだが、unsloth の UD(Dynamic)量子化はテンソルごとに精度配分が
+  # 異なりレイヤーあたりの実VRAM使用量がHauhauCS版のQ4_K_Mより大きい。
+  # --n-cpu-moe 36 を転用したところ CUDA OOM でクラッシュしたため実測し直し、
+  # --n-cpu-moe 38(2層のみGPU化)が安全な値(--cpu-moe比 tg 23.60→24.20 tok/s、
+  # S1/S2とも安定)。無検閲版が不要な用途向けの選択肢として用意する。
+  qwen3.6-35b-a3b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M
+      --n-cpu-moe 38 --reasoning auto --no-mmproj
+      -c 131072
+
   # Gemma4-26B-A4B(HauhauCS Uncensored Balanced、MTP投機的デコード用ドラフトヘッド同梱)。
   # MoE 30層/128エキスパート/アクティブ約4B。QAT(量子化考慮学習済み)モデルのため
   # Q4_K_M(16.8GB)が最適サイズ(モデルカード曰くそれ以上の量子化は品質向上なし)。
@@ -89,6 +106,22 @@ models:
       -b 2048 -ub 2048
       -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
       --n-cpu-moe 28 --reasoning auto --no-mmproj
+      -c 131072
+
+  # Gemma4-26B-A4B 公式 base model(unsloth GGUF、検閲あり、MTPドラフトヘッドなし)。
+  # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きく
+  # (Qwen3.6 と同傾向)、--n-cpu-moe 28 の転用では確認していないため保守的に
+  # 実測し直し、--n-cpu-moe 29(1層のみGPU化)を採用(--cpu-moe比 tg 18.12→18.39
+  # tok/s、S1/S2とも安定)。無検閲版が不要な用途向けの選択肢として用意する。
+  gemma4-26b-a4b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
+      --n-cpu-moe 29 --reasoning auto --no-mmproj
       -c 131072
 
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
