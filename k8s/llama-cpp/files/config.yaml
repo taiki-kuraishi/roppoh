@@ -43,6 +43,47 @@ models:
       --n-cpu-moe 36 --reasoning auto --no-mmproj
       -c 131072
 
+  # Qwen3.6-35B-A3B(HauhauCS Uncensored Aggressive)。現行 Qwen3.5 系の直接後継で
+  # アーキテクチャ据え置き(MoE 40層/256エキスパート/アクティブ約3B)のため、
+  # 上記で実測済みの --n-cpu-moe 36 がそのまま安定動作(2026-07 ベンチ実施記録は
+  # PR参照)。速度は Qwen3.5 と実測ほぼ同一(S1 tg 27.67 vs 27.71 tok/s、
+  # S2 cold TTFT 29.0s vs 29.5s、S3 cold TTFT 171.3s vs 172.5s)。
+  # モデル世代が新しいため品質面の入れ替え候補(品質評価は別途要実施、現時点では
+  # default は変更していない)。
+  qwen3.6-35b-a3b-hauhaucs-aggressive:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:Q4_K_M
+      --n-cpu-moe 36 --reasoning auto --no-mmproj
+      -c 131072
+
+  # Gemma4-26B-A4B(HauhauCS Uncensored Balanced、MTP投機的デコード用ドラフトヘッド同梱)。
+  # MoE 30層/128エキスパート/アクティブ約4B。QAT(量子化考慮学習済み)モデルのため
+  # Q4_K_M(16.8GB)が最適サイズ(モデルカード曰くそれ以上の量子化は品質向上なし)。
+  # hidden_size が Qwen(2048)より大きい(2816)分 VRAM 余剰が狭く(実測1.9GiB)、
+  # --n-cpu-moe 27(3層GPU化)は cold ~32k プロンプトで compute buffer 不足により
+  # CUDA OOM クラッシュ。--n-cpu-moe 28(2層GPU化)が実測上の安全な上限
+  # (2026-07 ベンチ実施記録はPR参照):
+  #   - S1 短文warm tg: 17.97 → 20.33 tok/s (+13.1%, --cpu-moe 比)
+  #   - S2 cold ~8k TTFT: 27.4s → 25.1s (-8.4%)
+  #   - S3 cold ~32k TTFT: 130.4s → 123.3s (-5.4%)
+  # 絶対速度は Qwen3.5/3.6 系より遅い(アクティブパラメータが4B > 3Bのため)。
+  # MTP投機的デコード(-md でドラフトヘッド指定)は本設定では未検証。
+  gemma4-26b-a4b-hauhaucs-balanced:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
+      --n-cpu-moe 28 --reasoning auto --no-mmproj
+      -c 131072
+
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
   # ※ --no-mmap は llama.cpp が起動時に推奨するが、実機(XMP 有効・DDR4 帯域向上後)では
