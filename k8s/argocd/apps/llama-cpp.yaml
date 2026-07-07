@@ -14,9 +14,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: llama-cpp
+  # NOTE: hermes-agent 常用LLM刷新のベンチマーク実施中、config.yaml を直接 kubectl apply で
+  # 差し替えるため一時的に automated sync を無効化している。作業完了後に復元すること。
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
