@@ -11,19 +11,10 @@ runs:
         restore-keys: ${{ runner.os }}-playwright-
     - shell: bash
       working-directory: apps/web-console
-      # The chromium download occasionally hangs after reaching 100% instead
-      # Of extracting, with no output until the job times out. Run via node
-      # Directly (not bunx) since Bun's fetch/stream implementation is a
-      # Likely culprit for large binary downloads, and retry with a short
-      # Per-attempt timeout instead of burning the whole job budget.
-      run: |
-        for attempt in 1 2 3; do
-          if timeout 3m node ./node_modules/.bin/playwright install chromium; then
-            exit 0
-          fi
-          echo "playwright install attempt ${attempt} timed out, retrying..."
-        done
-        exit 1
+      # Run via node directly (not bunx): Bun's fetch/stream implementation
+      # Was a likely culprit for occasional hangs on this large binary
+      # Download.
+      run: node ./node_modules/.bin/playwright install chromium
     - uses: actions/cache/save@v4
       with:
         path: ~/.cache/ms-playwright
