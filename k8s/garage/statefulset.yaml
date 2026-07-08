@@ -70,12 +70,13 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 1m / メモリ最大 61Mi
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 30m
+              memory: 128Mi
             limits:
-              cpu: "1"
+              cpu: 500m
               memory: 1Gi
           volumeMounts:
             - name: config
