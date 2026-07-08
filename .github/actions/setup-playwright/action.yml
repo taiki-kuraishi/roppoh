@@ -10,6 +10,7 @@ runs:
         key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lock') }}
         restore-keys: ${{ runner.os }}-playwright-
     - shell: bash
+      working-directory: apps/web-console
       run: bunx playwright install --with-deps chromium
     - uses: actions/cache/save@v4
       with:
