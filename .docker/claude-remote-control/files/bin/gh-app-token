@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # GitHub App の installation access token を stdout に出力する(bash + openssl +
-# jq のみに依存。node は bootstrap 前に存在しないため使わない — roppoh-remote-dev-plan.md 参照)。
+# jq のみに依存。node は bootstrap 前に存在しないため使わない — roppoh-claude-remote-control-plan.md 参照)。
 #
 # Usage: gh-app-token [owner]
 #   owner: tsar-org(既定)| taiki-kuraishi
 set -euo pipefail
 
-dir=/etc/remote-dev/github-app
+dir=/etc/claude-remote-control/github-app
 owner="${1:-tsar-org}"
 
 installation_id_file="$dir/installation-id-${owner}"

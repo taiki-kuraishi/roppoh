@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: remote-dev
+  name: claude-remote-control
   namespace: argocd
   annotations:
     notifications.argoproj.io/subscribe.on-app-deployed.github: ""
@@ -10,10 +10,10 @@ spec:
   source:
     repoURL: https://github.com/taiki-kuraishi/roppoh
     targetRevision: main
-    path: k8s/remote-dev
+    path: k8s/claude-remote-control
   destination:
     server: https://kubernetes.default.svc
-    namespace: remote-dev
+    namespace: claude-remote-control
   syncPolicy:
     automated:
       prune: true

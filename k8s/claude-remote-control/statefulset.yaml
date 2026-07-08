@@ -1,36 +1,36 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: remote-dev
-  namespace: remote-dev
+  name: claude-remote-control
+  namespace: claude-remote-control
   labels:
-    app.kubernetes.io/name: remote-dev
+    app.kubernetes.io/name: claude-remote-control
     app.kubernetes.io/managed-by: argocd
   annotations:
     # sshd コンテナは特権ポート 22 の bind とログイン処理(privilege separation /
     # authorized_keys 読み取り)のため root で動作する必要がある
-    # (roppoh-remote-dev-plan.md 参照)。
+    # (roppoh-claude-remote-control-plan.md 参照)。
     ignore-check.kube-linter.io/run-as-non-root: "sshd needs root to bind port 22 and handle login/privsep"
     ignore-check.kube-linter.io/no-read-only-root-fs: "sshd writes runtime state under /run; kept writable via emptyDir instead of a read-only rootfs"
-    # remote-dev Pod は Zed の SSH リモート開発先そのものであり、意図した実際の sshd(port 22)
+    # claude-remote-control Pod は Zed の SSH リモート開発先そのものであり、意図した実際の sshd(port 22)
     ignore-check.kube-linter.io/ssh-port: "this workload is an actual vetted sshd server for Zed remote development, not an unrelated service on port 22"
 spec:
   replicas: 1
-  serviceName: remote-dev
+  serviceName: claude-remote-control
   selector:
     matchLabels:
-      app.kubernetes.io/name: remote-dev
+      app.kubernetes.io/name: claude-remote-control
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: remote-dev
+        app.kubernetes.io/name: claude-remote-control
     spec:
       # local-path は PVC 初回作成時に root 所有(0755 root:root)で作られることがあるため、
       # fsGroup だけでは dev(uid 1000)から書き込めない場合がある。initContainer で明示的に
       # chown する(空のときのみ実行し、既存データの所有権は変更しない)。
       initContainers:
         - name: fix-home-ownership
-          image: registry.roppoh.local/remote-dev:bootstrap
+          image: registry.roppoh.local/claude-remote-control:bootstrap
           command:
             - bash
             - -c
@@ -52,8 +52,8 @@ spec:
               cpu: 200m
               memory: 64Mi
         - name: init
-          image: registry.roppoh.local/remote-dev:bootstrap
-          command: [remote-dev-init]
+          image: registry.roppoh.local/claude-remote-control:bootstrap
+          command: [claude-remote-control-init]
           env:
             - name: HOME
               value: /home/dev
@@ -77,7 +77,7 @@ spec:
               memory: 2Gi
       containers:
         - name: sshd
-          image: registry.roppoh.local/remote-dev:bootstrap
+          image: registry.roppoh.local/claude-remote-control:bootstrap
           # /run は emptyDir(readOnlyRootFilesystem の代わり)なので、sshd の
           # privilege separation ディレクトリを起動前に作り直す必要がある。
           command:
@@ -109,13 +109,13 @@ spec:
               mountPath: /etc/ssh/authorized_keys
               readOnly: true
             - name: github-app
-              mountPath: /etc/remote-dev/github-app
+              mountPath: /etc/claude-remote-control/github-app
               readOnly: true
             - name: run-sshd
               mountPath: /run
         - name: claude
-          image: registry.roppoh.local/remote-dev:bootstrap
-          command: [remote-dev-claude]
+          image: registry.roppoh.local/claude-remote-control:bootstrap
+          command: [claude-remote-control-claude]
           env:
             - name: HOME
               value: /home/dev
@@ -139,25 +139,25 @@ spec:
             - name: home
               mountPath: /home/dev
             - name: github-app
-              mountPath: /etc/remote-dev/github-app
+              mountPath: /etc/claude-remote-control/github-app
               readOnly: true
       volumes:
         - name: ssh-host-key
           secret:
-            secretName: remote-dev
+            secretName: claude-remote-control
             defaultMode: 0400
             items:
               - key: ssh_host_ed25519_key
                 path: ssh_host_ed25519_key
         - name: authorized-keys
           configMap:
-            name: remote-dev-authorized-keys
+            name: claude-remote-control-authorized-keys
             items:
               - key: authorized_keys
                 path: dev
         - name: github-app
           secret:
-            secretName: remote-dev
+            secretName: claude-remote-control
             items:
               - key: app-id
                 path: app-id

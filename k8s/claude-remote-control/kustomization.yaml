@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: remote-dev
+namespace: claude-remote-control
 
 resources:
   - namespace.yaml
@@ -9,6 +9,6 @@ resources:
   - statefulset.yaml
 
 configMapGenerator:
-  - name: remote-dev-authorized-keys
+  - name: claude-remote-control-authorized-keys
     files:
       - files/authorized_keys

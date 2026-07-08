@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
 #
 # Build context is the repository root:
-#   docker build -f .docker/remote-dev/Dockerfile .
+#   docker build -f .docker/claude-remote-control/Dockerfile .
 #
 # 言語ランタイム(Claude Code 含む)はイメージに焼かない。dotfiles の
 # mise/bootstrap がユーザーの PVC ホーム配下(~/.local, ~/.config/mise)に
-# 展開する(roppoh-remote-dev-plan.md 参照)。
+# 展開する(roppoh-claude-remote-control-plan.md 参照)。
 
 FROM ubuntu:24.04
 
@@ -26,19 +26,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     build-essential \
     gnupg \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && install -dm 755 /etc/apt/keyrings
 
 # mise: 公式 apt リポジトリ経由(自己更新 = イメージ再ビルドのたびに apt が最新を取得)
-RUN install -dm 755 /etc/apt/keyrings \
-    && curl -fsSL https://mise.jdx.dev/gpg-key.pub | gpg --dearmor -o /etc/apt/keyrings/mise-archive-keyring.gpg \
+RUN curl -fsSL https://mise.jdx.dev/gpg-key.pub | gpg --dearmor -o /etc/apt/keyrings/mise-archive-keyring.gpg \
     && echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg arch=amd64] https://mise.jdx.dev/deb stable main" \
     > /etc/apt/sources.list.d/mise.list \
     && apt-get update && apt-get install -y --no-install-recommends mise \
     && rm -rf /var/lib/apt/lists/*
 
 # gh: GitHub 公式 apt リポジトリ経由(自己更新)
-RUN install -dm 755 /etc/apt/keyrings \
-    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
+RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /etc/apt/keyrings/githubcli-archive-keyring.gpg \
     && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
     > /etc/apt/sources.list.d/github-cli.list \
     && apt-get update && apt-get install -y --no-install-recommends gh \
@@ -66,15 +65,7 @@ RUN curl -fsSL -o /tmp/ghq.zip \
 RUN userdel -r ubuntu 2>/dev/null; \
     useradd -m -u 1000 -s /usr/bin/zsh dev
 
-COPY .docker/remote-dev/files/sshd-remote-dev.conf /etc/ssh/sshd_config.d/remote-dev.conf
-COPY .docker/remote-dev/files/gh-app-token /usr/local/bin/gh-app-token
-COPY .docker/remote-dev/files/git-credential-github-app /usr/local/bin/git-credential-github-app
-COPY .docker/remote-dev/files/remote-dev-init /usr/local/bin/remote-dev-init
-COPY .docker/remote-dev/files/remote-dev-claude /usr/local/bin/remote-dev-claude
+COPY .docker/claude-remote-control/files/sshd-claude-remote-control.conf /etc/ssh/sshd_config.d/claude-remote-control.conf
+COPY --chmod=755 .docker/claude-remote-control/files/bin/ /usr/local/bin/
 
-RUN chmod 755 \
-    /usr/local/bin/gh-app-token \
-    /usr/local/bin/git-credential-github-app \
-    /usr/local/bin/remote-dev-init \
-    /usr/local/bin/remote-dev-claude \
-    && mkdir -p /run/sshd /etc/ssh/authorized_keys /etc/ssh/keys
+RUN mkdir -p /run/sshd /etc/ssh/authorized_keys /etc/ssh/keys

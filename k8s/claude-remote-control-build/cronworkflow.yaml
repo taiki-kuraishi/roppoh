@@ -1,10 +1,10 @@
 apiVersion: argoproj.io/v1alpha1
 kind: CronWorkflow
 metadata:
-  name: remote-dev-build
+  name: claude-remote-control-build
   namespace: argo
   labels:
-    app.kubernetes.io/name: remote-dev-build
+    app.kubernetes.io/name: claude-remote-control-build
     app.kubernetes.io/managed-by: argocd
 spec:
   # main を定期ポーリングしてビルド。外部到達不要の pull 型。
@@ -30,13 +30,13 @@ spec:
         - name: repo
           value: https://github.com/taiki-kuraishi/roppoh.git
         - name: image
-          value: remote-dev
+          value: claude-remote-control
         # クラスタ内 push 先（Service DNS）。pull は registries.yaml ミラー経由。
         - name: zot
           value: zot.zot.svc.cluster.local:5000
         # commit status の context
         - name: status_context
-          value: argo-workflows/remote-dev-build
+          value: argo-workflows/claude-remote-control-build
     volumes:
       - name: docker-config
         secret:
@@ -137,10 +137,10 @@ spec:
             # blob を取得しない部分クローン（履歴は全取得 → log -- paths を確実に解決）
             git clone --filter=blob:none "$AUTHED" /src
             cd /src
-            PATHS=".docker/remote-dev"
+            PATHS=".docker/claude-remote-control"
             IMAGE_SHA=$(git log -1 --format=%h -- $PATHS)
             FULL_SHA=$(git log -1 --format=%H -- $PATHS)
-            CUR_TAG=$(grep -E "^[[:space:]]*image:.*${IMAGE}:" k8s/remote-dev/statefulset.yaml \
+            CUR_TAG=$(grep -E "^[[:space:]]*image:.*${IMAGE}:" k8s/claude-remote-control/statefulset.yaml \
               | sed -E "s/.*${IMAGE}:([^[:space:]\"]+).*/\1/" | head -1)
             ACCEPT='application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json'
             CODE=$(curl -s -o /dev/null -w '%{http_code}' -H "Accept: ${ACCEPT}" \
@@ -216,7 +216,7 @@ spec:
           command: ["/kaniko/executor"]
           args:
             - --context=dir:///workspace
-            - --dockerfile=.docker/remote-dev/Dockerfile
+            - --dockerfile=.docker/claude-remote-control/Dockerfile
             - --destination={{workflow.parameters.zot}}/{{workflow.parameters.image}}:{{inputs.parameters.image_sha}}
             # zot のみ HTTP/insecure 扱い（base image は HTTPS のまま）
             - --insecure-registry={{workflow.parameters.zot}}
@@ -270,11 +270,11 @@ spec:
             git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/taiki-kuraishi/roppoh.git" /repo
             cd /repo
             sed -i -E "s#(image: registry.roppoh.local/${IMAGE}:)[^[:space:]]+#\1${IMAGE_SHA}#" \
-              k8s/remote-dev/statefulset.yaml
+              k8s/claude-remote-control/statefulset.yaml
             if git diff --quiet; then echo "manifest already up to date"; exit 0; fi
             git config user.name "argo-workflow-tsar[bot]"
             git config user.email "298113515+argo-workflow-tsar[bot]@users.noreply.github.com"
-            git add k8s/remote-dev/statefulset.yaml
+            git add k8s/claude-remote-control/statefulset.yaml
             git commit -m "⬆️ deploy(${IMAGE}): ${IMAGE_SHA} [skip ci]"
             git push origin HEAD:main
           volumeMounts:
