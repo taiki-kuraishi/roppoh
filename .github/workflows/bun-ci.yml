@@ -90,3 +90,15 @@ jobs:
       - name: Test apps/neo-fujimatsu
         run: bun run test:e2e
         working-directory: apps/neo-fujimatsu
+
+  playwright-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: lint-and-build
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - uses: ./.github/actions/setup-playwright
+      - name: Test apps/web-console
+        run: bun run test:e2e
+        working-directory: apps/web-console

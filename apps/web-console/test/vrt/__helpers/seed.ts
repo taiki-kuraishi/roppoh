@@ -1,6 +1,6 @@
 import { schema } from "@roppoh/better-auth";
 
-import type { TestBetterAuthDatabase } from "./test-better-auth-database";
+import type { TestBetterAuthDatabase } from "../../helpers/test-better-auth-database";
 
 type Auth = Awaited<ReturnType<TestBetterAuthDatabase["getTestBetterAuth"]>>;
 

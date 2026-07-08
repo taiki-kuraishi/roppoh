@@ -1,5 +1,6 @@
 import { router } from "@inertiajs/react";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/providers/auth-provider";
 
@@ -12,6 +13,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }): React.Re
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      toast.error("Login required.");
       router.visit("/login");
     }
   }, [isLoading, isAuthenticated]);

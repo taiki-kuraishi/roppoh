@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-import { baseHandlers } from "../helpers/discovery-handler";
-import { testWithMswMock } from "../helpers/test-with-msw-mock";
-import { setTheme } from "../helpers/theme";
+import { baseHandlers } from "../../helpers/discovery-handler";
+import { testWithMswMock } from "../../helpers/test-with-msw-mock";
+import { setTheme } from "../__helpers/theme";
 
 // Public page — no auth/session needed (no .layout).
 test.describe("vrt /login", () => {

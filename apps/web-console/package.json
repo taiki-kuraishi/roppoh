@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit",
     "dev": "vite dev",
     "deploy": "bun run build && wrangler deploy",
-    "test:vrt": "playwright test"
+    "test:e2e": "playwright test --config=e2e.playwright.config.ts",
+    "test:vrt": "playwright test --config=vrt.playwright.config.ts"
   },
   "dependencies": {
     "@better-auth/oauth-provider": "catalog:",

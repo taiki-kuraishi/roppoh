@@ -5,46 +5,34 @@ import { createLoggedInUser } from "../../helpers/create-logged-in-user";
 import { baseHandlers } from "../../helpers/discovery-handler";
 import { TestBetterAuthDatabase } from "../../helpers/test-better-auth-database";
 import { testWithMswMock } from "../../helpers/test-with-msw-mock";
-import { setTheme } from "../__helpers/theme";
 
-test.describe("vrt /organization", () => {
+// NEW role gate (decision #4): a non-admin authenticated user hitting an
+// Admin-only route is toast-notified and redirected to "/", instead of
+// Seeing the admin page content. Behavioral only, so it lives under test/e2e
+// (no toHaveScreenshot): the redirect target "/" already has its own visual
+// Coverage in vrt/index/page.spec.tsx, and theme doesn't affect this guard's
+// Logic.
+test.describe("e2e /organization forbidden (non-admin)", () => {
   const testAuth = new TestBetterAuthDatabase();
   test.beforeEach(async () => testAuth.begin());
   test.afterEach(() => testAuth.cleanup());
 
   const handlers = [...baseHandlers, createBetterAuthHandler(testAuth)];
 
-  testWithMswMock(handlers)("dark", async ({ context, page }) => {
+  testWithMswMock(handlers)("redirects to / with a toast", async ({ context, page }) => {
     // Arrange
     const auth = await testAuth.getTestBetterAuth();
     await createLoggedInUser({
       auth,
       context,
-      user: { email: "admin@example.com", name: "Admin User", role: "admin" },
+      user: { email: "user@example.com", name: "Regular User", role: "user" },
     });
-    await setTheme({ page, theme: "dark" });
 
     // Act
     await page.goto("/organization", { waitUntil: "networkidle" });
 
     // Assert
-    await expect(page).toHaveScreenshot({ fullPage: true });
-  });
-
-  testWithMswMock(handlers)("light", async ({ context, page }) => {
-    // Arrange
-    const auth = await testAuth.getTestBetterAuth();
-    await createLoggedInUser({
-      auth,
-      context,
-      user: { email: "admin@example.com", name: "Admin User", role: "admin" },
-    });
-    await setTheme({ page, theme: "light" });
-
-    // Act
-    await page.goto("/organization", { waitUntil: "networkidle" });
-
-    // Assert
-    await expect(page).toHaveScreenshot({ fullPage: true });
+    await expect(page).toHaveURL("/");
+    await expect(page.getByText("Admin access required.")).toBeVisible();
   });
 });

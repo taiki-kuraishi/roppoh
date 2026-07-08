@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { createBetterAuthHandler } from "../helpers/create-better-auth-handler";
-import { createLoggedInUser } from "../helpers/create-logged-in-user";
-import { baseHandlers } from "../helpers/discovery-handler";
-import { TestBetterAuthDatabase } from "../helpers/test-better-auth-database";
-import { testWithMswMock } from "../helpers/test-with-msw-mock";
-import { setTheme } from "../helpers/theme";
+import { createBetterAuthHandler } from "../../helpers/create-better-auth-handler";
+import { createLoggedInUser } from "../../helpers/create-logged-in-user";
+import { baseHandlers } from "../../helpers/discovery-handler";
+import { TestBetterAuthDatabase } from "../../helpers/test-better-auth-database";
+import { testWithMswMock } from "../../helpers/test-with-msw-mock";
+import { setTheme } from "../__helpers/theme";
 
 // AppLayout only (no adminLayout) — any authenticated user, admin or not,
 // Can reach "/". Uses a non-admin session to also prove the sidebar's

@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-import { createBetterAuthHandler } from "../helpers/create-better-auth-handler";
-import { createLoggedInUser } from "../helpers/create-logged-in-user";
-import { baseHandlers } from "../helpers/discovery-handler";
-import { seedUsers } from "../helpers/seed";
-import { TestBetterAuthDatabase } from "../helpers/test-better-auth-database";
-import { testWithMswMock } from "../helpers/test-with-msw-mock";
-import { setTheme } from "../helpers/theme";
+import { createBetterAuthHandler } from "../../helpers/create-better-auth-handler";
+import { createLoggedInUser } from "../../helpers/create-logged-in-user";
+import { baseHandlers } from "../../helpers/discovery-handler";
+import { TestBetterAuthDatabase } from "../../helpers/test-better-auth-database";
+import { testWithMswMock } from "../../helpers/test-with-msw-mock";
+import { seedUsers } from "../__helpers/seed";
+import { setTheme } from "../__helpers/theme";
 
 // Proves the nuqs ?dialog=create URL state (decision #9, vendored
 // @nuqs/adapter-inertia) opens the dialog on direct navigation, without a
