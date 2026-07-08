@@ -14,7 +14,7 @@ import { setTheme } from "../__helpers/theme";
 test.describe("vrt /user create dialog", () => {
   const testAuth = new TestBetterAuthDatabase();
   test.beforeEach(async () => testAuth.begin());
-  test.afterEach(() => testAuth.cleanup());
+  test.afterEach(async () => testAuth.cleanup());
 
   const handlers = [...baseHandlers, createBetterAuthHandler(testAuth)];
 

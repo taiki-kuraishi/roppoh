@@ -29,5 +29,9 @@ export default defineConfig({
     url: "http://127.0.0.1:51732",
   },
 
-  workers: undefined,
+  // Pinned to a single worker: all spec files share one in-memory
+  // Better-auth sqlite connection for the whole run (see
+  // Test/helpers/shared-better-auth-sqlite.ts), which only exists within one
+  // Process.
+  workers: 1,
 });

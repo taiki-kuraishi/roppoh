@@ -15,7 +15,7 @@ import { testWithMswMock } from "../../helpers/test-with-msw-mock";
 test.describe("e2e /organization forbidden (non-admin)", () => {
   const testAuth = new TestBetterAuthDatabase();
   test.beforeEach(async () => testAuth.begin());
-  test.afterEach(() => testAuth.cleanup());
+  test.afterEach(async () => testAuth.cleanup());
 
   const handlers = [...baseHandlers, createBetterAuthHandler(testAuth)];
 

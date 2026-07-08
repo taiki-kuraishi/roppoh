@@ -10,7 +10,7 @@ import { setTheme } from "../__helpers/theme";
 test.describe("vrt /organization", () => {
   const testAuth = new TestBetterAuthDatabase();
   test.beforeEach(async () => testAuth.begin());
-  test.afterEach(() => testAuth.cleanup());
+  test.afterEach(async () => testAuth.cleanup());
 
   const handlers = [...baseHandlers, createBetterAuthHandler(testAuth)];
 

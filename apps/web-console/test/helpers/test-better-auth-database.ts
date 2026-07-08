@@ -1,12 +1,12 @@
-import type { LibSQLDatabase } from "drizzle-orm/libsql";
+import type { Client } from "@libsql/client";
 
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { config, schema } from "@roppoh/better-auth";
 import { betterAuth } from "better-auth/minimal";
 import { testUtils } from "better-auth/plugins";
-import Database from "better-sqlite3";
-import { pushSQLiteSchema } from "drizzle-kit/api";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/libsql";
+
+import { getSharedBetterAuthSqlite } from "./shared-better-auth-sqlite";
 
 // Must match apps/neo-fujimatsu's basePath/baseURL (see
 // Dependency-injection.ts) and VITE_OIDC_ISSUER's origin, so
@@ -19,7 +19,7 @@ const TEST_SECRET = "vrt-web-console-better-auth-secret"; // Signing only, test-
 // Calls betterAuth() directly (not the createBetterAuth() factory): that
 // Factory's generic is constrained to `T extends typeof config`, which
 // Rejects a `plugins` tuple with testUtils() appended (different length).
-const createInstance = (db: Database.Database) =>
+const createInstance = (db: Client) =>
   betterAuth({
     ...config,
     basePath: BASE_PATH,
@@ -30,40 +30,28 @@ const createInstance = (db: Database.Database) =>
     telemetry: { enabled: false },
   });
 
-// Test-only better-auth instance backed by an in-memory sqlite DB (matches
-// Packages/better-auth's sqlite schema/provider). A fresh DB is created per
-// Test (begin/cleanup) rather than a shared DB + transaction rollback: the
-// Drizzle adapter opens its own internal transactions on writes, which risks
-// Nesting conflicts under an outer rollback. Recreating + pushing the schema
-// Is cheap for this table count.
+// Test-only better-auth instance backed by the shared in-memory sqlite DB
+// (see shared-better-auth-sqlite.ts): the schema is pushed once for the
+// Whole test run, and each test wraps its work in BEGIN/ROLLBACK on that same
+// Connection instead of recreating the database. This is safe because
+// @better-auth/drizzle-adapter only opens its own internal transaction when
+// The adapter's `transaction` option is explicitly enabled (it isn't here),
+// So better-auth's writes just run as statements against the already-open
+// Outer transaction.
 export class TestBetterAuthDatabase {
-  private db: Database.Database | undefined;
+  private db: Client | undefined;
   private instance: ReturnType<typeof createInstance> | undefined;
 
   // BeforeEach
   public async begin() {
-    this.db = new Database(":memory:");
-    this.db.pragma("foreign_keys = ON");
-    const drz = drizzle(this.db, { schema });
-    // PushSQLiteSchema is typed against drizzle-orm/libsql's LibSQLDatabase
-    // (a type-only mismatch drizzle-orm/better-sqlite3 also structurally
-    // Satisfies). Its own apply() is unusable here though: it runs every
-    // Generated statement through drizzleInstance.all(), and better-sqlite3's
-    // .all() throws on DDL ("This statement does not return data") — a
-    // Runtime assumption that only holds for libsql-style drivers. Apply the
-    // Generated DDL ourselves via the native Database.exec(), which has no
-    // Such restriction.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-    const push = await pushSQLiteSchema(schema, drz as unknown as LibSQLDatabase<typeof schema>);
-    if (push.statementsToExecute.length > 0) {
-      this.db.exec(push.statementsToExecute.join(";\n"));
-    }
+    this.db = await getSharedBetterAuthSqlite();
+    await this.db.execute("BEGIN");
     this.instance = createInstance(this.db);
   }
 
   // AfterEach
-  public cleanup() {
-    this.db?.close();
+  public async cleanup() {
+    await this.db?.execute("ROLLBACK");
     this.db = undefined;
     this.instance = undefined;
   }
