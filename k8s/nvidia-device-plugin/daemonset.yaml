@@ -40,12 +40,13 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 0m / メモリ最大 41Mi
           resources:
             requests:
-              cpu: 50m
+              cpu: 20m
               memory: 64Mi
             limits:
-              cpu: 200m
+              cpu: 100m
               memory: 128Mi
           volumeMounts:
             - name: device-plugin
