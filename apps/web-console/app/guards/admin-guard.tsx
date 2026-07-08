@@ -22,9 +22,8 @@ export function AdminGuard({ children }: { children: React.ReactNode }): React.R
     }
   }, [isPending, isAdmin]);
 
-  if (isPending || !isAdmin) {
-    return null;
-  }
-
+  // Unlike AuthGuard, this doesn't gate rendering on isPending/isAdmin: the
+  // Backend admin APIs already return 403 for non-admins, so briefly
+  // Rendering the page shell while the redirect above kicks in leaks nothing.
   return children;
 }
