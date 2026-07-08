@@ -12,11 +12,13 @@ runs:
     - shell: bash
       working-directory: apps/web-console
       # The chromium download occasionally hangs after reaching 100% instead
-      # Of extracting, with no output until the job times out. Retry with a
-      # Short per-attempt timeout instead of burning the whole job budget.
+      # Of extracting, with no output until the job times out. Run via node
+      # Directly (not bunx) since Bun's fetch/stream implementation is a
+      # Likely culprit for large binary downloads, and retry with a short
+      # Per-attempt timeout instead of burning the whole job budget.
       run: |
         for attempt in 1 2 3; do
-          if timeout 3m bunx playwright install chromium; then
+          if timeout 3m node ./node_modules/.bin/playwright install chromium; then
             exit 0
           fi
           echo "playwright install attempt ${attempt} timed out, retrying..."
