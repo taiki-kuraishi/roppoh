@@ -37,7 +37,7 @@
   "devDependencies": {
     "@better-auth/drizzle-adapter": "catalog:",
     "@cloudflare/vite-plugin": "catalog:",
-    "@libsql/client": "0.8.1",
+    "@libsql/client": "0.17.4",
     "@playwright/test": "catalog:",
     "@roppoh/better-auth": "workspace:*",
     "@tailwindcss/vite": "4.3.1",
