@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# initContainer 用: dotfiles(yadm)の同期と Git 認証設定の生成。
+# roppoh-remote-dev-plan.md の「dotfiles との契約」参照。
+set -euo pipefail
+
+# dotfiles 同期(初回 clone は --bootstrap 付き。bootstrap は mise install 等で数分かかる)
+if [ ! -d "$HOME/.local/share/yadm/repo.git" ]; then
+  yadm clone --bootstrap https://github.com/taiki-kuraishi/dotfiles.git
+else
+  yadm pull --rebase || echo "yadm pull failed (offline?) — continuing"
+fi
+
+# Git 認証: dotfiles の .gitconfig 末尾の include から読まれるファイルを生成
+cat > "$HOME/.gitconfig.local" <<'EOF'
+# remote-dev Pod が生成する(手で編集しない)。GitHub App の短命トークンで認証する。
+[credential]
+	useHttpPath = true
+[credential "https://github.com"]
+	helper =
+	helper = "!/usr/local/bin/git-credential-github-app"
+EOF

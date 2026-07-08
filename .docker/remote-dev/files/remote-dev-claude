@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# claude コンテナのエントリポイント。claude 本体は dotfiles の bootstrap が
+# インストールし、認証は初回に人間が
+#   kubectl exec -it -n remote-dev remote-dev-0 -c claude -- claude auth login
+# で行う。どちらも揃うまで待機し、CrashLoopBackOff にしない
+# (roppoh-remote-dev-plan.md 参照)。
+set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"
+
+until command -v claude >/dev/null 2>&1 && [ -f "$HOME/.claude/.credentials.json" ]; do
+  echo "waiting for claude install + auth (see roppoh-remote-dev-plan.md)"
+  sleep 300
+done
+
+exec claude remote-control --spawn=worktree --name "roppoh-dev"

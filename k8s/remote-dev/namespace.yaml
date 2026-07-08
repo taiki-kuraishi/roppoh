@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: remote-dev
+  labels:
+    app.kubernetes.io/name: remote-dev
+    app.kubernetes.io/managed-by: argocd

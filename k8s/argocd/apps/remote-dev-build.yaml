@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: remote-dev-build
+  namespace: argocd
+  annotations:
+    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/taiki-kuraishi/roppoh
+    targetRevision: main
+    path: k8s/remote-dev-build
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # CronWorkflow CRD は argo-workflows app が先に入れる。CRD 未確立時の
+      # dry-run 失敗をスキップし、selfHeal で追従させる。
+      - SkipDryRunOnMissingResource=true

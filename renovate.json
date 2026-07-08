@@ -45,6 +45,13 @@
       "matchStrings": ["FROM golang:(?<currentValue>[\\d.]+)-bookworm"],
       "depNameTemplate": "go",
       "datasourceTemplate": "golang-version"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^\\.docker/remote-dev/Dockerfile$"],
+      "matchStrings": ["ARG GHQ_VERSION=v(?<currentValue>[\\d.]+)"],
+      "depNameTemplate": "x-motemen/ghq",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "packageRules": [
