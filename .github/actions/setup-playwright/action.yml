@@ -11,7 +11,7 @@ runs:
         restore-keys: ${{ runner.os }}-playwright-
     - shell: bash
       working-directory: apps/web-console
-      run: bunx playwright install --with-deps chromium
+      run: bunx playwright install chromium
     - uses: actions/cache/save@v4
       with:
         path: ~/.cache/ms-playwright
