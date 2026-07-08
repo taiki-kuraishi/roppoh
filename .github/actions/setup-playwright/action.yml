@@ -11,7 +11,17 @@ runs:
         restore-keys: ${{ runner.os }}-playwright-
     - shell: bash
       working-directory: apps/web-console
-      run: bunx playwright install chromium
+      # The chromium download occasionally hangs after reaching 100% instead
+      # Of extracting, with no output until the job times out. Retry with a
+      # Short per-attempt timeout instead of burning the whole job budget.
+      run: |
+        for attempt in 1 2 3; do
+          if timeout 3m bunx playwright install chromium; then
+            exit 0
+          fi
+          echo "playwright install attempt ${attempt} timed out, retrying..."
+        done
+        exit 1
     - uses: actions/cache/save@v4
       with:
         path: ~/.cache/ms-playwright
