@@ -23,5 +23,5 @@ resources:
   - grafana-dashboards.yaml
   - secrets.yaml
   - traefik.yaml
-  - remote-dev.yaml
-  - remote-dev-build.yaml
+  - claude-remote-control.yaml
+  - claude-remote-control-build.yaml
