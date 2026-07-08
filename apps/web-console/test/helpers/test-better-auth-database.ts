@@ -1,4 +1,4 @@
-import type { Client } from "@libsql/client";
+import type { Client, Transaction } from "@libsql/client";
 
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { config, schema } from "@roppoh/better-auth";
@@ -32,27 +32,35 @@ const createInstance = (db: Client) =>
 
 // Test-only better-auth instance backed by the shared in-memory sqlite DB
 // (see shared-better-auth-sqlite.ts): the schema is pushed once for the
-// Whole test run, and each test wraps its work in BEGIN/ROLLBACK on that same
-// Connection instead of recreating the database. This is safe because
-// @better-auth/drizzle-adapter only opens its own internal transaction when
-// The adapter's `transaction` option is explicitly enabled (it isn't here),
-// So better-auth's writes just run as statements against the already-open
-// Outer transaction.
+// Whole test run, and each test opens its own interactive transaction (via
+// @libsql/client's `client.transaction()`) instead of recreating the
+// Database. Plain `client.execute("BEGIN"/"ROLLBACK")` was tried first, but
+// @libsql/client documents that every `Client.execute()` call runs "in its
+// Own logical database connection" — so a bare BEGIN/ROLLBACK pair sent that
+// Way never actually wraps the statements in between, and test data silently
+// Leaked across tests. `client.transaction()` returns a `Transaction` object
+// That keeps one connection open across all of its own `.execute()` calls
+// Until `.rollback()`/`.commit()`, which is what real per-test isolation
+// Needs. This is safe against @better-auth/drizzle-adapter's own writes too:
+// The adapter only opens its own internal transaction when the adapter's
+// `transaction` option is explicitly enabled (it isn't here), so its writes
+// Just run as statements against our already-open transaction.
 export class TestBetterAuthDatabase {
-  private db: Client | undefined;
+  private tx: Transaction | undefined;
   private instance: ReturnType<typeof createInstance> | undefined;
 
   // BeforeEach
   public async begin() {
-    this.db = await getSharedBetterAuthSqlite();
-    await this.db.execute("BEGIN");
-    this.instance = createInstance(this.db);
+    const client = await getSharedBetterAuthSqlite();
+    this.tx = await client.transaction("write");
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+    this.instance = createInstance(this.tx as unknown as Client);
   }
 
   // AfterEach
   public async cleanup() {
-    await this.db?.execute("ROLLBACK");
-    this.db = undefined;
+    await this.tx?.rollback();
+    this.tx = undefined;
     this.instance = undefined;
   }
 
@@ -69,9 +77,10 @@ export class TestBetterAuthDatabase {
   }
 
   public getDrizzle() {
-    if (!this.db) {
+    if (!this.tx) {
       throw new Error("call begin() before accessing the database");
     }
-    return drizzle(this.db, { schema });
+    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
+    return drizzle(this.tx as unknown as Client, { schema });
   }
 }
