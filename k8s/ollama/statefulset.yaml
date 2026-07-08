@@ -6,6 +6,10 @@ metadata:
   labels:
     app.kubernetes.io/name: ollama
     app.kubernetes.io/managed-by: argocd
+  annotations:
+    # GPU 推論のバースト・CFS スロットリング回避のため memory limit をあえて設定しない
+    # (詳細は spec.template.spec.containers[0].resources のコメント参照)
+    ignore-check.kube-linter.io/unset-memory-requirements: "intentionally unbounded for GPU inference burst; CPU/memory limits omitted by design"
 spec:
   # GPU(RTX 3050 6GB)は1基のみで llama-cpp と排他。巨大 MoE を --cpu-moe で動かす
   # llama-cpp(k8s/llama-cpp)へ GPU を譲るため 0 にスケールダウンして常駐を止める。
@@ -84,14 +88,14 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU p95 0.69 コア / メモリ p95 2005Mi
           resources:
             requests:
-              cpu: 500m
+              cpu: 700m
               memory: 2Gi
             limits:
-              # CPU limit は設定しない（CFS スロットリング回避。requestで既に優先度は確保済み）
-              # memory limit はノード全体(約30GB)を巻き込む OOM を防ぐための上限として維持
-              memory: 24Gi
+              # CPU/memory limit はあえて設定しない（GPU 推論のバースト・CFS スロットリング回避のため）。
+              # requests で既にスケジューリング上の優先度は確保済み。
               # GPU 1基を占有（RTX 3050 6GB）
               nvidia.com/gpu: 1
           volumeMounts:

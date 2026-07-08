@@ -60,10 +60,11 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU p95 1.6 コア / メモリ p95 21.8Gi(モデル切替で変動)
           resources:
             requests:
-              cpu: 500m
-              memory: 4Gi
+              cpu: "2"
+              memory: 22Gi
             limits:
               # CPU limit は設定しない(MoE のエキスパート計算は CPU 律速。全 6 コアを使わせる)
               # memory limit はノード全体(約30GB)を巻き込む OOM を防ぐ上限。エキスパートは

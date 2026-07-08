@@ -110,11 +110,13 @@ spec:
             # runAsNonRoot/runAsUser/readOnlyRootFilesystem/capabilities.drop は設定しない
             # (設定すると chown・setuid に必要な権限が失われ起動に失敗する)。
             allowPrivilegeEscalation: false
+          # 実測(Grafana Mimir, 過去7日): CPU p95 最大 0.56 コア / メモリ p95 最大 790Mi
           resources:
             requests:
-              cpu: 250m
-              memory: 512Mi
+              cpu: 300m
+              memory: 768Mi
             limits:
+              cpu: 750m
               memory: 2Gi
           readinessProbe:
             httpGet:
