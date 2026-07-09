@@ -1,0 +1,113 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: minecraft-backup
+  namespace: minecraft
+  labels:
+    app.kubernetes.io/name: minecraft
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # 毎日 03:00 JST。GFS の曜日/日付判定もこの timeZone(= TZ env)に揃える。
+  schedule: "0 3 * * *"
+  timeZone: Asia/Tokyo
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      # 完了 Job の掃除は CronJob の successful/failedJobsHistoryLimit に任せる
+      # (jobTemplate 側の ttlSecondsAfterFinished は履歴上限と競合しうるため設定しない)。
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: minecraft-backup
+        spec:
+          restartPolicy: OnFailure
+          # world PVC(local-path)と同じノードに載せる必要がある。
+          nodeSelector:
+            kubernetes.io/hostname: n100
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: backup
+              # 【自己更新】このイメージタグは Renovate が更新する。
+              # itzg/mc-backup は rcon-cli / rclone / tar / gzip を同梱するツールボックス。
+              # entrypoint は使わず、ConfigMap のスクリプトを直接実行する。
+              image: itzg/mc-backup:2026.7.0
+              command: ["bash", "/scripts/backup.sh"]
+              env:
+                - name: TZ
+                  value: Asia/Tokyo
+                - name: HOME
+                  value: /tmp
+                - name: BUCKET
+                  value: roppoh-minecraft-world-backup
+                - name: RCON_HOST
+                  value: minecraft
+                - name: RCON_PORT
+                  value: "25575"
+                - name: RCON_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: minecraft
+                      key: RCON_PASSWORD
+                # rclone は環境変数だけで R2(S3 互換)リモート "r2:" を構成する。
+                - name: RCLONE_CONFIG_R2_TYPE
+                  value: s3
+                - name: RCLONE_CONFIG_R2_PROVIDER
+                  value: Cloudflare
+                - name: RCLONE_CONFIG_R2_REGION
+                  value: auto
+                - name: RCLONE_CONFIG_R2_ENDPOINT
+                  value: https://bd1a33a9922e50b3afff5a2f21ad52d0.r2.cloudflarestorage.com
+                - name: RCLONE_CONFIG_R2_NO_CHECK_BUCKET
+                  value: "true"
+                - name: RCLONE_CONFIG_R2_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: minecraft
+                      key: R2_ACCESS_KEY_ID
+                - name: RCLONE_CONFIG_R2_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: minecraft
+                      key: R2_SECRET_ACCESS_KEY
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: "1"
+                  memory: 512Mi
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                  readOnly: true
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            # StatefulSet の volumeClaimTemplate が作る PVC(replicas:1 → ordinal 0)。
+            - name: data
+              persistentVolumeClaim:
+                claimName: data-minecraft-0
+                readOnly: true
+            - name: scripts
+              configMap:
+                name: minecraft-backup-script
+            - name: tmp
+              emptyDir: {}

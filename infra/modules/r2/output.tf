@@ -27,3 +27,8 @@ output "roppoh_grafana_tempo_name" {
   description = "roppoh-grafana-tempo R2 bucket name"
   value       = cloudflare_r2_bucket.roppoh_grafana_tempo.name
 }
+
+output "roppoh_minecraft_world_backup_name" {
+  description = "roppoh-minecraft-world-backup R2 bucket name"
+  value       = cloudflare_r2_bucket.roppoh_minecraft_world_backup.name
+}

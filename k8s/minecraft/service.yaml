@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minecraft
+  namespace: minecraft
+  labels:
+    app.kubernetes.io/name: minecraft
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # cloudflared が CF ダッシュボード設定(コード管理外)から
+  # tcp://minecraft.minecraft.svc.cluster.local:25565 を引く
+  # (dev-pod の SSH と同構図)。
+  # 素の Minecraft Java クライアントで公開するには edge 側で
+  # Cloudflare Spectrum(origin=Tunnel)を併用する。
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: minecraft
+  ports:
+    - name: minecraft
+      port: 25565
+      targetPort: minecraft
+      protocol: TCP
+    # RCON はクラスタ内(バックアップ CronJob からの save flush)専用。外部公開しない。
+    - name: rcon
+      port: 25575
+      targetPort: rcon
+      protocol: TCP
