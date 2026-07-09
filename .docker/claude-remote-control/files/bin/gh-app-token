@@ -6,7 +6,7 @@
 #   owner: tsar-org(既定)| taiki-kuraishi
 set -euo pipefail
 
-dir=/etc/claude-remote-control/github-app
+dir="${GH_APP_TOKEN_DIR:-/etc/claude-remote-control/github-app}"
 owner="${1:-tsar-org}"
 
 installation_id_file="$dir/installation-id-${owner}"
