@@ -1,0 +1,35 @@
+name: claude-remote-control-ci
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".docker/claude-remote-control/**"
+      - ".github/workflows/claude-remote-control-ci.yml"
+  pull_request:
+    paths:
+      - ".docker/claude-remote-control/**"
+      - ".github/workflows/claude-remote-control-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - name: Build claude-remote-control image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .docker/claude-remote-control/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: false
+          tags: claude-remote-control:ci
+          cache-from: type=gha,scope=claude-remote-control
+          cache-to: type=gha,mode=max,scope=claude-remote-control

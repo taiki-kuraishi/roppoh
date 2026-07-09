@@ -1,0 +1,181 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: claude-remote-control
+  namespace: claude-remote-control
+  labels:
+    app.kubernetes.io/name: claude-remote-control
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # sshd コンテナは特権ポート 22 の bind とログイン処理(privilege separation /
+    # authorized_keys 読み取り)のため root で動作する必要がある
+    # (roppoh-claude-remote-control-plan.md 参照)。
+    ignore-check.kube-linter.io/run-as-non-root: "sshd needs root to bind port 22 and handle login/privsep"
+    ignore-check.kube-linter.io/no-read-only-root-fs: "sshd writes runtime state under /run; kept writable via emptyDir instead of a read-only rootfs"
+    # claude-remote-control Pod は Zed の SSH リモート開発先そのものであり、意図した実際の sshd(port 22)
+    ignore-check.kube-linter.io/ssh-port: "this workload is an actual vetted sshd server for Zed remote development, not an unrelated service on port 22"
+spec:
+  replicas: 1
+  serviceName: claude-remote-control
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: claude-remote-control
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: claude-remote-control
+    spec:
+      # local-path は PVC 初回作成時に root 所有(0755 root:root)で作られることがあるため、
+      # fsGroup だけでは claude(uid 1000)から書き込めない場合がある。initContainer で明示的に
+      # chown する(空のときのみ実行し、既存データの所有権は変更しない)。
+      initContainers:
+        - name: fix-home-ownership
+          image: registry.roppoh.local/claude-remote-control:bootstrap
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+              if [ -z "$(ls -A /home/claude 2>/dev/null)" ]; then
+                chown 1000:1000 /home/claude
+              fi
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: home
+              mountPath: /home/claude
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+        - name: init
+          image: registry.roppoh.local/claude-remote-control:bootstrap
+          command: [claude-remote-control-init]
+          env:
+            - name: HOME
+              value: /home/claude
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: home
+              mountPath: /home/claude
+          # dotfiles の初回 bootstrap(mise install 等)は数分かかりうる。
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+      containers:
+        - name: sshd
+          image: registry.roppoh.local/claude-remote-control:bootstrap
+          # /run は emptyDir(readOnlyRootFilesystem の代わり)なので、sshd の
+          # privilege separation ディレクトリを起動前に作り直す必要がある。
+          command:
+            - bash
+            - -c
+            - mkdir -p -m 0755 /run/sshd && exec /usr/sbin/sshd -D -e
+          ports:
+            - name: ssh
+              containerPort: 22
+              protocol: TCP
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+          # sshd 自体は常時ほぼアイドル(実測なしのため小さめの初期値。後日 Mimir 実測で調整)。
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: home
+              mountPath: /home/claude
+            - name: ssh-host-key
+              mountPath: /etc/ssh/keys
+              readOnly: true
+            - name: authorized-keys
+              mountPath: /etc/ssh/authorized_keys
+              readOnly: true
+            - name: github-app
+              mountPath: /etc/claude-remote-control/github-app
+              readOnly: true
+            - name: run-sshd
+              mountPath: /run
+        - name: claude
+          image: registry.roppoh.local/claude-remote-control:bootstrap
+          command: [claude-remote-control-claude]
+          env:
+            - name: HOME
+              value: /home/claude
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # claude remote-control のワークロード(worktree spawn 含む)を見込んだ初期値。
+          # 実測に基づき後日調整(コミット 99fc4a6 の流儀に倣う)。
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: home
+              mountPath: /home/claude
+            - name: github-app
+              mountPath: /etc/claude-remote-control/github-app
+              readOnly: true
+      volumes:
+        - name: ssh-host-key
+          secret:
+            secretName: claude-remote-control
+            defaultMode: 0400
+            items:
+              - key: ssh_host_ed25519_key
+                path: ssh_host_ed25519_key
+        - name: authorized-keys
+          configMap:
+            name: claude-remote-control-authorized-keys
+            items:
+              - key: authorized_keys
+                path: claude
+        - name: github-app
+          secret:
+            secretName: claude-remote-control
+            items:
+              - key: app-id
+                path: app-id
+              - key: installation-id-tsar-org
+                path: installation-id-tsar-org
+              - key: installation-id-taiki-kuraishi
+                path: installation-id-taiki-kuraishi
+              - key: private-key.pem
+                path: private-key.pem
+        - name: run-sshd
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: home
+      spec:
+        storageClassName: local-path
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
