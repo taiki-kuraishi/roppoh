@@ -4,5 +4,6 @@
 set -euo pipefail
 
 mise run test:vrt:neo-fujimatsu -- --update-snapshots
+mise run test:vrt:web-console -- --update-snapshots
 mise run test:vrt:roppoh -- --update-snapshots
 mise run test:vrt:ura-roppoh -- --update-snapshots

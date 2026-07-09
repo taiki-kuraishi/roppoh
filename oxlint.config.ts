@@ -35,6 +35,15 @@ export default defineConfig({
       },
     },
     {
+      // Inertia resolves pages by PascalCase name (c.render('User/Index') ->
+      // App/pages/User/Index.tsx), which conflicts with the repo-wide
+      // Kebab-case filename rule below. Exempt only the pages tree.
+      files: ["apps/web-console/app/pages/**"],
+      rules: {
+        "unicorn/filename-case": "off",
+      },
+    },
+    {
       // Foundation SDK の DashboardBuilder/VariableBuilder は配列ではなく
       // 独自の .sort() を持つため、Array 前提の unicorn/no-array-sort は誤検知する
       files: ["packages/grafana-dashboards/**"],

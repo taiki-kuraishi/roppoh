@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "compatibility_date": "2025-11-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./app/server.ts",
+  "name": "web-console",
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "destinations": ["alloy-logs"],
+    },
+    "traces": {
+      "enabled": true,
+      "destinations": ["alloy-traces"],
+    },
+  },
+  "assets": {
+    "directory": "./dist/client",
+    // Inertia owns routing (server-rendered per route); there is no static
+    // index.html SPA fallback, so every navigable page route must be listed
+    // here to reach the Worker.
+    "run_worker_first": [
+      "/",
+      "/login",
+      "/callback",
+      "/consent",
+      "/user",
+      "/organization",
+      "/oidc-client",
+      "/health",
+    ],
+  },
+  "preview_urls": false,
+  "routes": [
+    {
+      "custom_domain": true,
+      "pattern": "web-console.tsar-bmb.org",
+      "zone_name": "tsar-bmb.org",
+    },
+  ],
+  "vars": {
+    "VITE_OIDC_ISSUER": "https://neo-fujimatsu.tsar-bmb.org/api",
+    "VITE_OIDC_CLIENT_ID": "kNQlBnNvdBPhYFKmdDRHbBzFVtHYiggd",
+  },
+  "workers_dev": false,
+}

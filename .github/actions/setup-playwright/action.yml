@@ -10,7 +10,11 @@ runs:
         key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lock') }}
         restore-keys: ${{ runner.os }}-playwright-
     - shell: bash
-      run: bunx playwright install --with-deps chromium
+      working-directory: apps/web-console
+      # Run via node directly (not bunx): Bun's fetch/stream implementation
+      # Was a likely culprit for occasional hangs on this large binary
+      # Download.
+      run: node ./node_modules/.bin/playwright install chromium
     - uses: actions/cache/save@v4
       with:
         path: ~/.cache/ms-playwright

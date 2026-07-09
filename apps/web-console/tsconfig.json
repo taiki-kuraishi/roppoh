@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "esnext", "WebWorker"],
+    "paths": {
+      "@/*": ["./app/*"],
+      "@/test/*": ["./test/*"],
+      "@roppoh/shadcn/*": ["../../packages/shadcn/src/*"]
+    },
+    "resolveJsonModule": true,
+    "types": ["./worker-configuration.d.ts", "vite/client"],
+    "verbatimModuleSyntax": true
+  },
+  "extends": "../../tsconfig.json",
+  "include": ["app", "test", "./*.ts"]
+}

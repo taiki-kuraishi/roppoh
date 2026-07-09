@@ -1,0 +1,4 @@
+@import "tailwindcss";
+@import "@roppoh/shadcn/global.css";
+
+@source "./**/*.{ts,tsx}";

@@ -5,4 +5,4 @@ set -euo pipefail
 
 bun install --frozen-lockfile
 
-bunx playwright install
+(cd apps/neo-fujimatsu && bunx playwright install chromium)
