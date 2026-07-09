@@ -9,7 +9,7 @@ export PATH="$HOME/.local/bin:$PATH"
 
 until command -v claude >/dev/null 2>&1 && [ -f "$HOME/.claude/.credentials.json" ]; do
   echo "waiting for claude install + auth (see roppoh-claude-remote-control-plan.md)"
-  sleep 300
+  sleep "${CLAUDE_WAIT_INTERVAL:-300}"
 done
 
 exec claude remote-control --spawn=worktree --name "roppoh-dev"

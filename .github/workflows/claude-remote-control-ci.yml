@@ -7,15 +7,27 @@ on:
     paths:
       - ".docker/claude-remote-control/**"
       - ".github/workflows/claude-remote-control-ci.yml"
+      - "mise.toml"
+      - ".mise-tasks/test/unit/claude-remote-control"
   pull_request:
     paths:
       - ".docker/claude-remote-control/**"
       - ".github/workflows/claude-remote-control-ci.yml"
+      - "mise.toml"
+      - ".mise-tasks/test/unit/claude-remote-control"
 
 permissions:
   contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+      - name: Run bin scripts unit tests (bats)
+        run: mise run test:unit:claude-remote-control
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 15
