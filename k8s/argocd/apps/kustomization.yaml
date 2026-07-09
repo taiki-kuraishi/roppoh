@@ -23,5 +23,6 @@ resources:
   - grafana-dashboards.yaml
   - secrets.yaml
   - traefik.yaml
-  - claude-remote-control.yaml
-  - claude-remote-control-build.yaml
+  - dev-pod.yaml
+  - dev-pod-build.yaml
+  - minecraft.yaml

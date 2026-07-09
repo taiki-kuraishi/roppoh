@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: claude-remote-control
+  name: minecraft
   namespace: argocd
   annotations:
     notifications.argoproj.io/subscribe.on-app-deployed.github: ""
@@ -10,10 +10,10 @@ spec:
   source:
     repoURL: https://github.com/taiki-kuraishi/roppoh
     targetRevision: main
-    path: k8s/claude-remote-control
+    path: k8s/minecraft
   destination:
     server: https://kubernetes.default.svc
-    namespace: claude-remote-control
+    namespace: minecraft
   syncPolicy:
     automated:
       prune: true

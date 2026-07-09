@@ -1,0 +1,191 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minecraft
+  namespace: minecraft
+  labels:
+    app.kubernetes.io/name: minecraft
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # initContainer(migrate-seed / fix-data-ownership)は local-path PVC の
+    # 所有権修正と docker volume からの初期コピーのため root で動作する必要がある。
+    ignore-check.kube-linter.io/run-as-non-root: "init containers need root to chown the local-path PVC and seed data; the minecraft server itself runs as uid 1000"
+    # itzg/minecraft-server は起動時にサーバ jar のダウンロードや設定ファイル生成を
+    # rootfs 上で行うため、read-only rootfs にはできない。
+    ignore-check.kube-linter.io/no-read-only-root-fs: "itzg/minecraft-server downloads the server jar and writes runtime files outside the data volume"
+spec:
+  replicas: 1
+  serviceName: minecraft
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minecraft
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minecraft
+    spec:
+      # world データは local-path(ノードローカル)に置かれ、かつ移行時は
+      # n100 上の docker volume を hostPath 参照するため、Pod を n100 に固定する。
+      nodeSelector:
+        kubernetes.io/hostname: n100
+      # グレースフルシャットダウン: preStop で world を flush してから停止する。
+      # autosave 途中の SIGKILL による world 破損を防ぐ(参考:
+      # https://zenn.dev/alecjp02/articles/733a31ded01de5)。
+      terminationGracePeriodSeconds: 120
+      initContainers:
+        # 【移行時のみ】dokploy の docker volume から world を一度だけコピーする。
+        # install フェーズ限定。/data/world が既に存在する場合は何もしないため、
+        # Pod 再作成(runtime フェーズ)で既存 world を破壊しない。
+        # 移行完了確認後、この initContainer と seed-src volume は削除すること。
+        - name: migrate-seed
+          image: alpine:3.24
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -eu
+              if [ ! -d /data/world ]; then
+                echo "[migrate-seed] /data/world not found -> seeding from docker volume"
+                cp -a /seed-src/. /data/
+                echo "[migrate-seed] seed done"
+              else
+                echo "[migrate-seed] /data/world exists -> skip (runtime phase)"
+              fi
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: seed-src
+              mountPath: /seed-src
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: "1"
+              memory: 256Mi
+        # local-path PVC は root:root(0755)で作られることがあるため、
+        # 非 root(uid 1000)の minecraft サーバが書けるよう chown する(冪等)。
+        - name: fix-data-ownership
+          image: alpine:3.24
+          command:
+            - /bin/sh
+            - -c
+            - chown -R 1000:1000 /data
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+      containers:
+        - name: minecraft
+          # 【自己更新】このイメージタグは Renovate が更新する
+          # java25 は移行元サーバの JAVA_VERSION(jdk-25)に合わせている。
+          image: itzg/minecraft-server:2026.7.0-java25
+          env:
+            - name: EULA
+              value: "TRUE"
+            # securityContext.runAsUser を指定すると itzg はユーザー切替(gosu)を
+            # スキップし uid 1000 で直接起動する。非 root 運用で sudo 試行を避ける。
+            - name: SKIP_SUDO
+              value: "true"
+            - name: TYPE
+              value: VANILLA
+            # 移行元は VERSION=LATEST 運用(現行 26.2)。移行時のワールド
+            # フォーマット変換を避けたい場合は現行バージョンへ一時 pin する。
+            - name: VERSION
+              value: LATEST
+            - name: MEMORY
+              value: 2G
+            # itzg はマージ動作: env を設定したプロパティ(enable-rcon / rcon.port /
+            # rcon.password)のみを上書きし、env 未設定のプロパティ(difficulty /
+            # gamemode / motd / level-name 等)は移行した server.properties の値を維持する。
+            # false にすると rcon.password も移行元の古い値のまま固定され、Secret の
+            # RCON_PASSWORD と食い違うため true にする。
+            - name: OVERRIDE_SERVER_PROPERTIES
+              value: "true"
+            - name: ENABLE_RCON
+              value: "true"
+            - name: RCON_PORT
+              value: "25575"
+            - name: RCON_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minecraft
+                  key: RCON_PASSWORD
+          ports:
+            - name: minecraft
+              containerPort: 25565
+              protocol: TCP
+            - name: rcon
+              containerPort: 25575
+              protocol: TCP
+          # 起動(jar 取得 + world ロード)に時間がかかるため startupProbe で保護。
+          startupProbe:
+            exec:
+              command: ["mc-monitor", "status", "--host", "localhost", "--port", "25565"]
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            exec:
+              command: ["mc-monitor", "status", "--host", "localhost", "--port", "25565"]
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command: ["mc-monitor", "status", "--host", "localhost", "--port", "25565"]
+            periodSeconds: 30
+            failureThreshold: 5
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - rcon-cli save-all flush && rcon-cli stop
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # vanilla / 小規模 world 向けの保守的な初期値(n100 は非力)。
+          # 実測に基づき後日調整(コミット 99fc4a6 の流儀に倣う)。
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1536Mi
+            limits:
+              cpu: "2"
+              memory: 3Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        # 【移行時のみ】n100 上の dokploy minecraft の docker volume(read-only)。
+        # 移行完了後は migrate-seed initContainer とともに削除する。
+        - name: seed-src
+          hostPath:
+            path: /var/lib/docker/volumes/test-minecraft-rabl5k_minecraft-volume/_data
+            type: Directory
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        storageClassName: local-path
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            # world 274M + サーバ jar 等。余裕を見て 5Gi。
+            storage: 5Gi

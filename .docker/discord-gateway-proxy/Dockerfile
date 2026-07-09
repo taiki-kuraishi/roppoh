@@ -4,7 +4,7 @@
 #   docker build -f .docker/discord-gateway-proxy/Dockerfile -t discord-gateway-proxy .
 #
 # Keep the builder Go version in sync with `go = "..."` in mise.toml.
-FROM golang:1.26.4-bookworm AS builder
+FROM golang:1.26.5-bookworm AS builder
 
 WORKDIR /src
 

@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: minecraft
+
+resources:
+  - namespace.yaml
+  - service.yaml
+  - statefulset.yaml
+  - backup-cronjob.yaml
+
+# ConfigMap はハッシュサフィックス付き命名(disableNameSuffixHash は使わない)。
+# backup.sh 変更時に ConfigMap 名が変わり、NameReference transformer が
+# CronJob の volumes[].configMap.name を自動で書き換える。
+configMapGenerator:
+  - name: minecraft-backup-script
+    files:
+      - files/backup.sh
