@@ -84,13 +84,17 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-          # 実測(Grafana Mimir, 過去7日): CPU 最大 198m / メモリ最大 592Mi
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 198m / メモリ最大 592Mi。ただし
+          # llama-cpp モデルとのストリーミングチャット時、CPU limit 400m によるスロットリングで
+          # イベントループが最大約6秒遅延し、セッションストアへの楽観的ロック書き込みが
+          # リトライしても衝突し続け "reply session initialization conflicted" エラーを
+          # 誘発することを確認(2026-07)。CPU limit を 1000m に緩和して event loop starvation を解消。
           resources:
             requests:
               cpu: 150m
               memory: 640Mi
             limits:
-              cpu: 400m
+              cpu: "1"
               memory: 1Gi
           readinessProbe:
             httpGet:
