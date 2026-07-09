@@ -57,6 +57,10 @@ spec:
           env:
             - name: HOME
               value: /home/user
+            # home-manager(yadm bootstrap)は $USER を参照する(コンテナには login/PAM が
+            # 無く自動設定されないため明示する)。未設定だと set -u で unbound variable になる。
+            - name: USER
+              value: user
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -119,6 +123,8 @@ spec:
           env:
             - name: HOME
               value: /home/user
+            - name: USER
+              value: user
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
