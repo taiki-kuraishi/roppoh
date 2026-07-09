@@ -93,3 +93,12 @@ resource "cloudflare_dns_record" "hermes_dashboard" {
   proxied = true
   ttl     = 1
 }
+
+resource "cloudflare_dns_record" "dev_pod" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "dev-pod.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}

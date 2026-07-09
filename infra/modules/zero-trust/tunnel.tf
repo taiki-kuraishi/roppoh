@@ -56,6 +56,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "hermes-dashboard.tsar-bmb.org"
         service  = "http://hermes-agent.hermes-agent.svc.cluster.local:9119"
       },
+      # dev-pod: Zed の SSH リモート開発先。cloudflared access ssh 経由で 22 番に到達する。
+      {
+        hostname = "dev-pod.tsar-bmb.org"
+        service  = "ssh://dev-pod.dev-pod.svc.cluster.local:22"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"

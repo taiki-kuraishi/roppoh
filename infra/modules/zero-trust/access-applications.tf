@@ -141,6 +141,28 @@ resource "cloudflare_zero_trust_access_application" "dokploy" {
   ]
 }
 
+# ----- Cloudflare Access: dev-pod (SSH) -----
+# Zed の SSH リモート開発先。`cloudflared access ssh --hostname dev-pod.tsar-bmb.org`
+# 経由で SSO 認証してから 22 番に到達する。
+resource "cloudflare_zero_trust_access_application" "dev_pod" {
+  account_id                 = var.account_id
+  name                       = "dev-pod"
+  domain                     = "dev-pod.tsar-bmb.org"
+  type                       = "self_hosted"
+  session_duration           = "730h"
+  http_only_cookie_attribute = false
+  auto_redirect_to_identity  = false
+  enable_binding_cookie      = false
+  options_preflight_bypass   = false
+
+  policies = [
+    {
+      id         = var.kuraishi_only_policy_id
+      precedence = 1
+    },
+  ]
+}
+
 # ----- Cloudflare Access: n100 -----
 resource "cloudflare_zero_trust_access_application" "n100" {
   account_id                 = var.account_id
