@@ -8,11 +8,12 @@ if [ ! -d "$HOME/.local/share/yadm/repo.git" ]; then
   yadm clone --bootstrap https://github.com/taiki-kuraishi/dotfiles.git
 else
   yadm pull --rebase || echo "yadm pull failed (offline?) — continuing"
-  # /nix は PVC(HOME)の外(コンテナ rootfs)にあるため、Pod 再作成で失われうる。
-  # yadm repo が PVC に残っていても /nix が無ければ Nix/Home Manager 導入物が
-  # 消えている状態なので、強制的に bootstrap を再実行する。
-  if [ ! -e /nix/var/nix/profiles/default ] && [ ! -e "$HOME/.nix-profile" ]; then
-    echo "nix not found on this rootfs (pod rescheduled?) — re-running yadm bootstrap"
+  # Nix 本体はイメージ(コンテナ rootfs)に焼き込まれているため Pod 再作成後も
+  # 常に存在する。一方 Home Manager が作るユーザープロファイル
+  # ($HOME/.nix-profile)は PVC 側にあるため、yadm repo が残っていてもこれが
+  # 無ければ home-manager switch がまだ当たっていない状態なので bootstrap を実行する。
+  if [ ! -e "$HOME/.nix-profile" ]; then
+    echo "$HOME/.nix-profile not found — re-running yadm bootstrap"
     yadm bootstrap
   fi
 fi
