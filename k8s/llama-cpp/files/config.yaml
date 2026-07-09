@@ -212,3 +212,47 @@ models:
       -hf unsloth/gemma-4-E2B-it-GGUF:Q5_K_M
       --no-mmproj
       -c 131072
+
+  # openclaw の memory 検索(agents.defaults.memorySearch)用 embedding エンドポイント。
+  # llama-server 群はすべてチャット用起動(--embeddings なし)のため /v1/embeddings が
+  # 501 を返し memory index が openai へフォールバックして失敗していた。その専用エンドポイント。
+  #
+  # GPU(RTX 3050 6GB)は chat モデルが占有するため -ngl 0(CPU 実行)にして VRAM を一切使わない。
+  # 0.6B と小さく indexing 用途では CPU でも実用速度。下記 groups で persistent 指定し、
+  # chat モデルのロード/スワップで unload されず常駐する(embedding は都度必要になるため)。
+  # Qwen3-Embedding は last-token pooling 指定が必須(--pooling last)。出力次元 1024。
+  qwen3-embedding-0.6b:
+    # chat と違い常駐前提(groups.embeddings.persistent)。ttl は unload 抑止のため長めに。
+    ttl: 86400
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 0
+      --embeddings --pooling last
+      -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
+      -c 8192 -b 8192 -ub 8192
+
+# モデルの同時ロード制御。従来は暗黙のデフォルト挙動(単一モデルのみ、ロードで他を unload)
+# だったが、embedding を chat と同時常駐させるため明示的にグループ分けする。
+#   - chat: 従来どおり相互スワップ(swap: true)。exclusive: false で embeddings を unload しない
+#   - embeddings: persistent で chat のロード/スワップに巻き込まれず常駐。CPU 実行のため VRAM 競合なし
+groups:
+  chat:
+    swap: true
+    exclusive: false
+    members:
+      - qwen3.5-35b-a3b-hauhaucs-aggressive
+      - qwen3.6-35b-a3b-hauhaucs-aggressive
+      - qwen3.6-35b-a3b
+      - gemma4-26b-a4b-hauhaucs-balanced
+      - gemma4-26b-a4b
+      - qwen3.5-35b-a3b
+      - qwen3.5-35b-a3b-longctx
+      - gemma4-12b
+      - gemma4-e4b
+      - gemma4-e2b
+  embeddings:
+    swap: false
+    exclusive: false
+    persistent: true
+    members:
+      - qwen3-embedding-0.6b
