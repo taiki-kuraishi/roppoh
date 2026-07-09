@@ -4,12 +4,18 @@
 #   docker build -f .docker/claude-remote-control/Dockerfile .
 #
 # CLIツール類(mise/gh/starship/dprint/ghq/ripgrep/tmux/vim含む)や言語ランタイムは
-# イメージに焼かない。dotfiles の yadm bootstrap が Nix + Home Manager 経由で
-# ユーザーの PVC ホーム配下(~/.local, ~/.config/mise, /nix)に展開する
+# イメージに焼かない。dotfiles の yadm bootstrap が Home Manager 経由で
+# ユーザーの PVC ホーム配下(~/.local, ~/.config/mise)に展開する
 # (roppoh-claude-remote-control-plan.md 参照)。
 # ここに残すのは (1) sshd コンテナ自体の起動に要るもの、(2) yadm bootstrap を
 # 起動するための最小限(鶏卵依存)、(3) bootstrap 前でも Git 認証のたびに呼ばれる
-# git-credential-github-app / gh-app-token の実行依存、の3種類のみ。
+# git-credential-github-app / gh-app-token の実行依存、(4) Nix 本体、の4種類のみ。
+#
+# Nix は /nix をコンテナ rootfs(イメージ)側に焼き込む。/nix は Pod 再作成のたびに
+# 失われて構わないキャッシュではなく、initContainer が root 昇格(sudo)なしの
+# uid 1000 で動くため、そもそも起動時に nix-installer を実行できない
+# (sudo が無い runAsNonRoot + allowPrivilegeEscalation: false 環境)。
+# そのためイメージビルド時に claude ユーザーで single-user インストールしておく。
 
 FROM ubuntu:24.04
 
@@ -22,11 +28,30 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     yadm \
     jq \
     openssl \
+    xz-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # ベースの ubuntu(uid 1000)を削除して claude ユーザーを作る(HOME は PVC でマウントされる)
 RUN userdel -r ubuntu 2>/dev/null; \
     useradd -m -u 1000 -s /usr/bin/zsh claude
+
+# claude(uid 1000)が root 昇格なしで使える single-user Nix を /nix に焼き込む。
+# /nix はビルドコンテキストの HOME(/home/claude, PVC でマウントされる)とは
+# 独立したパスなので、Pod 再作成後も常にこのイメージレイヤーの内容がそのまま使える。
+# filter-syscalls = false は、コンテナビルド環境(kaniko/CI/QEMU エミュレーション等)で
+# Nix のビルドサンドボックス用 seccomp フィルタが `unable to load seccomp BPF program`
+# で失敗するのを避けるための既知の回避策。sandbox = false と合わせて runtime の
+# home-manager rebuild にも引き続き適用される(同じ制約下で動くため)。
+RUN mkdir -m 0755 /nix && chown claude:claude /nix \
+    && mkdir -p /etc/nix \
+    && printf 'sandbox = false\nfilter-syscalls = false\n' > /etc/nix/nix.conf
+USER claude
+RUN curl -fsSL https://nixos.org/nix/install | sh -s -- --no-daemon
+USER root
+
+# single-user Nix のプロファイルは $HOME(PVC)配下のシンボリックリンク経由になるため、
+# HOME の実体に関わらず nix コマンド自体を解決できるよう /usr/local/bin にも実体を通す。
+RUN ln -s "$(readlink -f /home/claude/.nix-profile/bin/nix)" /usr/local/bin/nix
 
 COPY .docker/claude-remote-control/files/sshd-claude-remote-control.conf /etc/ssh/sshd_config.d/claude-remote-control.conf
 COPY --chmod=755 .docker/claude-remote-control/files/bin/ /usr/local/bin/
