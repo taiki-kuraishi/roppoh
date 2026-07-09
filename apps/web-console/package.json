@@ -23,7 +23,7 @@
     "@tanstack/react-form": "1.33.0",
     "@tanstack/react-query": "catalog:",
     "better-auth": "catalog:",
-    "hono": "4.12.25",
+    "hono": "4.12.28",
     "jotai": "2.20.0",
     "lucide-react": "1.16.0",
     "nuqs": "2.8.9",
