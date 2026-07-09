@@ -155,3 +155,60 @@ models:
       -hf unsloth/Qwen3.5-35B-A3B-GGUF:Q4_K_M
       --cpu-moe --reasoning auto --no-mmproj
       -c 131072
+
+  # Gemma4-12B(Dense、公式 unsloth GGUF)。Qwen/Gemma4-MoE 系と異なり Dense のため
+  # --n-cpu-moe による CPU オフロードが効かず、全レイヤーを VRAM(6GB)に載せる必要が
+  # ある。マルチモーダル(vision/audio)エンコーダはテキスト Agent 用途では不要なため
+  # --no-mmproj で無効化し VRAM を節約する。
+  # 2026-07 ベンチ実施記録(PR参照): Q3_K_M(5.69GB)は重み単体で VRAM をほぼ使い切り、
+  # -b/-ub 2048 は元より -c 8192 の KV cache 確保にすら失敗し CUDA OOM でクラッシュ
+  # (confirmed)。UD-IQ3_XXS(4.64GB)まで量子化を落とし、-b/-ub を 256 まで縮小しても
+  # c=131072(128k)は OOM(KV量子化を q4_0 まで落としても解消せず)。二分探索の結果、
+  # c=126976 は OOM、c=122880 は安定動作(実測 VRAM 5783MiB、残り約361MiB)を確認した
+  # ため 122880 を採用(128k 目標には僅かに届かないが Gemma4-12B は Dense かつ
+  # hidden_size が大きく、VRAM 6GB では他の Gemma4 系と異なりこれが実用上の上限)。
+  # gemma4-e4b/e2b と異なり VRAM 余裕がほぼ無いため、batch を大きくした prefill
+  # 高速化は不可(prefill 速度とのトレードオフ)。
+  gemma4-12b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 256 -ub 256
+      -hf unsloth/gemma-4-12b-it-GGUF:UD-IQ3_XXS
+      --no-mmproj
+      -c 122880
+
+  # Gemma4-E4B(Dense/MatFormer、非MoE)。ネイティブ context 128K。gemma4-12b と同様
+  # 全レイヤー VRAM 常駐、mmproj 無効化。
+  # 2026-07 ベンチ実施記録(PR参照): Q3_K_M(4.06GB)+ -b/-ub 2048 で c=131072 まで
+  # 安定動作(実測 VRAM 使用量 5019〜5021MiB で一定、context 深さ 0/8k/32k/93k を通じて
+  # 変動なし。Gemma のハイブリッド sliding-window attention により KV cache が
+  # ほぼ一定サイズに収まるためと見られる)。VRAM 余裕(残り約1.1GiB)は確保できているが
+  # Q4_K_M(4.98GB、+0.92GB)へ上げると残り約200MBまで縮小し危険なため Q3_K_M を採用。
+  gemma4-e4b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q8_0 -ctv q8_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
+      --no-mmproj
+      -c 131072
+
+  # Gemma4-E2B(Dense/MatFormer、非MoE、ファミリー最小)。ネイティブ context 128K。
+  # 2026-07 ベンチ実施記録(PR参照): 最小モデルのため VRAM 余裕が大きく(c=131072 で
+  # 実測 VRAM 使用量 3.2GB 前後、cold ~93k プロンプトでも同水準)、E4B/12B と異なり
+  # 量子化を上げても問題ない。品質重視で Q5_K_M を採用(残り約2.9GiB の余裕あり)。
+  gemma4-e2b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q8_0 -ctv q8_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-E2B-it-GGUF:Q5_K_M
+      --no-mmproj
+      -c 131072
