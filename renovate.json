@@ -4,6 +4,7 @@
   "ignorePaths": ["k8s/argocd/install.yaml"],
   "commitMessagePrefix": "⬆️ ",
   "labels": ["dependencies"],
+  "platformAutomerge": false,
   "kubernetes": {
     "fileMatch": ["(^|/)k8s/.+\\.ya?ml$"]
   },
