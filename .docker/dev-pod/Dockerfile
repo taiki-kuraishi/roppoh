@@ -29,6 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     jq \
     openssl \
     xz-utils \
+    libatomic1 \
     && rm -rf /var/lib/apt/lists/*
 
 # ベースの ubuntu(uid 1000)を削除して user ユーザーを作る(HOME は PVC でマウントされる)
@@ -49,9 +50,20 @@ USER user
 RUN curl -fsSL https://nixos.org/nix/install | sh -s -- --no-daemon
 USER root
 
-# single-user Nix のプロファイルは $HOME(PVC)配下のシンボリックリンク経由になるため、
-# HOME の実体に関わらず nix コマンド自体を解決できるよう /usr/local/bin にも実体を通す。
-RUN ln -s "$(readlink -f /home/user/.nix-profile/bin/nix)" /usr/local/bin/nix
+# single-user Nix のプロファイル($HOME/.nix-profile)は PVC でマスクされて実行時に
+# 消えるため、nix 系 CLI を解決できるよう対策する:
+#  (1) nix / nix-env / nix-store 等すべてを /usr/local/bin に通す。home-manager の
+#      activation は $HOME/.nix-profile 生成前に nix-env を呼ぶため nix 単体では足りない。
+#  (2) dotfiles bootstrap(dash, set -e)は起動時に nix プロファイルスクリプトを
+#      `. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh` で source する。
+#      single-user --no-daemon 版にはこのファイルが無く、dash では「存在しないファイルの
+#      source」が special-builtin エラーとなり `|| :` を待たずシェルが即終了する。
+#      PATH を通す最小スクリプトを既定パスに置き、source を成功させる。
+RUN NIXBIN="$(dirname "$(readlink -f /home/user/.nix-profile/bin/nix)")" \
+    && ln -sf "$NIXBIN"/nix "$NIXBIN"/nix-* /usr/local/bin/ \
+    && mkdir -p /nix/var/nix/profiles/default/etc/profile.d \
+    && printf 'export PATH="%s${PATH:+:$PATH}"\n' "$NIXBIN" \
+       > /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
 COPY .docker/dev-pod/files/sshd-dev-pod.conf /etc/ssh/sshd_config.d/dev-pod.conf
 COPY --chmod=755 .docker/dev-pod/files/bin/ /usr/local/bin/
