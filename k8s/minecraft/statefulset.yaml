@@ -106,9 +106,13 @@ spec:
               value: LATEST
             - name: MEMORY
               value: 2G
-            # 既存(移行した)server.properties を尊重し、env での上書きを抑制する。
+            # itzg はマージ動作: env を設定したプロパティ(enable-rcon / rcon.port /
+            # rcon.password)のみを上書きし、env 未設定のプロパティ(difficulty /
+            # gamemode / motd / level-name 等)は移行した server.properties の値を維持する。
+            # false にすると rcon.password も移行元の古い値のまま固定され、Secret の
+            # RCON_PASSWORD と食い違うため true にする。
             - name: OVERRIDE_SERVER_PROPERTIES
-              value: "false"
+              value: "true"
             - name: ENABLE_RCON
               value: "true"
             - name: RCON_PORT
