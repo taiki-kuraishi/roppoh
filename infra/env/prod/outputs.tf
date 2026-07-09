@@ -36,3 +36,15 @@ output "discord_events_ingest_token" {
   value       = module.pipelines.discord_events_ingest_token
   sensitive   = true
 }
+
+output "minecraft_world_backup_r2_access_key_id" {
+  description = "R2 S3 Access Key ID for the minecraft-backup CronJob (paste into k8s minecraft Secret R2_ACCESS_KEY_ID)"
+  value       = module.r2.minecraft_world_backup_r2_access_key_id
+  sensitive   = true
+}
+
+output "minecraft_world_backup_r2_secret_access_key" {
+  description = "R2 S3 Secret Access Key for the minecraft-backup CronJob (paste into k8s minecraft Secret R2_SECRET_ACCESS_KEY)"
+  value       = module.r2.minecraft_world_backup_r2_secret_access_key
+  sensitive   = true
+}

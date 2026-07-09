@@ -25,3 +25,4 @@ resources:
   - traefik.yaml
   - dev-pod.yaml
   - dev-pod-build.yaml
+  - minecraft.yaml
