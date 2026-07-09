@@ -24,9 +24,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# ベースの ubuntu(uid 1000)を削除して dev ユーザーを作る(HOME は PVC でマウントされる)
+# ベースの ubuntu(uid 1000)を削除して claude ユーザーを作る(HOME は PVC でマウントされる)
 RUN userdel -r ubuntu 2>/dev/null; \
-    useradd -m -u 1000 -s /usr/bin/zsh dev
+    useradd -m -u 1000 -s /usr/bin/zsh claude
 
 COPY .docker/claude-remote-control/files/sshd-claude-remote-control.conf /etc/ssh/sshd_config.d/claude-remote-control.conf
 COPY --chmod=755 .docker/claude-remote-control/files/bin/ /usr/local/bin/

@@ -26,7 +26,7 @@ spec:
         app.kubernetes.io/name: claude-remote-control
     spec:
       # local-path は PVC 初回作成時に root 所有(0755 root:root)で作られることがあるため、
-      # fsGroup だけでは dev(uid 1000)から書き込めない場合がある。initContainer で明示的に
+      # fsGroup だけでは claude(uid 1000)から書き込めない場合がある。initContainer で明示的に
       # chown する(空のときのみ実行し、既存データの所有権は変更しない)。
       initContainers:
         - name: fix-home-ownership
@@ -36,14 +36,14 @@ spec:
             - -c
             - |
               set -euo pipefail
-              if [ -z "$(ls -A /home/dev 2>/dev/null)" ]; then
-                chown 1000:1000 /home/dev
+              if [ -z "$(ls -A /home/claude 2>/dev/null)" ]; then
+                chown 1000:1000 /home/claude
               fi
           securityContext:
             runAsUser: 0
           volumeMounts:
             - name: home
-              mountPath: /home/dev
+              mountPath: /home/claude
           resources:
             requests:
               cpu: 10m
@@ -56,7 +56,7 @@ spec:
           command: [claude-remote-control-init]
           env:
             - name: HOME
-              value: /home/dev
+              value: /home/claude
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -66,7 +66,7 @@ spec:
               drop: ["ALL"]
           volumeMounts:
             - name: home
-              mountPath: /home/dev
+              mountPath: /home/claude
           # dotfiles の初回 bootstrap(mise install 等)は数分かかりうる。
           resources:
             requests:
@@ -101,7 +101,7 @@ spec:
               memory: 256Mi
           volumeMounts:
             - name: home
-              mountPath: /home/dev
+              mountPath: /home/claude
             - name: ssh-host-key
               mountPath: /etc/ssh/keys
               readOnly: true
@@ -118,7 +118,7 @@ spec:
           command: [claude-remote-control-claude]
           env:
             - name: HOME
-              value: /home/dev
+              value: /home/claude
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
@@ -137,7 +137,7 @@ spec:
               memory: 8Gi
           volumeMounts:
             - name: home
-              mountPath: /home/dev
+              mountPath: /home/claude
             - name: github-app
               mountPath: /etc/claude-remote-control/github-app
               readOnly: true
@@ -154,7 +154,7 @@ spec:
             name: claude-remote-control-authorized-keys
             items:
               - key: authorized_keys
-                path: dev
+                path: claude
         - name: github-app
           secret:
             secretName: claude-remote-control
