@@ -30,7 +30,7 @@ spec:
       # chown する(空のときのみ実行し、既存データの所有権は変更しない)。
       initContainers:
         - name: fix-home-ownership
-          image: registry.roppoh.local/dev-pod:de60a7f
+          image: registry.roppoh.local/dev-pod:5753e0e
           command:
             - bash
             - -c
@@ -52,7 +52,7 @@ spec:
               cpu: 200m
               memory: 64Mi
         - name: init
-          image: registry.roppoh.local/dev-pod:de60a7f
+          image: registry.roppoh.local/dev-pod:5753e0e
           command: [dev-pod-init]
           env:
             - name: HOME
@@ -81,7 +81,7 @@ spec:
               memory: 2Gi
       containers:
         - name: sshd
-          image: registry.roppoh.local/dev-pod:de60a7f
+          image: registry.roppoh.local/dev-pod:5753e0e
           # /run は emptyDir(readOnlyRootFilesystem の代わり)なので、sshd の
           # privilege separation ディレクトリを起動前に作り直す必要がある。
           command:
@@ -118,7 +118,7 @@ spec:
             - name: run-sshd
               mountPath: /run
         - name: claude
-          image: registry.roppoh.local/dev-pod:de60a7f
+          image: registry.roppoh.local/dev-pod:5753e0e
           command: [dev-pod-claude]
           env:
             - name: HOME
