@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
-# claude-remote-control-claude: claude コンテナのentrypointのテスト。claude をスタブする。
+# dev-pod-claude: claude コンテナのentrypointのテスト。claude をスタブする。
 
 load 'helpers/stub'
 
-SCRIPT="$BATS_TEST_DIRNAME/../claude-remote-control-claude"
+SCRIPT="$BATS_TEST_DIRNAME/../dev-pod-claude"
 
 setup() {
   stub_setup

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # initContainer 用: dotfiles(yadm)の同期と Git 認証設定の生成。
-# roppoh-claude-remote-control-plan.md の「dotfiles との契約」参照。
+# roppoh-dev-pod-plan.md の「dotfiles との契約」参照。
 set -euo pipefail
 
 # dotfiles 同期(初回 clone は --bootstrap 付き。bootstrap は mise install 等で数分かかる)
@@ -20,7 +20,7 @@ fi
 
 # Git 認証: dotfiles の .gitconfig 末尾の include から読まれるファイルを生成
 cat > "$HOME/.gitconfig.local" <<'EOF'
-# claude-remote-control Pod が生成する(手で編集しない)。GitHub App の短命トークンで認証する。
+# dev-pod Pod が生成する(手で編集しない)。GitHub App の短命トークンで認証する。
 [credential]
 	useHttpPath = true
 [credential "https://github.com"]

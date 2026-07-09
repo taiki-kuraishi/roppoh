@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# claude-remote-control-init: dotfiles(yadm)同期スクリプトのテスト。yadmをスタブする。
+# dev-pod-init: dotfiles(yadm)同期スクリプトのテスト。yadmをスタブする。
 #
 # 注意: スクリプトは絶対パス /nix/var/nix/profiles/default を直接見るため、実際に
 # Nixが導入済みの開発マシンでは「nixが無い」シナリオを再現できない。CI(素のUbuntu
@@ -7,7 +7,7 @@
 
 load 'helpers/stub'
 
-SCRIPT="$BATS_TEST_DIRNAME/../claude-remote-control-init"
+SCRIPT="$BATS_TEST_DIRNAME/../dev-pod-init"
 
 setup() {
   stub_setup
