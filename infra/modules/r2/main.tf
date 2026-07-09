@@ -75,3 +75,36 @@ resource "cloudflare_r2_bucket_lifecycle" "roppoh_minecraft_world_backup" {
     },
   ]
 }
+
+# k8s の minecraft-backup CronJob が使う R2 S3 互換資格情報用のトークン。
+# roppoh-minecraft-world-backup バケットのみに Object Read & Write を限定する
+# (pipelines モジュールの discord_events_sink と同じ cloudflare_account_token パターン)。
+# S3 互換キーの導出(Cloudflare 公式仕様):
+#   Access Key ID     = token.id
+#   Secret Access Key = sha256(token.value)   ← output.tf で変換
+data "cloudflare_account_api_token_permission_groups_list" "r2_bucket_item_read" {
+  account_id = var.account_id
+  name       = "Workers R2 Storage Bucket Item Read"
+}
+
+data "cloudflare_account_api_token_permission_groups_list" "r2_bucket_item_write" {
+  account_id = var.account_id
+  name       = "Workers R2 Storage Bucket Item Write"
+}
+
+resource "cloudflare_account_token" "minecraft_world_backup_r2" {
+  name       = "minecraft-world-backup-r2"
+  account_id = var.account_id
+
+  policies = [{
+    effect = "allow"
+    permission_groups = [
+      { id = data.cloudflare_account_api_token_permission_groups_list.r2_bucket_item_read.result[0].id },
+      { id = data.cloudflare_account_api_token_permission_groups_list.r2_bucket_item_write.result[0].id },
+    ]
+    # 当該バケットのみにスコープ(jurisdiction は default)。
+    resources = jsonencode({
+      "com.cloudflare.edge.r2.bucket.${var.account_id}_default_${cloudflare_r2_bucket.roppoh_minecraft_world_backup.name}" = "*"
+    })
+  }]
+}
