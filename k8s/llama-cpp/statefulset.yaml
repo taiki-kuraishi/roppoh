@@ -7,10 +7,7 @@ metadata:
     app.kubernetes.io/name: llama-cpp
     app.kubernetes.io/managed-by: argocd
 spec:
-  # TurboQuant試験(k8s/llama-cpp-turboquant)のため一時停止。GPU(RTX 3050 6GB)は
-  # 1基のみで排他のため。切り戻しは replicas を 1 に戻すだけでよい
-  # (k8s/ollama/statefulset.yaml と同じ運用パターン)。
-  replicas: 0
+  replicas: 1
   serviceName: llama-cpp
   selector:
     matchLabels:
