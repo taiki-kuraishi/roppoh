@@ -21,6 +21,7 @@ resources:
   - openclaw.yaml
   - hermes-agent.yaml
   - grafana-dashboards.yaml
+  - grafana-alerting.yaml
   - secrets.yaml
   - traefik.yaml
   - dev-pod.yaml

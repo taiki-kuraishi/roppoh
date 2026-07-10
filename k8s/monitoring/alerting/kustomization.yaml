@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - bootstrap-job.yaml
+
+# files/rules.yaml (Mimir ruler rule group) と
+# files/alertmanager-config.yaml.tmpl (Discord webhook_url プレースホルダ入り)
+# を ConfigMap 化し、bootstrap-job.yaml の render-config initContainer にマウントする。
+configMapGenerator:
+  - name: mimir-alerting-config
+    files:
+      - files/rules.yaml
+      - files/alertmanager-config.yaml.tmpl
