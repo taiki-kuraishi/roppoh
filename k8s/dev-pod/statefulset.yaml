@@ -29,6 +29,40 @@ spec:
       # fsGroup だけでは user(uid 1000)から書き込めない場合がある。initContainer で明示的に
       # chown する(空のときのみ実行し、既存データの所有権は変更しない)。
       initContainers:
+        # /nix はイメージに single-user Nix を焼き込んでいる(volumes の nix 参照)。
+        # ただし yadm bootstrap(init コンテナ)が Home Manager activation で生成する
+        # store パス(mise / starship / home-manager-files / user-environment 等)は
+        # コンテナごとに独立した rootfs レイヤーに書かれるため、init が作った成果物を
+        # sshd / claude コンテナが見られない(= .nix-profile / .zshrc が dangling になり
+        # mise も starship も PATH に乗らない)。そこで /nix を emptyDir で全コンテナに
+        # 共有する。ただし空ボリュームを /nix にマウントするとイメージ側の /nix が
+        # 隠れてしまうため、この seed コンテナでは共有ボリュームを /mnt/nix に退避して
+        # マウントし、空のときだけイメージの /nix をコピーして種付けする。
+        - name: seed-nix
+          image: registry.roppoh.local/dev-pod:c46198f
+          command:
+            - bash
+            - -c
+            - |
+              set -euo pipefail
+              if [ -z "$(ls -A /mnt/nix 2>/dev/null)" ]; then
+                # cp -a で store の所有権(user:user)を保持。マウントポイント自身は
+                # emptyDir 既定の root 所有なので user が /nix/store に書けるよう chown する。
+                cp -a /nix/. /mnt/nix/
+                chown user:user /mnt/nix
+              fi
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+            - name: nix
+              mountPath: /mnt/nix
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: "1"
+              memory: 256Mi
         - name: fix-home-ownership
           image: registry.roppoh.local/dev-pod:c46198f
           command:
@@ -71,6 +105,10 @@ spec:
           volumeMounts:
             - name: home
               mountPath: /home/user
+            # bootstrap の Home Manager activation が生成する nix store を
+            # sshd / claude と共有する(seed-nix で種付け済み)。
+            - name: nix
+              mountPath: /nix
           # dotfiles の初回 bootstrap(mise install 等)は数分かかりうる。
           resources:
             requests:
@@ -127,6 +165,10 @@ spec:
               readOnly: true
             - name: run-sshd
               mountPath: /run
+            # SSH ログイン先。init が bootstrap した nix store をここで参照して
+            # mise / starship / .zshrc(.nix-profile 経由)を解決する。
+            - name: nix
+              mountPath: /nix
         - name: claude
           image: registry.roppoh.local/dev-pod:c46198f
           command: [dev-pod-claude]
@@ -157,6 +199,9 @@ spec:
             - name: github-app
               mountPath: /etc/dev-pod/github-app
               readOnly: true
+            # mise / claude 本体は nix profile 経由で解決するため /nix を共有する。
+            - name: nix
+              mountPath: /nix
       volumes:
         - name: ssh-host-key
           secret:
@@ -191,6 +236,10 @@ spec:
               - key: private-key.pem
                 path: private-key.pem
         - name: run-sshd
+          emptyDir: {}
+        # イメージ焼き込みの single-user Nix を全コンテナで共有する。emptyDir なので
+        # Pod 再作成のたびに seed-nix が種付けし直し、init が bootstrap し直す(数分)。
+        - name: nix
           emptyDir: {}
   volumeClaimTemplates:
     - metadata:
