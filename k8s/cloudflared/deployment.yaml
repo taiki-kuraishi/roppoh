@@ -37,7 +37,7 @@ spec:
       containers:
         - name: cloudflared
           # 【自己更新】このイメージタグは Renovate が更新する
-          image: cloudflare/cloudflared:2026.6.1
+          image: cloudflare/cloudflared:2026.7.1
           args:
             - tunnel
             - --no-autoupdate
