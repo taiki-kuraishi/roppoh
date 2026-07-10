@@ -1,0 +1,13 @@
+groups:
+  - name: dev-pod-alerts
+    rules:
+      # waiting_reason を直接見る(restarts_total の increase() 閾値と違い、
+      # 単発リスタートを誤検知しない)。
+      - alert: DevPodClaudeCrashLooping
+        expr: kube_pod_container_status_waiting_reason{job="kube-state-metrics", namespace="dev-pod", container="claude", reason="CrashLoopBackOff"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: dev-pod の claude コンテナが CrashLoopBackOff になっています
+          description: "{{ $labels.namespace }}/{{ $labels.pod }} の claude コンテナが 5 分以上 CrashLoopBackOff です。claude の OAuth トークン失効、または別要因のクラッシュの可能性があります。"
