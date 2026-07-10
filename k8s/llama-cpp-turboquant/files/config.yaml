@@ -1,0 +1,30 @@
+# モデル DL(初回 -hf)がヘルスチェックで中断されないよう長めに取る
+healthCheckTimeout: 3600
+logLevel: info
+# ${PORT} マクロの起点
+startPort: 10001
+
+models:
+  # TurboQuant(FWHT回転+Trellis-Coded Quantizationの KVキャッシュ圧縮)の
+  # 試験用エントリ。本家未マージ(PR #21089)のため spiritbuun/buun-llama-cpp
+  # フォークからの自前ビルドイメージでのみ動作する(k8s/llama-cpp-turboquant-build
+  # 参照)。既存 k8s/llama-cpp の gemma4-26b-a4b と全く同じ -hf/量子化を使い、
+  # KVキャッシュ量子化方式(q4_0 → turbo3_tcq)のみを変数として分離検証する。
+  # turbo3_tcq(scalar版 turbo3 ではなく TCQ 版)を採用: フォーク自身の README
+  # ベンチ(RTX 3090, Qwen3.5-27B Q6_K)で scalar turbo3 と同速度(30.04 tok/s)
+  # ながら KLD(品質劣化指標)がより低いとされ、速度を犠牲にせず品質改善できるため。
+  # --n-cpu-moe は既存の安全値 29 から開始(まず動作確認)。turbo3_tcq の VRAM
+  # 圧縮で GPU 常駐層を増やせるか(--n-cpu-moe を下げられるか)は動作確認後に
+  # 二分探索で実測する。
+  # -c は本家 k8s/llama-cpp の Gemma4-26B-A4B 系エントリと同じ 131072(ネイティブ
+  # 上限とみられる値)を採用し、拡張余地の検証は別途行う。
+  gemma4-26b-a4b-turboquant:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk turbo3_tcq -ctv turbo3_tcq
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
+      --n-cpu-moe 29 --reasoning auto --no-mmproj
+      -c 131072

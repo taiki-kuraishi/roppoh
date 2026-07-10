@@ -5,6 +5,7 @@ resources:
   - cloudflared.yaml
   - ollama.yaml
   - llama-cpp.yaml
+  - llama-cpp-turboquant.yaml
   - nvidia-device-plugin.yaml
   - grafana-loki.yaml
   - grafana-mimir.yaml
@@ -26,4 +27,5 @@ resources:
   - traefik.yaml
   - dev-pod.yaml
   - dev-pod-build.yaml
+  - llama-cpp-turboquant-build.yaml
   - minecraft.yaml

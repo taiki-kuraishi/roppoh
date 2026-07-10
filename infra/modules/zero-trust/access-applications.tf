@@ -33,6 +33,24 @@ resource "cloudflare_zero_trust_access_application" "llama_cpp" {
   ]
 }
 
+# ----- Cloudflare Access: llama-cpp-turboquant -----
+# ollama/llama-cpp と同じ Service Token で認証する(検証用途だが本番と同じ保護レベルを維持)
+resource "cloudflare_zero_trust_access_application" "llama_cpp_turboquant" {
+  account_id = var.account_id
+  name       = "llama-cpp-turboquant"
+  domain     = "llama-cpp-turboquant.tsar-bmb.org"
+  type       = "self_hosted"
+
+  policies = [
+    {
+      name       = "service-token-only"
+      decision   = "non_identity"
+      precedence = 1
+      include    = [{ service_token = { token_id = cloudflare_zero_trust_access_service_token.ollama.id } }]
+    }
+  ]
+}
+
 # ----- Cloudflare Access: zot -----
 resource "cloudflare_zero_trust_access_application" "zot" {
   account_id                 = var.account_id
