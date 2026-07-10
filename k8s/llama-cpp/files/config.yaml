@@ -194,9 +194,9 @@ models:
       -ngl 99 -fa on --jinja
       -ctk q8_0 -ctv q8_0
       -b 2048 -ub 2048
-      -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
-      --no-mmproj
-      -c 131072
+       -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
+       --no-mmproj
+       -c 262144
 
   # Gemma4-E2B(Dense/MatFormer、非MoE、ファミリー最小)。ネイティブ context 128K。
   # 2026-07 ベンチ実施記録(PR参照): 最小モデルのため VRAM 余裕が大きく(c=131072 で
