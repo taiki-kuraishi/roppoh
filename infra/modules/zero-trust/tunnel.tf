@@ -61,6 +61,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "dev-pod.tsar-bmb.org"
         service  = "ssh://dev-pod.dev-pod.svc.cluster.local:22"
       },
+      # argo-workflow: Argo Workflows UI(server は --auth-mode=server / secure=false で平文 HTTP)。
+      {
+        hostname = "argo-workflow.tsar-bmb.org"
+        service  = "http://argo-workflows-server.argo.svc.cluster.local:2746"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"

@@ -183,3 +183,25 @@ resource "cloudflare_zero_trust_access_application" "n100" {
     },
   ]
 }
+
+# ----- Cloudflare Access: argo-workflow -----
+# Argo Workflows UI。cloudflared 経由で argo-workflows-server(2746)に到達する。
+# argo-server は --auth-mode=server で自前 SSO を持たないため、この Access が唯一の認証ゲート。
+resource "cloudflare_zero_trust_access_application" "argo_workflow" {
+  account_id                 = var.account_id
+  name                       = "argo-workflow"
+  domain                     = "argo-workflow.tsar-bmb.org"
+  type                       = "self_hosted"
+  session_duration           = "730h"
+  http_only_cookie_attribute = false
+  auto_redirect_to_identity  = false
+  enable_binding_cookie      = false
+  options_preflight_bypass   = false
+
+  policies = [
+    {
+      id         = var.kuraishi_only_policy_id
+      precedence = 1
+    },
+  ]
+}
