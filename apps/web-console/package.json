@@ -31,7 +31,7 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
-    "valibot": "1.4.1",
+    "valibot": "1.4.2",
     "vite-ssr-components": "catalog:"
   },
   "devDependencies": {
