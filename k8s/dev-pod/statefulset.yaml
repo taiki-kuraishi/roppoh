@@ -169,6 +169,11 @@ spec:
             # mise / starship / .zshrc(.nix-profile 経由)を解決する。
             - name: nix
               mountPath: /nix
+            # dev-pod 専用 age 秘密鍵。dotfiles の SOPS_AGE_KEYFILE が指す
+            # ~/.config/sops/age/keys.txt に配置し、pod 内で sops 復号できるようにする。
+            - name: sops-age
+              mountPath: /home/user/.config/sops/age
+              readOnly: true
         - name: claude
           image: registry.roppoh.local/dev-pod:18a7ab4
           command: [dev-pod-claude]
@@ -202,6 +207,10 @@ spec:
             # mise / claude 本体は nix profile 経由で解決するため /nix を共有する。
             - name: nix
               mountPath: /nix
+            # dev-pod 専用 age 秘密鍵(sshd と同じ。claude からも sops 復号可能に)。
+            - name: sops-age
+              mountPath: /home/user/.config/sops/age
+              readOnly: true
       volumes:
         - name: ssh-host-key
           secret:
@@ -241,6 +250,16 @@ spec:
         # Pod 再作成のたびに seed-nix が種付けし直し、init が bootstrap し直す(数分)。
         - name: nix
           emptyDir: {}
+        # dev-pod 専用 age 秘密鍵(SOPS 復号用)。dotfiles が参照する
+        # ~/.config/sops/age/keys.txt に read-only でマウントする。0444 にして
+        # uid 1000(user)/ root どちらのコンテナからも読めるようにする。
+        - name: sops-age
+          secret:
+            secretName: dev-pod
+            defaultMode: 0444
+            items:
+              - key: sops-age-key
+                path: keys.txt
   volumeClaimTemplates:
     - metadata:
         name: home
