@@ -1,24 +1,25 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: llama-cpp
+  name: llama-cpp-turboquant
   namespace: llama-cpp
   labels:
-    app.kubernetes.io/name: llama-cpp
+    app.kubernetes.io/name: llama-cpp-turboquant
     app.kubernetes.io/managed-by: argocd
 spec:
-  # TurboQuant試験(k8s/llama-cpp-turboquant)のため一時停止。GPU(RTX 3050 6GB)は
-  # 1基のみで排他のため。切り戻しは replicas を 1 に戻すだけでよい
-  # (k8s/ollama/statefulset.yaml と同じ運用パターン)。
-  replicas: 0
-  serviceName: llama-cpp
+  # TurboQuant試験用。GPU(RTX 3050 6GB)は1基のみで llama-cpp/ollama と排他のため、
+  # k8s/llama-cpp/statefulset.yaml 側の replicas を同じコミットで 0 に落として有効化する
+  # (k8s/ollama/statefulset.yaml と同じ運用。kubectl scale の一時操作は
+  # selfHeal で巻き戻されるため使わない)。切り戻しは本値を 0 に戻すだけでよい。
+  replicas: 1
+  serviceName: llama-cpp-turboquant
   selector:
     matchLabels:
-      app.kubernetes.io/name: llama-cpp
+      app.kubernetes.io/name: llama-cpp-turboquant
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: llama-cpp
+        app.kubernetes.io/name: llama-cpp-turboquant
     spec:
       # GPU 搭載ノード(z390 / RTX 3050 6GB)にのみスケジュール
       nodeSelector:
@@ -31,13 +32,12 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: llama-cpp
-          # 【自己更新】このイメージタグは Renovate が更新する
-          # llama-swap(モデルスワップ・プロキシ)+ llama-server を同梱した CUDA イメージ。
-          # タグ形式は v<llama-swap版>-cuda-b<llama.cpp版>。
-          image: ghcr.io/mostlygeek/llama-swap:v235-cuda-b9870
-          # llama-swap をプロキシとして起動。実際の推論は config に定義した各モデルの
-          # llama-server 子プロセスが on-demand で担う(詳細は configmap.yaml)。
+        - name: llama-cpp-turboquant
+          # 【自己更新】k8s/llama-cpp-turboquant-build/cronworkflow.yaml の bump ジョブが
+          # フォークビルドの git short SHA へ書き換える(Renovate 対象外の自前ビルド)。
+          image: registry.roppoh.local/llama-cpp-turboquant:init
+          # llama-swap をプロキシとして起動。実際の推論は config に定義したモデルの
+          # llama-server(TurboQuantフォークビルド)子プロセスが on-demand で担う。
           command:
             - /app/llama-swap
           args:
@@ -51,8 +51,6 @@ spec:
               protocol: TCP
           env:
             # llama-server(子プロセス)の -hf ダウンロード先。PVC 上に置き再 DL を防ぐ。
-            # 環境変数は子プロセスに継承される。旧 StatefulSet と同じパスのため
-            # ダウンロード済みの qwen3.5-35b-a3b をそのまま再利用できる。
             - name: LLAMA_CACHE
               value: /data/models
             # 非 root 実行のため HOME を書き込み可能な emptyDir に向ける
@@ -63,17 +61,15 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
-          # 実測(Grafana Mimir, 過去7日): CPU p95 1.6 コア / メモリ p95 21.8Gi(モデル切替で変動)
+          # 試験用の単一モデル運用のため本番(llama-cpp)より小さめの初期値。
+          # 実機ベンチ後、Grafana Mimir の実測値で調整する。
           resources:
             requests:
               cpu: "2"
-              memory: 22Gi
+              memory: 8Gi
             limits:
-              # CPU limit は設定しない(MoE のエキスパート計算は CPU 律速。全 6 コアを使わせる)
-              # memory limit はノード全体(約30GB)を巻き込む OOM を防ぐ上限。エキスパートは
-              # mmap(reclaimable な file page cache)なので通常この上限には達しない
-              memory: 26Gi
-              # GPU 1基を占有(RTX 3050 6GB)。ollama とは排他(GPU は1基のみ)
+              memory: 12Gi
+              # GPU 1基を占有(RTX 3050 6GB)。llama-cpp/ollama とは排他(GPU は1基のみ)
               nvidia.com/gpu: 1
           # llama-swap プロキシ自体は即時起動する(モデルは on-demand ロード)。
           # プロキシが listen しているかを TCP で確認する。モデルのロード完了は
@@ -105,7 +101,7 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: llama-cpp-config
+            name: llama-cpp-turboquant-config
         - name: tmp
           emptyDir: {}
         - name: home
@@ -119,4 +115,6 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 40Gi
+            # 試験対象モデル1つ(14.2GB)+ ダウンロード時の一時ファイル分の余裕。
+            # 既存 llama-cpp の PVC は稼働中 Pod に排他マウントされ続けるため共有不可。
+            storage: 20Gi

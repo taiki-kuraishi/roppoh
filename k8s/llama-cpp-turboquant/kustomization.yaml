@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# namespace.yaml は作らない。既存の llama-cpp Namespace(k8s/llama-cpp が所有)を
+# 再利用する(monitoring/argo namespace を複数 Application が共有する既存パターンと
+# 同じ)。2つの Application が同じ Namespace オブジェクトを所有すると ArgoCD の
+# prune 競合リスクがあるため。
+namespace: llama-cpp
+
+resources:
+  - service.yaml
+  - statefulset.yaml
+
+# ConfigMap はデフォルトのハッシュサフィックス付き命名を使う。内容変更時に
+# NameReference transformer が StatefulSet の volumes[].configMap.name を自動的に
+# 新しい名前へ書き換え、ArgoCD 同期時に自動でローリング再起動が起きる。
+configMapGenerator:
+  - name: llama-cpp-turboquant-config
+    files:
+      - files/config.yaml

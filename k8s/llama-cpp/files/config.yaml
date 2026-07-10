@@ -124,6 +124,28 @@ models:
       --n-cpu-moe 29 --reasoning auto --no-mmproj
       -c 131072
 
+  # Gemma4-26B-A4B QAT(Unsloth Dynamic UD-Q4_K_XL)版。QAT(Quantization-Aware
+  # Trained)モデルの Dynamic 量子化で、Unsloth ベンチでは naive Q4_0 比
+  # top-1精度 70.2%→85.6% に改善するとされる。リポジトリ末尾が
+  # `-qat-GGUF`(非QAT版の `-GGUF` とは別リポジトリ)である点に注意。
+  # ファイルサイズは 14.2GB(既存 gemma4-26b-a4b の Q4_K_M 16.8GB より小さい)。
+  #
+  # --n-cpu-moe は暫定値。既存 gemma4-26b-a4b(同アーキテクチャ、同 unsloth
+  # 系列)の実測値 29 を初期値として流用しているが、QAT の Dynamic 量子化は
+  # テンソルごとの精度配分が異なるため、層あたりの実VRAM使用量が同じとは
+  # 限らない。実機での S1/S2/S3 ベンチと OOM 境界の二分探索が必須
+  # (本ファイルの他エントリと同じ実測ベースの手法に従う)。
+  gemma4-26b-a4b-qat:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
+      --n-cpu-moe 29 --reasoning auto --no-mmproj
+      -c 131072
+
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
   # ※ --no-mmap は llama.cpp が起動時に推奨するが、実機(XMP 有効・DDR4 帯域向上後)では
@@ -245,6 +267,7 @@ groups:
       - qwen3.6-35b-a3b
       - gemma4-26b-a4b-hauhaucs-balanced
       - gemma4-26b-a4b
+      - gemma4-26b-a4b-qat
       - qwen3.5-35b-a3b
       - qwen3.5-35b-a3b-longctx
       - gemma4-12b

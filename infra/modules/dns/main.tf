@@ -58,6 +58,15 @@ resource "cloudflare_dns_record" "llama_cpp" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "llama_cpp_turboquant" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "llama-cpp-turboquant.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "zot" {
   zone_id = data.cloudflare_zone.this.zone_id
   name    = "zot.${var.zone_name}"
