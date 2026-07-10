@@ -65,6 +65,15 @@ RUN NIXBIN="$(dirname "$(readlink -f /home/user/.nix-profile/bin/nix)")" \
     && printf 'export PATH="%s${PATH:+:$PATH}"\n' "$NIXBIN" \
        > /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
+# 上記(2)は nix コマンド本体しか PATH に通さない。mise / starship など Home Manager が
+# $HOME/.nix-profile/bin に入れる profile パッケージは、bootstrap 後もログインシェルの
+# PATH に乗らない(hm-session-vars.sh は $HOME/.local/bin しか足さず、zsh は
+# /etc/profile.d を読まないため nix の profile script も効かない)。SSH ログインは
+# login shell なので、login 用のグローバル /etc/zsh/zprofile で profile bin を通す。
+# $HOME/.nix-profile は実行時に PVC 経由で固定パス /home/user/.nix-profile を指す。
+# これで ~/.zshrc の `command -v mise && mise activate` も成立し mise 管理ツールも解決される。
+RUN printf 'export PATH="/home/user/.nix-profile/bin${PATH:+:$PATH}"\n' > /etc/zsh/zprofile
+
 COPY .docker/dev-pod/files/sshd-dev-pod.conf /etc/ssh/sshd_config.d/dev-pod.conf
 COPY --chmod=755 .docker/dev-pod/files/bin/ /usr/local/bin/
 
