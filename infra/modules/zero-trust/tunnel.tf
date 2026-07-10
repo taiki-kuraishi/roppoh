@@ -41,10 +41,6 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         service  = "http://llama-cpp.llama-cpp.svc.cluster.local:8080"
       },
       {
-        hostname = "llama-cpp-turboquant.tsar-bmb.org"
-        service  = "http://llama-cpp-turboquant.llama-cpp.svc.cluster.local:8080"
-      },
-      {
         hostname = "zot.tsar-bmb.org"
         service  = "http://zot.zot.svc.cluster.local:5000"
       },
