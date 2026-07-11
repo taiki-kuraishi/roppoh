@@ -35,10 +35,10 @@ models:
       -c 131072
 
   # Gemma4-26B-A4B 公式 base model(unsloth GGUF、検閲あり、MTPドラフトヘッドなし)。
-  # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きく
-  # (Qwen3.6 と同傾向)、--n-cpu-moe 28 の転用では確認していないため保守的に
-  # 実測し直し、--n-cpu-moe 29(1層のみGPU化)を採用(--cpu-moe比 tg 18.12→18.39
-  # tok/s、S1/S2とも安定)。無検閲版が不要な用途向けの選択肢として用意する。
+  # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きい
+  # (Qwen3.6 と同傾向)。--n-cpu-moe 29(1層のみGPU化)はS1/S2実測上は安定していた
+  # (--cpu-moe比 tg 18.12→18.39 tok/s)が、安全マージン優先で --cpu-moe(全エキスパート
+  # CPU 退避)に変更する。
   gemma4-26b-a4b:
     ttl: 3600
     cmd: >
@@ -47,7 +47,7 @@ models:
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
-      --n-cpu-moe 29 --reasoning auto --no-mmproj
+      --cpu-moe --reasoning auto --no-mmproj
       -c 131072
 
   # gemma4-26b-a4b の長文コンテキスト版。qwen3.5-35b-a3b-longctx と同じ方針で、
