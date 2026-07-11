@@ -189,7 +189,7 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
-          # claude remote-control のワークロード(worktree spawn 含む)を見込んだ初期値。
+          # claude ワークロード(worktree spawn 含む)を見込んだ初期値。
           # 実測に基づき後日調整(コミット 99fc4a6 の流儀に倣う)。
           resources:
             requests:

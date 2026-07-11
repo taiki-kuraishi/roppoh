@@ -1,22 +1,7 @@
 #!/usr/bin/env bash
-# claude コンテナのエントリポイント。claude 本体は dotfiles の bootstrap が
-# インストールし、認証は初回に人間が
-#   kubectl exec -it -n dev-pod dev-pod-0 -c claude -- claude auth login
-# で行う。どちらも揃うまで待機し、CrashLoopBackOff にしない
-# (roppoh-dev-pod-plan.md 参照)。
+# claude コンテナのエントリポイント。claude remote-control は複数リポジトリを
+# 扱えず(1プロセス=1ディレクトリに固定)このpodの用途に合わないため使わない。
+# claude 本体への手動アクセスは sshd コンテナ(kubectl exec / SSH ログイン)から
+# 行う前提で、このコンテナはただ待機するだけにする。
 set -euo pipefail
-export PATH="$HOME/.local/bin:$PATH"
-
-# workspace trust は起動時のカレントディレクトリ単位で判定される。コンテナの
-# 既定 cwd は `/`(未信頼)のままなので、初回手動ログイン時に信頼済みとなる
-# $HOME に cd してから claude を起動しないと
-# "Workspace not trusted. Please run `claude` in / first ..." で
-# 即座に終了し、CrashLoopBackOff になる(実機で確認済み)。
-cd "$HOME"
-
-until command -v claude >/dev/null 2>&1 && [ -f "$HOME/.claude/.credentials.json" ]; do
-  echo "waiting for claude install + auth (see roppoh-dev-pod-plan.md)"
-  sleep "${CLAUDE_WAIT_INTERVAL:-300}"
-done
-
-exec claude remote-control --spawn=worktree --name "roppoh-dev"
+exec sleep infinity
