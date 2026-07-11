@@ -17,57 +17,6 @@ macros:
     -b 4096 -ub 4096
 
 models:
-  # 現用モデル(hermes の default)。HauhauCS による Qwen3.5-35B-A3B の
-  # Uncensored/Aggressive ファインチューン。量子化設定は下記 qwen3.5-35b-a3b-longctx
-  # と同じもの(KV q4, mmproj 無効, 長コンテキスト)を流用する。
-  #
-  # 2026-07 ベンチ結果(z390: i5-9600K / DDR4 32GB / RTX 3050 6GB, 実施記録は
-  # PR参照): --cpu-moe(全40層のMoEエキスパートをCPUへ)から --n-cpu-moe 36
-  # (先頭36層のみCPU、残り4層はGPU)に変更。VRAM実測に2.6GiB の余剰があり、
-  # 4層分(~1.9GiB)なら c=131072 のまま安全に載せられる上限だった
-  # (35以下=CUDA OOMでプロセスクラッシュ、confirmed via S1-S3 全ステージ)。
-  #   - S1 短文warm tg: 25.68 → 27.71 tok/s (+7.9%)
-  #   - S2 cold ~8k TTFT: 172.0s → 29.5s (-83%、prefillの一部がGPU化された効果)
-  #   - S3 cold ~32k TTFT: 191.3s → 172.5s (-10%)
-  # 量子化・モデル重みは変更していないため品質は現行と同一。
-  # (--cache-reuse 256 も検証したが素の連続会話では効果差なし。デフォルトの
-  # プロンプトキャッシュで既に追記 turn の TTFT は ~0.8s まで下がるため見送り)
-  #
-  # context 拡張の検討: -ngl 99 では KV キャッシュも GPU(VRAM)に載るため、
-  # context 長の実質的な上限は VRAM(6GB)であって CPU RAM(32GB)ではない。
-  # -nkvo(--no-kv-offload)で KV を CPU RAM 側に逃がせばネイティブ最大 262144 まで
-  # 拡張できるが、実測 tg 27.71 → 7.52 tok/s(-73%)と壊滅的に遅くなったため不採用。
-  # attention 計算がCPU-GPU間コピューを挟むことになりPCIe/CPU側がボトルネックになる
-  # ためと見られる。c=131072 (VRAM常駐)が速度とcontext長のバランス上の最適点。
-  qwen3.5-35b-a3b-hauhaucs-aggressive:
-    ttl: 3600
-    cmd: >
-      /app/llama-server --host 127.0.0.1 --port ${PORT}
-      -ngl 99 -fa on --jinja
-      -ctk q4_0 -ctv q4_0
-      -b 2048 -ub 2048
-      -hf HauhauCS/Qwen3.5-35B-A3B-Uncensored-HauhauCS-Aggressive:Q4_K_M
-      --n-cpu-moe 36 --reasoning auto --no-mmproj
-      -c 131072
-
-  # Qwen3.6-35B-A3B(HauhauCS Uncensored Aggressive)。現行 Qwen3.5 系の直接後継で
-  # アーキテクチャ据え置き(MoE 40層/256エキスパート/アクティブ約3B)のため、
-  # 上記で実測済みの --n-cpu-moe 36 がそのまま安定動作(2026-07 ベンチ実施記録は
-  # PR参照)。速度は Qwen3.5 と実測ほぼ同一(S1 tg 27.67 vs 27.71 tok/s、
-  # S2 cold TTFT 29.0s vs 29.5s、S3 cold TTFT 171.3s vs 172.5s)。
-  # モデル世代が新しいため品質面の入れ替え候補(品質評価は別途要実施、現時点では
-  # default は変更していない)。
-  qwen3.6-35b-a3b-hauhaucs-aggressive:
-    ttl: 3600
-    cmd: >
-      /app/llama-server --host 127.0.0.1 --port ${PORT}
-      -ngl 99 -fa on --jinja
-      -ctk q4_0 -ctv q4_0
-      -b 2048 -ub 2048
-      -hf HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive:Q4_K_M
-      --n-cpu-moe 36 --reasoning auto --no-mmproj
-      -c 131072
-
   # Qwen3.6-35B-A3B 公式 base model(unsloth GGUF、検閲あり)。アーキテクチャは
   # HauhauCS 版と同じだが、unsloth の UD(Dynamic)量子化はテンソルごとに精度配分が
   # 異なりレイヤーあたりの実VRAM使用量がHauhauCS版のQ4_K_Mより大きい。
@@ -85,29 +34,6 @@ models:
       --n-cpu-moe 38 --reasoning auto --no-mmproj
       -c 131072
 
-  # Gemma4-26B-A4B(HauhauCS Uncensored Balanced、MTP投機的デコード用ドラフトヘッド同梱)。
-  # MoE 30層/128エキスパート/アクティブ約4B。QAT(量子化考慮学習済み)モデルのため
-  # Q4_K_M(16.8GB)が最適サイズ(モデルカード曰くそれ以上の量子化は品質向上なし)。
-  # hidden_size が Qwen(2048)より大きい(2816)分 VRAM 余剰が狭く(実測1.9GiB)、
-  # --n-cpu-moe 27(3層GPU化)は cold ~32k プロンプトで compute buffer 不足により
-  # CUDA OOM クラッシュ。--n-cpu-moe 28(2層GPU化)が実測上の安全な上限
-  # (2026-07 ベンチ実施記録はPR参照):
-  #   - S1 短文warm tg: 17.97 → 20.33 tok/s (+13.1%, --cpu-moe 比)
-  #   - S2 cold ~8k TTFT: 27.4s → 25.1s (-8.4%)
-  #   - S3 cold ~32k TTFT: 130.4s → 123.3s (-5.4%)
-  # 絶対速度は Qwen3.5/3.6 系より遅い(アクティブパラメータが4B > 3Bのため)。
-  # MTP投機的デコード(-md でドラフトヘッド指定)は本設定では未検証。
-  gemma4-26b-a4b-hauhaucs-balanced:
-    ttl: 3600
-    cmd: >
-      /app/llama-server --host 127.0.0.1 --port ${PORT}
-      -ngl 99 -fa on --jinja
-      -ctk q4_0 -ctv q4_0
-      -b 2048 -ub 2048
-      -hf HauhauCS/Gemma4-26B-A4B-QAT-Uncensored-HauhauCS-Balanced-MTP:Q4_K_M
-      --n-cpu-moe 28 --reasoning auto --no-mmproj
-      -c 131072
-
   # Gemma4-26B-A4B 公式 base model(unsloth GGUF、検閲あり、MTPドラフトヘッドなし)。
   # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きく
   # (Qwen3.6 と同傾向)、--n-cpu-moe 28 の転用では確認していないため保守的に
@@ -123,6 +49,22 @@ models:
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
       --n-cpu-moe 29 --reasoning auto --no-mmproj
       -c 131072
+
+  # gemma4-26b-a4b の長文コンテキスト版。qwen3.5-35b-a3b-longctx と同じ方針で、
+  # --n-cpu-moe の代わりに --cpu-moe(全エキスパート CPU 退避)にして VRAM を
+  # KV キャッシュ側に全振りし、ネイティブ上限 262144(HF config.json の
+  # max_position_embeddings 実測値)まで context を確保する。速度より長い履歴保持を
+  # 優先する用途向け(初回 prefill は --n-cpu-moe 版より遅くなる)。
+  gemma4-26b-a4b-longctx:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 262144
 
   # gemma4-26b-a4b(上記, Q4_K_M 実測16GB)と同じ非QAT base model・同じ
   # --n-cpu-moe/-ctk/-ctv構成で、量子化レベルだけ落とした比較用エントリ3種
@@ -177,7 +119,7 @@ models:
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ2_XXS
       --cpu-moe --reasoning auto --no-mmproj
-      -c 32768
+      -c 131072
 
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
@@ -295,11 +237,9 @@ groups:
     swap: true
     exclusive: false
     members:
-      - qwen3.5-35b-a3b-hauhaucs-aggressive
-      - qwen3.6-35b-a3b-hauhaucs-aggressive
       - qwen3.6-35b-a3b
-      - gemma4-26b-a4b-hauhaucs-balanced
       - gemma4-26b-a4b
+      - gemma4-26b-a4b-longctx
       - gemma4-26b-a4b-iq4xs
       - gemma4-26b-a4b-iq3xxs
       - gemma4-26b-a4b-iq2xxs
