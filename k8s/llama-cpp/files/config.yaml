@@ -31,8 +31,8 @@ models:
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
       -hf unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M
-      --n-cpu-moe 38 --reasoning auto --no-mmproj
-      -c 131072
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 262144
 
   # Gemma4-26B-A4B 公式 base model(unsloth GGUF、検閲あり、MTPドラフトヘッドなし)。
   # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きい
