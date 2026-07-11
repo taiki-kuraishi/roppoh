@@ -64,7 +64,7 @@ models:
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q4_K_M
       --cpu-moe --reasoning auto --no-mmproj
-      -c 196608
+      -c 163840
 
   # gemma4-26b-a4b(上記, Q4_K_M 実測16GB)と同じ非QAT base model・同じ
   # --n-cpu-moe/-ctk/-ctv構成で、量子化レベルだけ落とした比較用エントリ3種
