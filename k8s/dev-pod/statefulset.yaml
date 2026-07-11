@@ -40,7 +40,7 @@ spec:
         # 隠れてしまうため、この seed コンテナでは共有ボリュームを /mnt/nix に退避して
         # マウントし、空のときだけイメージの /nix をコピーして種付けする。
         - name: seed-nix
-          image: registry.roppoh.local/dev-pod:f4b06c0
+          image: registry.roppoh.local/dev-pod:4a28d1b
           command:
             - bash
             - -c
@@ -65,7 +65,7 @@ spec:
               cpu: "1"
               memory: 256Mi
         - name: fix-home-ownership
-          image: registry.roppoh.local/dev-pod:f4b06c0
+          image: registry.roppoh.local/dev-pod:4a28d1b
           command:
             - bash
             - -c
@@ -87,7 +87,7 @@ spec:
               cpu: 200m
               memory: 64Mi
         - name: init
-          image: registry.roppoh.local/dev-pod:f4b06c0
+          image: registry.roppoh.local/dev-pod:4a28d1b
           command: [dev-pod-init]
           env:
             - name: HOME
@@ -120,7 +120,7 @@ spec:
               memory: 2Gi
       containers:
         - name: sshd
-          image: registry.roppoh.local/dev-pod:f4b06c0
+          image: registry.roppoh.local/dev-pod:4a28d1b
           # /run は emptyDir(readOnlyRootFilesystem の代わり)なので、sshd の
           # privilege separation ディレクトリを起動前に作り直す必要がある。
           # また useradd(Dockerfile)時点では user アカウントがロック(/etc/shadow が "!")
@@ -176,7 +176,7 @@ spec:
               mountPath: /home/user/.config/sops/age
               readOnly: true
         - name: claude
-          image: registry.roppoh.local/dev-pod:f4b06c0
+          image: registry.roppoh.local/dev-pod:4a28d1b
           command: [dev-pod-claude]
           env:
             - name: HOME
