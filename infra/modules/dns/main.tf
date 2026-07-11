@@ -111,3 +111,12 @@ resource "cloudflare_dns_record" "argo_workflow" {
   proxied = true
   ttl     = 1
 }
+
+resource "cloudflare_dns_record" "alertmanager" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "alertmanager.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}

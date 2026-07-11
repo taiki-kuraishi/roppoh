@@ -1,3 +1,23 @@
+# ----- Cloudflare Access: alertmanager -----
+resource "cloudflare_zero_trust_access_application" "alertmanager" {
+  account_id                 = var.account_id
+  name                       = "alertmanager"
+  domain                     = "alertmanager.tsar-bmb.org"
+  type                       = "self_hosted"
+  session_duration           = "730h"
+  http_only_cookie_attribute = false
+  auto_redirect_to_identity  = false
+  enable_binding_cookie      = false
+  options_preflight_bypass   = false
+
+  policies = [
+    {
+      id         = var.kuraishi_only_policy_id
+      precedence = 1
+    },
+  ]
+}
+
 # ----- Cloudflare Access: Ollama -----
 resource "cloudflare_zero_trust_access_application" "ollama" {
   account_id = var.account_id
