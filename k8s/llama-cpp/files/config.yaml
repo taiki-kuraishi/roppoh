@@ -132,15 +132,12 @@ models:
   # (UD = Unsloth Dynamic 方式のため router/embedding 等の高感度テンソルは
   # 高精度側に残るが、それでもゼロにはならない)。
   #
-  # -c は3エントリとも 262144(モデルのネイティブ max_position_embeddings。
-  # HF config.json で実測確認済み。gemma4-e4b/e2b と同じネイティブ上限で、
-  # 131072 は VRAM 都合の保守値でしかない)を優先採用する。--n-cpu-moe は
-  # 上記 gemma4-26b-a4b の実測済み安全値 29 をそのまま初期値として流用するが、
-  # 量子化・context 条件が変わるため実測必須。ベンチ手順:
-  #   (1) --n-cpu-moe 29 のまま -c 262144 でロードし OOM しないか確認
-  #   (2) VRAM に余裕があれば --n-cpu-moe を二分探索で下げ、GPU常駐層を増やす
-  #   (本ファイルの他エントリと同じ実測ベースの手法。VRAM拡張は
-  #    「まずcontext優先、余れば--n-cpu-moe」の順で使う)
+  # -c 262144(ネイティブ上限)+ --n-cpu-moe 29(未実測の初期値流用)で投入したところ
+  # 全エントリ(iq4xs/iq3xxs/iq2xxs)で起動直後に CUDA OOM とみられるクラッシュが発生し
+  # /v1/chat/completions が毎回 500 を返す状態になった(2026-07 確認)。VRAM 実測が
+  # 済むまでの暫定対応として、他モデルの `--cpu-moe`(全エキスパートを CPU RAM へ退避)
+  # + -c 32768 と同じ保守的な構成に戻す。実測が取れ次第 --n-cpu-moe への移行・
+  # context 拡張を再検討する。
   #
   # ファイルサイズ実測(HF content-length): IQ4_XS 12.7GB / IQ3_XXS 10.6GB /
   # IQ2_XXS 9.2GB(参考: Q4_K_M は 16GB)。UD方式のため4bit未満でも高感度
@@ -153,11 +150,11 @@ models:
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ4_XS
-      --n-cpu-moe 29 --reasoning auto --no-mmproj
-      -c 262144
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 32768
 
-  # 3bit系で最小の IQ3_XXS。上記 iq4xs のコメント参照(同方針・同 --n-cpu-moe
-  # 初期値)。4bit未満のため MoE ルーティング精度劣化のリスクが iq4xs より高い。
+  # 3bit系で最小の IQ3_XXS。上記 iq4xs のコメント参照(同方針)。4bit未満のため
+  # MoE ルーティング精度劣化のリスクが iq4xs より高い。
   gemma4-26b-a4b-iq3xxs:
     ttl: 3600
     cmd: >
@@ -166,13 +163,11 @@ models:
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ3_XXS
-      --n-cpu-moe 29 --reasoning auto --no-mmproj
-      -c 262144
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 32768
 
-  # 2bit系で最小の IQ2_XXS。上記 iq4xs のコメント参照(同方針・同 --n-cpu-moe
-  # 初期値)。3エントリ中もっとも量子化が荒く、品質劣化リスクが最大な一方、
-  # モデル重みが最小(9.2GB)なので --n-cpu-moe を下げた際の CPU 側展開負荷も
-  # もっとも軽く、速度面の伸びしろは大きい可能性がある。
+  # 2bit系で最小の IQ2_XXS。上記 iq4xs のコメント参照(同方針)。3エントリ中もっとも
+  # 量子化が荒く、品質劣化リスクが最大な一方、モデル重みが最小(9.2GB)。
   gemma4-26b-a4b-iq2xxs:
     ttl: 3600
     cmd: >
@@ -181,8 +176,8 @@ models:
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ2_XXS
-      --n-cpu-moe 29 --reasoning auto --no-mmproj
-      -c 262144
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 32768
 
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
