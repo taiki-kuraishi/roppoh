@@ -14,7 +14,6 @@ metadata:
     ignore-check.kube-linter.io/no-read-only-root-fs: "sshd writes runtime state under /run; kept writable via emptyDir instead of a read-only rootfs"
     # dev-pod Pod は Zed の SSH リモート開発先そのものであり、意図した実際の sshd(port 22)
     ignore-check.kube-linter.io/ssh-port: "this workload is an actual vetted sshd server for Zed remote development, not an unrelated service on port 22"
-    ignore-check.kube-linter.io/privilege-escalation-container: "init container needs allowPrivilegeEscalation=true to start nix-daemon"
 spec:
   replicas: 1
   serviceName: dev-pod
@@ -97,10 +96,10 @@ spec:
             - name: USER
               value: user
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-            runAsNonRoot: false
-            allowPrivilegeEscalation: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           volumeMounts:
