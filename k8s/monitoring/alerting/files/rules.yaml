@@ -11,3 +11,14 @@ groups:
         annotations:
           summary: dev-pod の claude コンテナが CrashLoopBackOff になっています
           description: "{{ $labels.namespace }}/{{ $labels.pod }} の claude コンテナが 5 分以上 CrashLoopBackOff です。claude の OAuth トークン失効、または別要因のクラッシュの可能性があります。"
+
+  - name: argo-workflow-alerts
+    rules:
+      - alert: ArgoWorkflowFailed
+        expr: argo_workflows_workflow_status_count{status="Failed"} > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Argo Workflow failed"
+          description: "An Argo Workflow has failed in namespace {{ $labels.namespace }}. Workflow name: {{ $labels.workflow_name }}"
