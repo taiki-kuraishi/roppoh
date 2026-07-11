@@ -20,9 +20,11 @@ models:
   # Qwen3.6-35B-A3B 公式 base model(unsloth GGUF、検閲あり)。アーキテクチャは
   # HauhauCS 版と同じだが、unsloth の UD(Dynamic)量子化はテンソルごとに精度配分が
   # 異なりレイヤーあたりの実VRAM使用量がHauhauCS版のQ4_K_Mより大きい。
-  # --n-cpu-moe 36 を転用したところ CUDA OOM でクラッシュしたため実測し直し、
-  # --n-cpu-moe 38(2層のみGPU化)が安全な値(--cpu-moe比 tg 23.60→24.20 tok/s、
-  # S1/S2とも安定)。無検閲版が不要な用途向けの選択肢として用意する。
+  # --n-cpu-moe 36 を転用したところ CUDA OOM でクラッシュした実績があり、
+  # 安全マージン優先で --cpu-moe(全エキスパート CPU 退避)に変更。
+  # 2026-07 実測: --cpu-moe に変更後、ネイティブ上限 262144 のままロードしても
+  # 安定動作を確認(実測 VRAM 5559MiB、残り約246MiB)。hidden_size が Gemma4 系より
+  # 小さいため、一発でネイティブ上限に到達しこれ以上の拡張余地はない。
   qwen3.6-35b-a3b:
     ttl: 3600
     cmd: >
