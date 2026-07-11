@@ -26,7 +26,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
       },
       {
         hostname = "alertmanager.tsar-bmb.org"
-        service  = "http://grafana-mimir-alertmanager.monitoring.svc.cluster.local:9093"
+        service  = "http://grafana-mimir-alertmanager.monitoring.svc.cluster.local:8080"
       },
       {
         hostname = "otel.tsar-bmb.org"
