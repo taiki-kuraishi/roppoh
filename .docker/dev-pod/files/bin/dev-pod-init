@@ -3,6 +3,13 @@
 # roppoh-dev-pod-plan.md の「dotfiles との契約」参照。
 set -euo pipefail
 
+# multi-user Nix 導入済みのコンテナで非 root ユーザーが nix コマンドを使うには
+# nix-daemon が必要。初回のみバックグラウンド起動する。
+if [ ! -S /nix/var/nix/daemon-socket/socket ]; then
+  nohup /nix/var/nix/profiles/default/bin/nix-daemon >/dev/null 2>&1 &
+  sleep 1
+fi
+
 # dotfiles 同期(初回 clone は --bootstrap 付き。bootstrap は mise install 等で数分かかる)
 if [ ! -d "$HOME/.local/share/yadm/repo.git" ]; then
   yadm clone --bootstrap https://github.com/taiki-kuraishi/dotfiles.git
