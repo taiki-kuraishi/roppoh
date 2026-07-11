@@ -124,6 +124,66 @@ models:
       --n-cpu-moe 29 --reasoning auto --no-mmproj
       -c 131072
 
+  # gemma4-26b-a4b(上記, Q4_K_M 実測16GB)と同じ非QAT base model・同じ
+  # --n-cpu-moe/-ctk/-ctv構成で、量子化レベルだけ落とした比較用エントリ3種
+  # (下記 iq4xs/iq3xxs/iq2xxs)。非QATモデルは QAT 版と異なり Q4 未満に
+  # 落とすほど MoE のルーティング(router/gate)量子化誤差が乗りやすく、
+  # dense モデルより劣化が体感しやすい傾向がある点に留意
+  # (UD = Unsloth Dynamic 方式のため router/embedding 等の高感度テンソルは
+  # 高精度側に残るが、それでもゼロにはならない)。
+  #
+  # -c は3エントリとも 262144(モデルのネイティブ max_position_embeddings。
+  # HF config.json で実測確認済み。gemma4-e4b/e2b と同じネイティブ上限で、
+  # 131072 は VRAM 都合の保守値でしかない)を優先採用する。--n-cpu-moe は
+  # 上記 gemma4-26b-a4b の実測済み安全値 29 をそのまま初期値として流用するが、
+  # 量子化・context 条件が変わるため実測必須。ベンチ手順:
+  #   (1) --n-cpu-moe 29 のまま -c 262144 でロードし OOM しないか確認
+  #   (2) VRAM に余裕があれば --n-cpu-moe を二分探索で下げ、GPU常駐層を増やす
+  #   (本ファイルの他エントリと同じ実測ベースの手法。VRAM拡張は
+  #    「まずcontext優先、余れば--n-cpu-moe」の順で使う)
+  #
+  # ファイルサイズ実測(HF content-length): IQ4_XS 12.7GB / IQ3_XXS 10.6GB /
+  # IQ2_XXS 9.2GB(参考: Q4_K_M は 16GB)。UD方式のため4bit未満でも高感度
+  # テンソルは高精度側に残り、サイズは量子化ビット数ほど単純には縮まない。
+  gemma4-26b-a4b-iq4xs:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ4_XS
+      --n-cpu-moe 29 --reasoning auto --no-mmproj
+      -c 262144
+
+  # 3bit系で最小の IQ3_XXS。上記 iq4xs のコメント参照(同方針・同 --n-cpu-moe
+  # 初期値)。4bit未満のため MoE ルーティング精度劣化のリスクが iq4xs より高い。
+  gemma4-26b-a4b-iq3xxs:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ3_XXS
+      --n-cpu-moe 29 --reasoning auto --no-mmproj
+      -c 262144
+
+  # 2bit系で最小の IQ2_XXS。上記 iq4xs のコメント参照(同方針・同 --n-cpu-moe
+  # 初期値)。3エントリ中もっとも量子化が荒く、品質劣化リスクが最大な一方、
+  # モデル重みが最小(9.2GB)なので --n-cpu-moe を下げた際の CPU 側展開負荷も
+  # もっとも軽く、速度面の伸びしろは大きい可能性がある。
+  gemma4-26b-a4b-iq2xxs:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:IQ2_XXS
+      --n-cpu-moe 29 --reasoning auto --no-mmproj
+      -c 262144
+
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
   # ※ --no-mmap は llama.cpp が起動時に推奨するが、実機(XMP 有効・DDR4 帯域向上後)では
@@ -245,6 +305,9 @@ groups:
       - qwen3.6-35b-a3b
       - gemma4-26b-a4b-hauhaucs-balanced
       - gemma4-26b-a4b
+      - gemma4-26b-a4b-iq4xs
+      - gemma4-26b-a4b-iq3xxs
+      - gemma4-26b-a4b-iq2xxs
       - qwen3.5-35b-a3b
       - qwen3.5-35b-a3b-longctx
       - gemma4-12b
