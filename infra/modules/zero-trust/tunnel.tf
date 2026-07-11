@@ -65,6 +65,11 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "dev-pod.tsar-bmb.org"
         service  = "ssh://dev-pod.dev-pod.svc.cluster.local:22"
       },
+      # dev-pod-orca: dev-pod 上で動く Orca Remote Server(claude コンテナ、6768番)。
+      {
+        hostname = "dev-pod-orca.tsar-bmb.org"
+        service  = "http://dev-pod.dev-pod.svc.cluster.local:6768"
+      },
       # argo-workflow: Argo Workflows UI(server は --auth-mode=server / secure=false で平文 HTTP)。
       {
         hostname = "argo-workflow.tsar-bmb.org"
