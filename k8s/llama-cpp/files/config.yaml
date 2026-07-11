@@ -52,9 +52,12 @@ models:
 
   # gemma4-26b-a4b の長文コンテキスト版。qwen3.5-35b-a3b-longctx と同じ方針で、
   # --n-cpu-moe の代わりに --cpu-moe(全エキスパート CPU 退避)にして VRAM を
-  # KV キャッシュ側に全振りし、ネイティブ上限 262144(HF config.json の
-  # max_position_embeddings 実測値)まで context を確保する。速度より長い履歴保持を
-  # 優先する用途向け(初回 prefill は --n-cpu-moe 版より遅くなる)。
+  # KV キャッシュ側に全振りする。速度より長い履歴保持を優先する用途向け
+  # (初回 prefill は --n-cpu-moe 版より遅くなる)。
+  # 2026-07 実測(二分探索): ネイティブ上限 262144 は CUDA OOM でクラッシュ
+  # (confirmed)。196608 も OOM。163840 は安定動作を確認(実測 VRAM 5485MiB、
+  # 残り約320MiB)。gemma4-26b-a4b(c=131072, 実測 VRAM ~5.11GB)から算出した
+  # 現実測ベースの実用上限として 163840 を採用する。
   gemma4-26b-a4b-longctx:
     ttl: 3600
     cmd: >
