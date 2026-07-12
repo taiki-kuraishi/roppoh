@@ -37,7 +37,7 @@ spec:
       containers:
         - name: ollama
           # 【自己更新】このイメージタグは Renovate が更新する
-          image: ollama/ollama:0.30.11
+          image: ollama/ollama:0.31.2
           ports:
             - name: http
               containerPort: 11434
