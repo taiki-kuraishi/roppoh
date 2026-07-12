@@ -4,7 +4,7 @@ description: Setup playwright with deps
 runs:
   using: "composite"
   steps:
-    - uses: actions/cache/restore@v4
+    - uses: actions/cache/restore@v6
       with:
         path: ~/.cache/ms-playwright
         key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lock') }}
@@ -15,7 +15,7 @@ runs:
       # Was a likely culprit for occasional hangs on this large binary
       # Download.
       run: node ./node_modules/.bin/playwright install chromium
-    - uses: actions/cache/save@v4
+    - uses: actions/cache/save@v6
       with:
         path: ~/.cache/ms-playwright
         key: ${{ runner.os }}-playwright-${{ hashFiles('**/bun.lock') }}
