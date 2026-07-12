@@ -201,27 +201,10 @@ resource "cloudflare_zero_trust_access_application" "dev_pod" {
   ]
 }
 
-# ----- Cloudflare Access: dev-pod-orca -----
-# dev-pod 上の Orca Remote Server(6768番)。ペアリング URL 自体がシークレットだが、
-# 二重の防御として dev-pod(SSH)と同じ本人限定ポリシーで Access もかける。
-resource "cloudflare_zero_trust_access_application" "dev_pod_orca" {
-  account_id                 = var.account_id
-  name                       = "dev-pod-orca"
-  domain                     = "dev-pod-orca.tsar-bmb.org"
-  type                       = "self_hosted"
-  session_duration           = "730h"
-  http_only_cookie_attribute = false
-  auto_redirect_to_identity  = false
-  enable_binding_cookie      = false
-  options_preflight_bypass   = false
-
-  policies = [
-    {
-      id         = var.kuraishi_only_policy_id
-      precedence = 1
-    },
-  ]
-}
+# dev-pod-orca(dev-pod 上の Orca Remote Server、6768番)には Cloudflare Access を
+# かけない。Orca mobile app は WebSocket でペアリングするが、Access のブラウザ SSO
+# リダイレクトを処理できずハンドシェイクが確立しない。認証はペアリング URL に
+# 埋め込まれたトークン(orca serve --mobile-pairing が発行)自体に委ねる。
 
 # ----- Cloudflare Access: n100 -----
 resource "cloudflare_zero_trust_access_application" "n100" {
