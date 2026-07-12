@@ -36,7 +36,7 @@
     "@cloudflare/vite-plugin": "catalog:",
     "@cloudflare/workers-types": "4.20260702.1",
     "@tailwindcss/vite": "4.3.2",
-    "@types/node": "25.9.5",
+    "@types/node": "26.1.1",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react": "catalog:",
