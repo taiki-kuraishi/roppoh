@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: hermes-agent
   namespace: argocd
-  annotations:
-    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
 spec:
   project: default
   source:

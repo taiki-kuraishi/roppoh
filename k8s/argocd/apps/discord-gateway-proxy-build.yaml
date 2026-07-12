@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: discord-gateway-proxy-build
   namespace: argocd
-  annotations:
-    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
 spec:
   project: default
   source:
