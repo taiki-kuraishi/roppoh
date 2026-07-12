@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: dev-pod-build
   namespace: argocd
-  annotations:
-    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
 spec:
   project: default
   source:
