@@ -3,9 +3,6 @@ kind: Application
 metadata:
   name: dev-pod
   namespace: argocd
-  annotations:
-    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
-    notifications.argoproj.io/subscribe.on-app-degraded.discord: ""
 spec:
   project: default
   source:
