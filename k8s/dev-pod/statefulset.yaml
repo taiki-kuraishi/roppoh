@@ -14,6 +14,11 @@ metadata:
     ignore-check.kube-linter.io/no-read-only-root-fs: "sshd writes runtime state under /run; kept writable via emptyDir instead of a read-only rootfs"
     # dev-pod Pod は Zed の SSH リモート開発先そのものであり、意図した実際の sshd(port 22)
     ignore-check.kube-linter.io/ssh-port: "this workload is an actual vetted sshd server for Zed remote development, not an unrelated service on port 22"
+    # claude コンテナは Orca(Electron/Chromium)の headless server を動かす。
+    # setuid chrome-sandbox を機能させるため allowPrivilegeEscalation + SYS_ADMIN が要る
+    # (uid 1000 の非rootのまま。ローカル検証済み)。
+    ignore-check.kube-linter.io/privilege-escalation-container: "claude container needs allowPrivilegeEscalation=true for Orca's Chromium sandbox"
+    ignore-check.kube-linter.io/no-add-caps: "claude container needs SYS_ADMIN for Orca's Chromium sandbox (GPU/zygote process launch)"
 spec:
   replicas: 1
   serviceName: dev-pod
@@ -177,17 +182,30 @@ spec:
         - name: claude
           image: registry.roppoh.local/dev-pod:137d118
           command: [dev-pod-claude]
+          ports:
+            - name: orca
+              containerPort: 6768
+              protocol: TCP
           env:
             - name: HOME
               value: /home/user
             - name: USER
               value: user
+            # Orca Remote Server のペアリング URL に埋め込まれるアドレス。
+            # クライアントはこのホスト名で到達できる必要がある(Cloudflare Tunnel の
+            # ingress hostname と一致させる。infra/modules/zero-trust 参照)。
+            - name: ORCA_PAIRING_ADDRESS
+              value: dev-pod-orca.tsar-bmb.org
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
             runAsNonRoot: true
-            allowPrivilegeEscalation: false
+            # Orca(Electron/Chromium)の setuid chrome-sandbox を機能させるために必要。
+            # SYS_ADMIN が無いと Chromium の GPU/Zygote プロセス起動が失敗する
+            # (ローカル検証済み)。
+            allowPrivilegeEscalation: true
             capabilities:
+              add: ["SYS_ADMIN"]
               drop: ["ALL"]
           # claude ワークロード(worktree spawn 含む)を見込んだ初期値。
           # 実測に基づき後日調整(コミット 99fc4a6 の流儀に倣う)。

@@ -17,3 +17,9 @@ spec:
       port: 22
       targetPort: ssh
       protocol: TCP
+    # cloudflared が infra/modules/zero-trust/tunnel.tf の ingress 設定から
+    # http://dev-pod.dev-pod.svc.cluster.local:6768 を引く(Orca Remote Server)。
+    - name: orca
+      port: 6768
+      targetPort: orca
+      protocol: TCP

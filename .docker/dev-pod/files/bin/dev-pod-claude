@@ -1,7 +1,14 @@
 #!/usr/bin/env bash
-# claude コンテナのエントリポイント。claude remote-control は複数リポジトリを
-# 扱えず(1プロセス=1ディレクトリに固定)このpodの用途に合わないため使わない。
-# claude 本体への手動アクセスは sshd コンテナ(kubectl exec / SSH ログイン)から
-# 行う前提で、このコンテナはただ待機するだけにする。
+# claude コンテナのエントリポイント。Orca Remote Server
+# (https://www.onorca.dev/docs/remote-servers)を headless 起動する。
+# ペアリング(認証)は自動化せず、人間が SSH 経由でこの Pod に入って
+# ログ(ペアリング URL)を確認し、手元の Orca クライアントで手動ペアリングする。
 set -euo pipefail
-exec sleep infinity
+export LIBGL_ALWAYS_SOFTWARE=1
+
+APPDIR="${ORCA_APPDIR:-/opt/orca/app}"
+export APPDIR
+
+exec "$APPDIR/AppRun" serve \
+  --port 6768 \
+  --pairing-address "${ORCA_PAIRING_ADDRESS:?ORCA_PAIRING_ADDRESS is required}"
