@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 #MISE description="Setup terraform environment"
 #MISE depends_post=["install:terraform:prod"]
+
+mise trust --all
