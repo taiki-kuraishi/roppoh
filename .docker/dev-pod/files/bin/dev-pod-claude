@@ -1,22 +1,18 @@
 #!/usr/bin/env bash
-# claude コンテナのエントリポイント。claude 本体は dotfiles の bootstrap が
-# インストールし、認証は初回に人間が
-#   kubectl exec -it -n dev-pod dev-pod-0 -c claude -- claude auth login
-# で行う。どちらも揃うまで待機し、CrashLoopBackOff にしない
-# (roppoh-dev-pod-plan.md 参照)。
+# claude コンテナのエントリポイント。Orca Remote Server
+# (https://www.onorca.dev/docs/remote-servers)を headless 起動する。
+# --mobile-pairing でモバイル(スマホ)クライアント向けのペアリング QR/リンクを
+# 出力する(デスクトップ用リンクの代わりに出るため、デスクトップからペアリング
+# したい場合は個別に `orca serve` を実行し直す必要がある)。
+# ペアリング(認証)は自動化せず、人間が SSH 経由でこの Pod に入って
+# ログ(ペアリング URL / QR)を確認し、手元の Orca クライアントで手動ペアリングする。
 set -euo pipefail
-export PATH="$HOME/.local/bin:$PATH"
+export LIBGL_ALWAYS_SOFTWARE=1
 
-# workspace trust は起動時のカレントディレクトリ単位で判定される。コンテナの
-# 既定 cwd は `/`(未信頼)のままなので、初回手動ログイン時に信頼済みとなる
-# $HOME に cd してから claude を起動しないと
-# "Workspace not trusted. Please run `claude` in / first ..." で
-# 即座に終了し、CrashLoopBackOff になる(実機で確認済み)。
-cd "$HOME"
+APPDIR="${ORCA_APPDIR:-/opt/orca/app}"
+export APPDIR
 
-until command -v claude >/dev/null 2>&1 && [ -f "$HOME/.claude/.credentials.json" ]; do
-  echo "waiting for claude install + auth (see roppoh-dev-pod-plan.md)"
-  sleep "${CLAUDE_WAIT_INTERVAL:-300}"
-done
-
-exec claude remote-control --spawn=worktree --name "roppoh-dev"
+exec "$APPDIR/AppRun" serve \
+  --port 6768 \
+  --pairing-address "${ORCA_PAIRING_ADDRESS:?ORCA_PAIRING_ADDRESS is required}" \
+  --mobile-pairing

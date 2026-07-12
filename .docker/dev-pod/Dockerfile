@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.25
 #
 # Build context is the repository root:
 #   docker build -f .docker/dev-pod/Dockerfile .
@@ -9,7 +9,9 @@
 # (roppoh-dev-pod-plan.md 参照)。
 # ここに残すのは (1) sshd コンテナ自体の起動に要るもの、(2) yadm bootstrap を
 # 起動するための最小限(鶏卵依存)、(3) bootstrap 前でも Git 認証のたびに呼ばれる
-# git-credential-github-app / gh-app-token の実行依存、(4) Nix 本体、の4種類のみ。
+# git-credential-github-app / gh-app-token の実行依存、(4) Nix 本体、
+# (5) claude コンテナで動かす Orca headless server(AppImage 本体 + Electron/Chromium
+# 実行時ライブラリ)、の5種類のみ。
 #
 # Nix は /nix をコンテナ rootfs(イメージ)側に焼き込む。/nix は Pod 再作成のたびに
 # 失われて構わないキャッシュではなく、initContainer が root 昇格(sudo)なしの
@@ -30,6 +32,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     xz-utils \
     libatomic1 \
+    libfuse2t64 \
+    xvfb \
+    zlib1g-dev \
+    libglib2.0-0t64 \
+    libnspr4 \
+    libnss3 \
+    libatk1.0-0t64 \
+    libatk-bridge2.0-0t64 \
+    libcups2t64 \
+    libdbus-1-3 \
+    libcairo2 \
+    libgtk-3-0t64 \
+    libpango-1.0-0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxkbcommon0 \
+    libasound2t64 \
+    libatspi2.0-0t64 \
     && rm -rf /var/lib/apt/lists/*
 
 # ベースの ubuntu(uid 1000)を削除して user ユーザーを作る(HOME は PVC でマウントされる)
@@ -73,6 +94,19 @@ RUN NIXBIN="$(dirname "$(readlink -f /home/user/.nix-profile/bin/nix)")" \
 # $HOME/.nix-profile は実行時に PVC 経由で固定パス /home/user/.nix-profile を指す。
 # これで ~/.zshrc の `command -v mise && mise activate` も成立し mise 管理ツールも解決される。
 RUN printf 'export PATH="/home/user/.nix-profile/bin${PATH:+:$PATH}"\n' > /etc/zsh/zprofile
+
+# Orca headless server(claude コンテナが動かすリモート開発ホスト)。
+# https://www.onorca.dev/docs/reference/headless-linux-server.md の手順に倣い、
+# AppImage を実行時に FUSE マウントせずビルド時に展開しておく(k8s コンテナには
+# /dev/fuse が無いため実行時の自己マウントが失敗する)。
+RUN mkdir -p /opt/orca && cd /opt/orca \
+    && curl -fsSL https://github.com/stablyai/orca/releases/download/v1.4.135/orca-linux.AppImage \
+       -o orca-linux.AppImage \
+    && chmod +x orca-linux.AppImage \
+    && ./orca-linux.AppImage --appimage-extract \
+    && rm orca-linux.AppImage \
+    && mv squashfs-root app \
+    && chown -R user:user /opt/orca
 
 COPY .docker/dev-pod/files/sshd-dev-pod.conf /etc/ssh/sshd_config.d/dev-pod.conf
 COPY --chmod=755 .docker/dev-pod/files/bin/ /usr/local/bin/

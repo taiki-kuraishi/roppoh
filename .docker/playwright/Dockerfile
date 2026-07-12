@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.25
 
 # Bump together with @playwright/test in apps/neo-fujimatsu/package.json.
 FROM mcr.microsoft.com/playwright:v1.61.1-noble

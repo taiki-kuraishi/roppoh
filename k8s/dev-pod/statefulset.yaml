@@ -14,7 +14,11 @@ metadata:
     ignore-check.kube-linter.io/no-read-only-root-fs: "sshd writes runtime state under /run; kept writable via emptyDir instead of a read-only rootfs"
     # dev-pod Pod は Zed の SSH リモート開発先そのものであり、意図した実際の sshd(port 22)
     ignore-check.kube-linter.io/ssh-port: "this workload is an actual vetted sshd server for Zed remote development, not an unrelated service on port 22"
-    ignore-check.kube-linter.io/privilege-escalation-container: "init container needs allowPrivilegeEscalation=true to start nix-daemon"
+    # claude コンテナは Orca(Electron/Chromium)の headless server を動かす。
+    # setuid chrome-sandbox を機能させるため allowPrivilegeEscalation + SYS_ADMIN が要る
+    # (uid 1000 の非rootのまま。ローカル検証済み)。
+    ignore-check.kube-linter.io/privilege-escalation-container: "claude container needs allowPrivilegeEscalation=true for Orca's Chromium sandbox"
+    ignore-check.kube-linter.io/no-add-caps: "claude container needs SYS_ADMIN for Orca's Chromium sandbox (GPU/zygote process launch)"
 spec:
   replicas: 1
   serviceName: dev-pod
@@ -40,7 +44,7 @@ spec:
         # 隠れてしまうため、この seed コンテナでは共有ボリュームを /mnt/nix に退避して
         # マウントし、空のときだけイメージの /nix をコピーして種付けする。
         - name: seed-nix
-          image: registry.roppoh.local/dev-pod:4a28d1b
+          image: registry.roppoh.local/dev-pod:8ddf358
           command:
             - bash
             - -c
@@ -65,7 +69,7 @@ spec:
               cpu: "1"
               memory: 256Mi
         - name: fix-home-ownership
-          image: registry.roppoh.local/dev-pod:4a28d1b
+          image: registry.roppoh.local/dev-pod:8ddf358
           command:
             - bash
             - -c
@@ -87,7 +91,7 @@ spec:
               cpu: 200m
               memory: 64Mi
         - name: init
-          image: registry.roppoh.local/dev-pod:4a28d1b
+          image: registry.roppoh.local/dev-pod:8ddf358
           command: [dev-pod-init]
           env:
             - name: HOME
@@ -97,10 +101,10 @@ spec:
             - name: USER
               value: user
           securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-            runAsNonRoot: false
-            allowPrivilegeEscalation: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
           volumeMounts:
@@ -120,7 +124,7 @@ spec:
               memory: 2Gi
       containers:
         - name: sshd
-          image: registry.roppoh.local/dev-pod:4a28d1b
+          image: registry.roppoh.local/dev-pod:8ddf358
           # /run は emptyDir(readOnlyRootFilesystem の代わり)なので、sshd の
           # privilege separation ディレクトリを起動前に作り直す必要がある。
           # また useradd(Dockerfile)時点では user アカウントがロック(/etc/shadow が "!")
@@ -176,21 +180,34 @@ spec:
               mountPath: /home/user/.config/sops/age
               readOnly: true
         - name: claude
-          image: registry.roppoh.local/dev-pod:4a28d1b
+          image: registry.roppoh.local/dev-pod:8ddf358
           command: [dev-pod-claude]
+          ports:
+            - name: orca
+              containerPort: 6768
+              protocol: TCP
           env:
             - name: HOME
               value: /home/user
             - name: USER
               value: user
+            # Orca Remote Server のペアリング URL に埋め込まれるアドレス。
+            # クライアントはこのホスト名で到達できる必要がある(Cloudflare Tunnel の
+            # ingress hostname と一致させる。infra/modules/zero-trust 参照)。
+            - name: ORCA_PAIRING_ADDRESS
+              value: dev-pod-orca.tsar-bmb.org
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000
             runAsNonRoot: true
-            allowPrivilegeEscalation: false
+            # Orca(Electron/Chromium)の setuid chrome-sandbox を機能させるために必要。
+            # SYS_ADMIN が無いと Chromium の GPU/Zygote プロセス起動が失敗する
+            # (ローカル検証済み)。
+            allowPrivilegeEscalation: true
             capabilities:
+              add: ["SYS_ADMIN"]
               drop: ["ALL"]
-          # claude remote-control のワークロード(worktree spawn 含む)を見込んだ初期値。
+          # claude ワークロード(worktree spawn 含む)を見込んだ初期値。
           # 実測に基づき後日調整(コミット 99fc4a6 の流儀に倣う)。
           resources:
             requests:

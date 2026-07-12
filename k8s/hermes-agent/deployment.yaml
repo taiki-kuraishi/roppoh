@@ -30,7 +30,7 @@ spec:
       containers:
         - name: hermes-agent
           # 【自己更新】このタグは Renovate が更新する
-          image: nousresearch/hermes-agent:v2026.6.5
+          image: nousresearch/hermes-agent:v2026.7.7
           # command は指定しない: 公式イメージの ENTRYPOINT は s6-overlay の /init
           # (chown → UID 10000 降格 → main-wrapper.sh)であり、command で上書きすると
           # 単体では存在しない "gateway" バイナリを直接 exec しようとして起動に失敗する。
