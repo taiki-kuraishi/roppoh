@@ -22,3 +22,16 @@ groups:
         annotations:
           summary: "Argo Workflow failed"
           description: "An Argo Workflow has failed in namespace {{ $labels.namespace }}. Workflow name: {{ $labels.workflow_name }}"
+
+  - name: argocd-app-alerts
+    rules:
+      # ArgoCD app_health が Healthy 以外の Application を検知
+      # (notifications-cm の on-app-degraded と同等、ただし Prometheus 経由)
+      - alert: ArgoCDAppDegraded
+        expr: argocd_app_info{health_status!="Healthy"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ArgoCD app {{ $labels.name }} is degraded in {{ $labels.namespace }}"
+          description: "Application {{ $labels.name }} in namespace {{ $labels.namespace }} has health_status={{ $labels.health_status }}. See: https://argocd.tsar-bmb.org/applications/{{ $labels.name }}"

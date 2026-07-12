@@ -192,10 +192,13 @@ spec:
             - name: USER
               value: user
             # Orca Remote Server のペアリング URL に埋め込まれるアドレス。
-            # クライアントはこのホスト名で到達できる必要がある(Cloudflare Tunnel の
-            # ingress hostname と一致させる。infra/modules/zero-trust 参照)。
+            # Cloudflare Tunnel は 443(wss)しか外部公開しておらず、内部の待受
+            # ポート(--port 6768)は外部から到達できない。スキームを省略すると
+            # orca serve は ws://<host>:6768 を埋め込んでしまい接続できないため、
+            # 明示的に wss:// を付けて 443 番へのペアリング URL を発行させる
+            # (infra/modules/zero-trust 参照)。
             - name: ORCA_PAIRING_ADDRESS
-              value: dev-pod-orca.tsar-bmb.org
+              value: wss://dev-pod-orca.tsar-bmb.org
           securityContext:
             runAsUser: 1000
             runAsGroup: 1000

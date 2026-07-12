@@ -5,7 +5,6 @@ resources:
   - apps/
 patches:
   - path: patches/argocd-cm.yaml
-  - path: patches/argocd-notifications-cm.yaml
   - path: patches/argocd-repo-server-sops.yaml
   - patch: |
       apiVersion: v1
