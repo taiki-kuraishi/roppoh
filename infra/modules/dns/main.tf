@@ -103,6 +103,15 @@ resource "cloudflare_dns_record" "dev_pod" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "dev_pod_orca" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "dev-pod-orca.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "argo_workflow" {
   zone_id = data.cloudflare_zone.this.zone_id
   name    = "argo-workflow.${var.zone_name}"
