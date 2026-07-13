@@ -62,7 +62,7 @@ models:
       -c 98304
 
   # Gemma4-26B-A4B QAT(Quantization-Aware Trained)版、unsloth Dynamic UD-Q4_K_XL(14.2GB)。
-  # QAT は量子化を織り込んで学習済みのため 4bit でも品質劣化が小さく、unsloth ベンチでは
+  # QAT は量子化を織り込んで学習済みのため 4bit でも品質劣化이 작고, unsloth 베ンチでは
   # naive Q4_0 の top-1 精度 70.2% → QAT で 85.6% に改善。「ほぼ BF16 品質を Q4 サイズで」得られる。
   # サイズは 14.2GB で base の Q4_K_M(16.8GB)より小さく、q6k(~23GB)より大幅に軽い
   #   → RAM が最も軽く 30GB ノードに優しい。GPU 常駐の非-expert 層も小さく VRAM に余裕が出る。
