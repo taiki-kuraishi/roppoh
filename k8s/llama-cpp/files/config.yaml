@@ -131,10 +131,14 @@ models:
   # Gemma4-26B-A4B の高精度版(Q6_K, ~21GB)。当初 Q8_0(~28GB)希望だったが z390 ノード RAM が
   # 合計 ~30GB(cgroup limit 26Gi)でタイトなため Q6_K を採用(「ほぼ無劣化」を維持しつつ RAM リスク回避)。
   # --cpu-moe で全エキスパートを CPU RAM へ退避。
-  # 2026-07 二分探索(GPU 独占・DL 済み重みで実測): 空き VRAM は c=131072〜194560 の全域で
-  # 246MiB 一定(Gemma のハイブリッド sliding-window attention で KV がほぼ頭打ちのため)。
-  # 194560 はロード可・196608 は起動時 compute buffer(graph_reserve)で CUDA OOM。崖の直下
-  # (194560)は 2048 トークン手前でマージンが薄いため、~16k トークンの余裕を取り 180224 を採用。
+  # 2026-07 context 選定(クリーン GPU + 実生成で実測): c=131072 はロード後 空き 682MiB、
+  # 実生成後も 670MiB を維持し安定動作(KV は n_ctx 分をロード時に前確保するため、長い
+  # プロンプトでも追加確保はほぼ無い)。一時 180224 まで上げたが、KV/compute buffer が
+  # 6GB VRAM を超え「ロードは通るが実生成/長プロンプトのプレフィルで CUDA OOM →
+  # ストリーミング中にクラッシュ(upstream exited unexpectedly)」する不具合が発生
+  # (cudaMalloc 2459MiB failed)。670MiB の余裕が実測できた 131072 を採用する。
+  # ※ 当初「131072〜194560 で空き 246 一定」と記録していたが、これは測定用プロセスの
+  #   残留(~436MiB 占有)による汚染データで誤り。クリーン計測では 131072 で 670MiB。
   # --temp/--top-p/--top-k は unsloth の gemma-4-26B-A4B 推奨サンプリング(temp 1.0 / top-p 0.95 / top-k 64)。
   gemma4-26b-a4b-q6k:
     ttl: 3600
@@ -146,7 +150,7 @@ models:
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q6_K
       --cpu-moe --reasoning auto --no-mmproj
       --temp 1.0 --top-p 0.95 --top-k 64
-      -c 180224
+      -c 131072
 
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
