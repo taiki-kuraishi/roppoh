@@ -21,10 +21,16 @@ spec:
             - server
           # cloudflared が HTTP で到達できるよう自己署名 TLS を無効化(平文 HTTP)。
           secure: false
+          # ノード配置: n100 に固定
+          nodeSelector:
+            kubernetes.io/hostname: n100
         controller:
           # Workflow / CronWorkflow を実行する namespace
           workflowNamespaces:
             - argo
+          # ノード配置: n100 に固定
+          nodeSelector:
+            kubernetes.io/hostname: n100
         # Workflow Pod 用の ServiceAccount(argo-workflow) と最小 RBAC を作成
         workflow:
           serviceAccount:

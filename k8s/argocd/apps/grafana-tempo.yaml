@@ -89,6 +89,12 @@ spec:
             - secretRef:
                 name: grafana-object-storage
 
+        # -----------------------------------------------------------------------
+        # ノード配置: n100 に固定(このキーは tempo: の外側、chartのトップレベル)
+        # -----------------------------------------------------------------------
+        nodeSelector:
+          kubernetes.io/hostname: n100
+
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

@@ -100,6 +100,12 @@ spec:
         service:
           type: ClusterIP
 
+        # -----------------------------------------------------------------------
+        # ノード配置: n100 に固定
+        # -----------------------------------------------------------------------
+        nodeSelector:
+          kubernetes.io/hostname: n100
+
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring

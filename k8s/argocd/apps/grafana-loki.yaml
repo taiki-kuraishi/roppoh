@@ -53,6 +53,15 @@ spec:
           # WAL は emptyDir 利用（PVC 不要。再起動時の未フラッシュ分は消失、homelab では許容）
           persistence:
             enabled: false
+          # ノード配置: n100 に固定
+          nodeSelector:
+            kubernetes.io/hostname: n100
+
+        # gateway (nginx): grafana-loki-gateway Service を提供する。ノード配置: n100 に固定
+        # (loki-canary は DaemonSet 設計のため対象外、意図的に nodeSelector を設定しない)
+        gateway:
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         # -------------------------------------------------------------------------
         # Loki 設定本体
