@@ -19,6 +19,7 @@ metadata:
     # (uid 1000 の非rootのまま。ローカル検証済み)。
     ignore-check.kube-linter.io/privilege-escalation-container: "claude container needs allowPrivilegeEscalation=true for Orca's Chromium sandbox"
     ignore-check.kube-linter.io/no-add-caps: "claude container needs SYS_ADMIN for Orca's Chromium sandbox (GPU/zygote process launch)"
+    ignore-check.kube-linter.io/unset-memory-requirements: "dev-pod is a development environment; limits are intentionally omitted to avoid OOM kills during worktree spawns and builds"
 spec:
   replicas: 1
   serviceName: dev-pod
@@ -65,9 +66,6 @@ spec:
             requests:
               cpu: 50m
               memory: 64Mi
-            limits:
-              cpu: "1"
-              memory: 256Mi
         - name: fix-home-ownership
           image: registry.roppoh.local/dev-pod:8ddf358
           command:
@@ -87,9 +85,6 @@ spec:
             requests:
               cpu: 10m
               memory: 32Mi
-            limits:
-              cpu: 200m
-              memory: 64Mi
         - name: init
           image: registry.roppoh.local/dev-pod:8ddf358
           command: [dev-pod-init]
@@ -119,9 +114,6 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
-            limits:
-              cpu: "2"
-              memory: 2Gi
       containers:
         - name: sshd
           image: registry.roppoh.local/dev-pod:8ddf358
@@ -150,9 +142,6 @@ spec:
             requests:
               cpu: 25m
               memory: 64Mi
-            limits:
-              cpu: 250m
-              memory: 256Mi
           volumeMounts:
             - name: home
               mountPath: /home/user
@@ -216,9 +205,6 @@ spec:
             requests:
               cpu: 100m
               memory: 512Mi
-            limits:
-              cpu: "4"
-              memory: 8Gi
           volumeMounts:
             - name: home
               mountPath: /home/user
