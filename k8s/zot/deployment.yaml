@@ -19,6 +19,8 @@ spec:
       labels:
         app.kubernetes.io/name: zot
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532

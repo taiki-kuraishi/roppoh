@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: cloudflared
     spec:
+      # n100/z390 どちらにも配置できるようにし、podAntiAffinity で
+      # 2レプリカを別ノードへ散らして冗長性を確保する(ノード指定はしない)。
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

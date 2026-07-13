@@ -20,6 +20,8 @@ spec:
       labels:
         app.kubernetes.io/name: discord-gateway-proxy
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       securityContext:
         runAsNonRoot: true
         # distroless:nonroot の既定ユーザー

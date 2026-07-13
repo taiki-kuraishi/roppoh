@@ -20,6 +20,8 @@ spec:
       labels:
         app.kubernetes.io/name: mimir-alerting-bootstrap
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       restartPolicy: OnFailure
       securityContext:
         runAsNonRoot: true

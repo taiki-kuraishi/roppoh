@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: garage
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       securityContext:
         # dxflrs/garage v2.x は uid 1000 の非 root ユーザーで動作する。
         # 起動失敗時は runAsUser の値を調整すること。

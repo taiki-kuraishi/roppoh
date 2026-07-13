@@ -18,6 +18,9 @@ spec:
   workflowSpec:
     serviceAccountName: argo-workflow
     entrypoint: main
+    # 全 step の Pod を n100 に固定
+    nodeSelector:
+      kubernetes.io/hostname: n100
     # ビルド成否を GitHub commit status へ通知（best-effort）
     onExit: notify-final
     activeDeadlineSeconds: 1800

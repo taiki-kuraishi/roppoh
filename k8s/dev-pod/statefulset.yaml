@@ -30,6 +30,9 @@ spec:
       labels:
         app.kubernetes.io/name: dev-pod
     spec:
+      # z390 に固定(運用上の配置方針。GPU使用が理由ではない)。
+      nodeSelector:
+        nvidia.com/gpu: "true"
       # local-path は PVC 初回作成時に root 所有(0755 root:root)で作られることがあるため、
       # fsGroup だけでは user(uid 1000)から書き込めない場合がある。initContainer で明示的に
       # chown する(空のときのみ実行し、既存データの所有権は変更しない)。

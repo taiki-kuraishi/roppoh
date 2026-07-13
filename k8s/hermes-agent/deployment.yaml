@@ -27,6 +27,8 @@ spec:
       labels:
         app.kubernetes.io/name: hermes-agent
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       containers:
         - name: hermes-agent
           # 【自己更新】このタグは Renovate が更新する
