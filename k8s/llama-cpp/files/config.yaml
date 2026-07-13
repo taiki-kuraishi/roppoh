@@ -128,6 +128,22 @@ models:
       --cpu-moe --reasoning auto --no-mmproj
       -c 131072
 
+  # Gemma4-26B-A4B の高精度版(Q6_K, ~21GB)。当初 Q8_0(~28GB)希望だったが z390 ノード RAM が
+  # 合計 ~30GB(cgroup limit 26Gi)でタイトなため Q6_K を採用(「ほぼ無劣化」を維持しつつ RAM リスク回避)。
+  # --cpu-moe で全エキスパートを CPU RAM へ退避。context は保守値 32768 で投入。Q4_K_M 版
+  # (c=131072 で VRAM 5.11GB)より非-expert 層が GPU 上で大きくなるため、Argo 同期後に二分探索して
+  # 上限を確定・更新する(TODO: bisect)。
+  gemma4-26b-a4b-q6k:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q6_K
+      --cpu-moe --reasoning auto --no-mmproj
+      -c 32768
+
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
   # --cpu-moe でエキスパートを CPU RAM に退避し実測 VRAM ~4GB で 6GB に収まる。
   # ※ --no-mmap は llama.cpp が起動時に推奨するが、実機(XMP 有効・DDR4 帯域向上後)では
@@ -191,6 +207,9 @@ models:
   # 変動なし。Gemma のハイブリッド sliding-window attention により KV cache が
   # ほぼ一定サイズに収まるためと見られる)。VRAM 余裕(残り約1.1GiB)は確保できているが
   # Q4_K_M(4.98GB、+0.92GB)へ上げると残り約200MBまで縮小し危険なため Q3_K_M を採用。
+  # ネイティブ context 128K(131072)がベンチ確認済みの安全上限(実測 VRAM 5019MiB、残り約1.1GiB)。
+  # 一時 262144 に上げていたが、full-attention 層の KV 確保が 6GB VRAM を超えロード時 CUDA OOM で
+  # 即 exit(upstream command exited prematurely)したため 131072 に戻した。
   gemma4-e4b:
     ttl: 3600
     cmd: >
@@ -198,9 +217,9 @@ models:
       -ngl 99 -fa on --jinja
       -ctk q8_0 -ctv q8_0
       -b 2048 -ub 2048
-       -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
-       --no-mmproj
-       -c 262144
+      -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
+      --no-mmproj
+      -c 131072
 
   # Gemma4-E2B(Dense/MatFormer、非MoE、ファミリー最小)。ネイティブ context 128K。
   # 2026-07 ベンチ実施記録(PR参照): 最小モデルのため VRAM 余裕が大きく(c=131072 で
@@ -216,6 +235,22 @@ models:
       -hf unsloth/gemma-4-E2B-it-GGUF:Q5_K_M
       --no-mmproj
       -c 131072
+
+  # gpt-oss-20b(OpenAI, MoE 21B / active 3.6B)。MoE 重みは MXFP4 ネイティブ(~4.25bpp)で
+  # ダウンストリーム量子化ではないため実質無劣化。F16 タグは非-MoE 層を F16 で保持。実体 ~13GB。
+  # harmony chat format 必須のため --jinja(GGUF 同梱テンプレート使用)。--cpu-moe で全エキスパートを
+  # CPU RAM へ退避。native context 128K。context は保守値 32768 で投入し、Argo 同期後に二分探索で
+  # 上限を確定・更新する(TODO: bisect。目標 131072)。--no-mmap は #522 の検証により採用しない。
+  gpt-oss-20b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q8_0 -ctv q8_0
+      -b 2048 -ub 2048
+      -hf unsloth/gpt-oss-20b-GGUF:F16
+      --cpu-moe --reasoning auto
+      -c 32768
 
   # openclaw の memory 検索(agents.defaults.memorySearch)用 embedding エンドポイント。
   # llama-server 群はすべてチャット用起動(--embeddings なし)のため /v1/embeddings が
@@ -252,9 +287,11 @@ groups:
       - gemma4-26b-a4b-iq2xxs
       - qwen3.5-35b-a3b
       - qwen3.5-35b-a3b-longctx
+      - gemma4-26b-a4b-q6k
       - gemma4-12b
       - gemma4-e4b
       - gemma4-e2b
+      - gpt-oss-20b
   embeddings:
     swap: false
     exclusive: false
