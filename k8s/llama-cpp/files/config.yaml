@@ -135,6 +135,7 @@ models:
   # 246MiB 一定(Gemma のハイブリッド sliding-window attention で KV がほぼ頭打ちのため)。
   # 194560 はロード可・196608 は起動時 compute buffer(graph_reserve)で CUDA OOM。崖の直下
   # (194560)は 2048 トークン手前でマージンが薄いため、~16k トークンの余裕を取り 180224 を採用。
+  # --temp/--top-p/--top-k は unsloth の gemma-4-26B-A4B 推奨サンプリング(temp 1.0 / top-p 0.95 / top-k 64)。
   gemma4-26b-a4b-q6k:
     ttl: 3600
     cmd: >
@@ -144,6 +145,7 @@ models:
       -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-GGUF:Q6_K
       --cpu-moe --reasoning auto --no-mmproj
+      --temp 1.0 --top-p 0.95 --top-k 64
       -c 180224
 
   # 標準版(以前の hermes の default)。MoE 34.66B / アクティブ約3B。
