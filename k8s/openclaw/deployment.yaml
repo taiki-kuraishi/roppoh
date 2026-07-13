@@ -34,7 +34,7 @@ spec:
       containers:
         - name: openclaw
           # 【自己更新】このタグは Renovate が更新する
-          image: ghcr.io/openclaw/openclaw:2026.6.11
+          image: ghcr.io/openclaw/openclaw:2026.7.1
           command:
             - node
             - dist/index.js
