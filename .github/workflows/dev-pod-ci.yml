@@ -26,6 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
+        with:
+          install_args: "npm:bats"
       - name: Run bin scripts unit tests (bats)
         run: mise run test:unit:dev-pod
   docker:

@@ -21,6 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
+        with:
+          install_args: "terraform tflint"
       - name: terraform fmt
         working-directory: infra
         run: terraform fmt -check -recursive

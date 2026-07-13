@@ -22,5 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-      - name: lint k8s (kubeconform, kube-linter)
-        run: mise run lint:k8s
+        with:
+          install_args: "kubeconform kube-linter"
+      - parallel:
+          - name: kubeconform
+            run: kubeconform -summary -ignore-missing-schemas -ignore-filename-pattern 'patches/' -ignore-filename-pattern 'dashboards/' -ignore-filename-pattern 'files/' k8s
+          - name: kube-linter
+            run: kube-linter lint k8s --config .kube-linter.yaml

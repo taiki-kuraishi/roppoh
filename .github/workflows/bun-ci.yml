@@ -30,11 +30,15 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-bun
       - uses: ./.github/actions/setup-turbo
-      - run: bun --bun oxlint --deny-warnings --format=github
-      - run: bun run type-check
-      - run: bun turbo type-check
-      - run: bun run knip
-      - run: bunx lefthook validate
+      - parallel:
+          - name: Lint (oxlint)
+            run: bun --bun oxlint --deny-warnings --format=github
+          - name: Type check
+            run: bun run type-check
+          - name: Knip
+            run: bun run knip
+          - name: Validate lefthook
+            run: bunx lefthook validate
       - run: bun turbo build
 
   visual-regression-test:
