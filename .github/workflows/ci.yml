@@ -13,11 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-        with:
-          install_args: "bun lefthook"
       - run: bun install --frozen-lockfile --filter "./"
       - parallel:
-          - name: Format check (oxfmt)
-            run: bun run oxfmt --check
-          - name: Validate lefthook
-            run: lefthook validate
+          - run: bun run oxfmt --check
+          - run: lefthook validate

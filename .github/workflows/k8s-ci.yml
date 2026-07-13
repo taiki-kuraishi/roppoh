@@ -22,8 +22,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: jdx/mise-action@v4
-        with:
-          install_args: "kubeconform kube-linter"
       - parallel:
           - name: kubeconform
             run: kubeconform -summary -ignore-missing-schemas -ignore-filename-pattern 'patches/' -ignore-filename-pattern 'dashboards/' -ignore-filename-pattern 'files/' k8s
