@@ -50,6 +50,8 @@ spec:
             enabled: false
           zoneAwareReplication:
             enabled: false # 単一レプリカなので無効化
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         store_gateway:
           replicas: 1
@@ -57,28 +59,65 @@ spec:
             enabled: false
           zoneAwareReplication:
             enabled: false # 単一レプリカなので無効化
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         distributor:
           replicas: 1
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         querier:
           replicas: 1
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         query_frontend:
           replicas: 1
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         compactor:
           replicas: 1
           persistentVolume:
             enabled: false
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         alertmanager:
           replicas: 1
           persistentVolume:
             enabled: false
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         ruler:
           replicas: 1
+          nodeSelector:
+            kubernetes.io/hostname: n100
+
+        # gateway (nginx): grafana-mimir-gateway Service を提供する。ノード配置: n100 に固定
+        gateway:
+          nodeSelector:
+            kubernetes.io/hostname: n100
+
+        # 以下4つは chart のデフォルトで enabled: true になっており明示的に無効化していない
+        # ため実際に稼働している(helm template で検証済み)。ノード配置: n100 に固定
+        overrides_exporter:
+          nodeSelector:
+            kubernetes.io/hostname: n100
+
+        query_scheduler:
+          nodeSelector:
+            kubernetes.io/hostname: n100
+
+        rollout_operator:
+          nodeSelector:
+            kubernetes.io/hostname: n100
+
+        kafka:
+          nodeSelector:
+            kubernetes.io/hostname: n100
 
         # -------------------------------------------------------------------------
         # Mimir 設定本体 (structuredConfig)

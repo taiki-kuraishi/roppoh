@@ -17,3 +17,5 @@ spec:
     additionalArguments:
       - "--metrics.prometheus.addServicesLabels=true"
       - "--metrics.prometheus.addRoutersLabels=true"
+    nodeSelector:
+      kubernetes.io/hostname: n100
