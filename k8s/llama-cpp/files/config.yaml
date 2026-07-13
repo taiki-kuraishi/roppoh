@@ -33,11 +33,12 @@ models:
   #   --spec-draft-cpu-moe = MTP ドラフト側のエキスパートも CPU RAM へ退避
   # これにより GPU 常駐は非-expert 層 + KV のみになり、VRAM を context に回す。
   #
-  # ★ context は暫定 131072 で投入(未実測。旧 Q4_K_M 非MTP は 262144 で残 246MiB だったが、
-  #   MTP は KV を2本(本体+ドラフト)持つぶん VRAM を食うため半分程度から始める)。
-  #   DL 完了後に「実生成(投機デコード有効)後の空き VRAM」基準で二分探索し上限を確定する
-  #   (q6k の教訓: ロード時の空きではなく実生成後の空きで測る。crash 回避のため DL 完了直後に
-  #   実測して必要なら即調整する)。
+  # ★ context 98304(実測確定)。当初 131072(=128k)で投入したが、MTP の投機デコードは本体とは
+  #   別に「ドラフト用コンテキスト」を GPU に確保し、その compute buffer(~1GB)が 6GB VRAM に
+  #   収まらず load 時 CUDA OOM(`failed to create MTP context` / `failed to allocate compute pp
+  #   buffers`)で毎回クラッシュした。DL 済み重みでクリーン実測(実生成込み)した結果、131072 は
+  #   NG・98304 はロード+実生成が通り生成後 空き 402MiB を確認したため 98304 を採用。
+  #   (KV を draft側も q4_0 に落としても 131072 は不可 = KV ではなく MTP compute buffer が律速)
   #
   # ★ 速度は要実測(採用可否の判断材料): MTP の 1.5-2x は full-GPU 前提の値で、本機は
   #   --cpu-moe(tg が CPU 律速)のため効果は未知数。DL 後に tok/s を旧 Q4_K_M(~15-18 tok/s)
@@ -58,7 +59,7 @@ models:
       --reasoning auto --no-mmproj
       --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
       --presence-penalty 0.0 --repeat-penalty 1.0
-      -c 131072
+      -c 98304
 
   # Gemma4-26B-A4B 公式 base model(unsloth GGUF、検閲あり、MTPドラフトヘッドなし)。
   # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きい
