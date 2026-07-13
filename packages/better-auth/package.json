@@ -19,7 +19,7 @@
     "drizzle-orm": "0.45.2"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "4.20260702.1",
+    "@cloudflare/workers-types": "5.20260712.1",
     "drizzle-kit": "catalog:"
   },
   "peerDependencies": {
