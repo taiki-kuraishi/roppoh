@@ -1,5 +1,9 @@
-# モデル DL(初回 -hf, 最大約20GB)がヘルスチェックで中断されないよう長めに取る
-healthCheckTimeout: 3600
+# モデル DL(初回 -hf)がヘルスチェックで中断されないよう長めに取る。
+# 実回線は約 5MB/s と遅く、最大級のモデル(qwen3.6 MTP UD-Q5_K_XL = 27.2GB)は初回 DL に
+# ~90分かかる。3600(1h)では DL 途中で kill される実績があった(q6k が 95% で被弾)ため
+# 10800(3h)に引き上げる。健全でないモデルはプロセス即 exit で早期検知されるため、
+# この値を大きくしても「壊れたモデルの検知」は遅延しない(遅い DL の完走のみを許容する)。
+healthCheckTimeout: 10800
 logLevel: info
 # ${PORT} マクロの起点。各モデルに一意ポートを自動割当
 startPort: 10001
@@ -17,14 +21,30 @@ macros:
     -b 4096 -ub 4096
 
 models:
-  # Qwen3.6-35B-A3B 公式 base model(unsloth GGUF、検閲あり)。アーキテクチャは
-  # HauhauCS 版と同じだが、unsloth の UD(Dynamic)量子化はテンソルごとに精度配分が
-  # 異なりレイヤーあたりの実VRAM使用量がHauhauCS版のQ4_K_Mより大きい。
-  # --n-cpu-moe 36 を転用したところ CUDA OOM でクラッシュした実績があり、
-  # 安全マージン優先で --cpu-moe(全エキスパート CPU 退避)に変更。
-  # 2026-07 実測: --cpu-moe に変更後、ネイティブ上限 262144 のままロードしても
-  # 安定動作を確認(実測 VRAM 5559MiB、残り約246MiB)。hidden_size が Gemma4 系より
-  # 小さいため、一発でネイティブ上限に到達しこれ以上の拡張余地はない。
+  # Qwen3.6-35B-A3B 公式 base model(unsloth GGUF、検閲あり)。
+  # MTP(Multi-Token Prediction)ドラフトヘッド付き GGUF + UD-Q4_K_XL(22.9GB)に変更し、
+  # llama.cpp の投機デコード(--spec-type draft-mtp)で tg の高速化を狙う(build b9870 で対応確認)。
+  # 量子化は Q5_K_XL(27.2GB)ではなく Q4_K_XL(22.9GB)を採用: Q4_K_XL は Qwen3.5 ベンチで
+  # KLD(99.9%) 0.41・フル比 PPL +0.87% と Q4 帯で最良かつ実質ロスレスで、Q5(+0.21%)との
+  # 品質差は誤差レベル。より小さいぶん RAM に余裕ができ、GPU 常駐の非-expert 層も小さくなり
+  # context を稼げる。
+  # 「MoE を全て CPU に寄せて context を稼ぐ」方針:
+  #   --cpu-moe            = 本体エキスパートを CPU RAM へ退避
+  #   --spec-draft-cpu-moe = MTP ドラフト側のエキスパートも CPU RAM へ退避
+  # これにより GPU 常駐は非-expert 層 + KV のみになり、VRAM を context に回す。
+  #
+  # ★ context は暫定 131072 で投入(未実測。旧 Q4_K_M 非MTP は 262144 で残 246MiB だったが、
+  #   MTP は KV を2本(本体+ドラフト)持つぶん VRAM を食うため半分程度から始める)。
+  #   DL 完了後に「実生成(投機デコード有効)後の空き VRAM」基準で二分探索し上限を確定する
+  #   (q6k の教訓: ロード時の空きではなく実生成後の空きで測る。crash 回避のため DL 完了直後に
+  #   実測して必要なら即調整する)。
+  #
+  # ★ 速度は要実測(採用可否の判断材料): MTP の 1.5-2x は full-GPU 前提の値で、本機は
+  #   --cpu-moe(tg が CPU 律速)のため効果は未知数。DL 後に tok/s を旧 Q4_K_M(~15-18 tok/s)
+  #   と比較し、明確に上回らなければ MTP をやめて素の Q4_K_XL へ戻すことも検討する。
+  #   なお MTP は tg のみ加速で prefill/長文 TTFT は速くならない点に留意。
+  #
+  # ★ RAM: 22.9GB は 30GB ノード(cgroup 26Gi)で旧 Q4_K_M(~20GB)並みに収まる(Q5 27.2GB より安全)。
   qwen3.6-35b-a3b:
     ttl: 3600
     cmd: >
@@ -32,11 +52,13 @@ models:
       -ngl 99 -fa on --jinja
       -ctk q4_0 -ctv q4_0
       -b 2048 -ub 2048
-      -hf unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M
-      --cpu-moe --reasoning auto --no-mmproj
+      -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_XL
+      --cpu-moe --spec-draft-cpu-moe
+      --spec-type draft-mtp --spec-draft-n-max 3
+      --reasoning auto --no-mmproj
       --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
       --presence-penalty 0.0 --repeat-penalty 1.0
-      -c 262144
+      -c 131072
 
   # Gemma4-26B-A4B 公式 base model(unsloth GGUF、検閲あり、MTPドラフトヘッドなし)。
   # unsloth の UD(Dynamic)量子化は HauhauCS 版より層あたりの実VRAM使用量が大きい
