@@ -21,6 +21,8 @@ spec:
         app.kubernetes.io/name: openclaw
     spec:
       serviceAccountName: openclaw
+      nodeSelector:
+        kubernetes.io/hostname: n100
       securityContext:
         runAsNonRoot: true
         # 公式イメージの既定ユーザー(node)

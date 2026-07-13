@@ -21,12 +21,12 @@ teardown() {
   rm -rf "$TEST_APPDIR"
 }
 
-@test "ORCA_PAIRING_ADDRESSを渡してAppRun serveを--mobile-pairing付きでexecする" {
+@test "ORCA_PAIRING_ADDRESSを渡してAppRun serveをexecする(--mobile-pairingは付けない)" {
   export ORCA_PAIRING_ADDRESS=dev-pod-orca.example.com
 
   run bash "$SCRIPT"
   [ "$status" -eq 0 ]
-  [ "$(cat "$STUB_CALLS_DIR/AppRun.calls")" = "serve --port 6768 --pairing-address dev-pod-orca.example.com --mobile-pairing" ]
+  [ "$(cat "$STUB_CALLS_DIR/AppRun.calls")" = "serve --port 6768 --pairing-address dev-pod-orca.example.com" ]
 }
 
 @test "ORCA_PAIRING_ADDRESSが未設定ならエラー終了する" {

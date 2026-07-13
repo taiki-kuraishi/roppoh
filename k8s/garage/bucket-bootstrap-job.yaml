@@ -30,6 +30,8 @@ spec:
       labels:
         app.kubernetes.io/name: garage-bootstrap
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       restartPolicy: OnFailure
       securityContext:
         runAsNonRoot: true
