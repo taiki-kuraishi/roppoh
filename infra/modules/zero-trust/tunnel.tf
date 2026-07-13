@@ -75,6 +75,13 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "argo-workflow.tsar-bmb.org"
         service  = "http://argo-workflows-server.argo.svc.cluster.local:2746"
       },
+      # llama-swap: llama-swap の Web UI(/ui)。llama-cpp と同一 Service だが、
+      # こちらは kuraishi-only のメール SSO でブラウザアクセスさせる(API 用の
+      # llama-cpp.tsar-bmb.org は service-token のまま温存)。
+      {
+        hostname = "llama-swap.tsar-bmb.org"
+        service  = "http://llama-cpp.llama-cpp.svc.cluster.local:8080"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"
