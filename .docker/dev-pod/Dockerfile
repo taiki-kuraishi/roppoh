@@ -19,7 +19,7 @@
 # (sudo が無い runAsNonRoot + allowPrivilegeEscalation: false 環境)。
 # そのためイメージビルド時に user ユーザーで single-user インストールしておく。
 
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-server \
