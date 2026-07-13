@@ -63,8 +63,12 @@ models:
   # ※ 以前 #577 で追加→#579 で revert したが、これは同梱の TurboQuant 実験 pod ごと巻き戻した
   #   巻き添えで、QAT モデル自体の不具合ではない。今回は現行の `--cpu-moe`(全 expert CPU)に
   #   統一して単独で再導入する。
-  # context は base Q4(131072 で安定)に倣い 131072 で投入。QAT Q4 は base より小さいため
-  # 安全側だが、正確な上限は DL 後に実生成後 VRAM 基準で二分探索する(q6k の教訓)。
+  # context は 163840 で投入。KV は VRAM 側にあり QAT の小ささ(14.2GB)で GPU 常駐の非-expert
+  # 層が base(16.8GB)より小さくなるぶん、base より context を伸ばせる。根拠として、より大きい
+  # base Q4 の longctx が 163840 で安定(実測 VRAM 5485MiB/残 320MiB)・196608 で OOM である
+  # ため、より軽い QAT なら 163840 は確実に安全圏。QAT はさらに軽いので 196608〜native 262144
+  # まで狙える可能性があるが、q6k の教訓(ロードは通っても実生成で OOM→クラッシュ)を踏まえ、
+  # それ以上は DL 後に実生成後 VRAM 基準の二分探索で確定してから引き上げる。
   # --temp/--top-p/--top-k は unsloth の gemma-4-26B-A4B 推奨サンプリング。
   gemma4-26b-a4b-qat:
     ttl: 3600
@@ -76,7 +80,7 @@ models:
       -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --cpu-moe --reasoning auto --no-mmproj
       --temp 1.0 --top-p 0.95 --top-k 64
-      -c 131072
+      -c 163840
 
   # gemma4-26b-a4b の長文コンテキスト版。qwen3.5-35b-a3b-longctx と同じ方針で、
   # --n-cpu-moe の代わりに --cpu-moe(全エキスパート CPU 退避)にして VRAM を
