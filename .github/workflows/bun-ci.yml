@@ -31,15 +31,11 @@ jobs:
       - uses: ./.github/actions/setup-bun
       - uses: ./.github/actions/setup-turbo
       - parallel:
-          - name: Lint (oxlint)
-            run: bun --bun oxlint --deny-warnings --format=github
-          - name: Type check
-            run: bun run type-check
-          - name: Knip
-            run: bun run knip
-          - name: Validate lefthook
-            run: bunx lefthook validate
-      - run: bun turbo build
+          - run: bun --bun oxlint --deny-warnings --format=github
+          - run: bun run type-check
+          - run: bun run knip
+          - run: bunx lefthook validate
+          - run: bun turbo build
 
   visual-regression-test:
     runs-on: ubuntu-latest
