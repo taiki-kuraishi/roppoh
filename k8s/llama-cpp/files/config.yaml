@@ -5,6 +5,9 @@
 # この値を大きくしても「壊れたモデルの検知」は遅延しない(遅い DL の完走のみを許容する)。
 healthCheckTimeout: 10800
 logLevel: info
+# globalTTL=0 → モデルは TTL で自動 unload されない(各モデルの ttl 未指定=-1 はこの値に従う)。
+# 従来は各モデルに ttl を設定していたが、アイドル時の再ロード(遅い DL / cold start)を避けるため撤廃した。
+globalTTL: 0
 # ${PORT} マクロの起点。各モデルに一意ポートを自動割当
 startPort: 10001
 
@@ -47,7 +50,6 @@ models:
   #
   # ★ RAM: 22.9GB は 30GB ノード(cgroup 26Gi)で旧 Q4_K_M(~20GB)並みに収まる(Q5 27.2GB より安全)。
   qwen3.6-35b-a3b:
-    ttl: 3600
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
@@ -79,7 +81,6 @@ models:
   #   不安定なら 229376 等へ下げる余地あり。
   # --temp/--top-p/--top-k は unsloth の gemma-4-26B-A4B 推奨サンプリング。
   gemma4-26b-a4b-qat:
-    ttl: 3600
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
@@ -101,7 +102,6 @@ models:
   # 一時 262144 に上げていたが、full-attention 層の KV 確保が 6GB VRAM を超えロード時 CUDA OOM で
   # 即 exit(upstream command exited prematurely)したため 131072 に戻した。
   gemma4-e4b:
-    ttl: 3600
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
@@ -116,7 +116,6 @@ models:
   # 実測 VRAM 使用量 3.2GB 前後、cold ~93k プロンプトでも同水準)、E4B/12B と異なり
   # 量子化を上げても問題ない。品質重視で Q5_K_M を採用(残り約2.9GiB の余裕あり)。
   gemma4-e2b:
-    ttl: 3600
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
@@ -135,8 +134,7 @@ models:
   # chat モデルのロード/スワップで unload されず常駐する(embedding は都度必要になるため)。
   # Qwen3-Embedding は last-token pooling 指定が必須(--pooling last)。出力次元 1024。
   qwen3-embedding-0.6b:
-    # chat と違い常駐前提(groups.embeddings.persistent)。ttl は unload 抑止のため長めに。
-    ttl: 86400
+    # chat と違い常駐前提(groups.embeddings.persistent)。globalTTL=0 で自動 unload されず常駐する。
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 0
@@ -163,3 +161,11 @@ groups:
     persistent: true
     members:
       - qwen3-embedding-0.6b
+
+# 起動時フック。llama-swap 起動直後に gemma4-26b-a4b-qat をロードしておき、初回リクエストの
+# cold start(DL 済み重みでも load に時間がかかる)を避ける。chat グループは swap: true のため
+# 他 chat モデルへ切り替わるとスワップアウトされるが、それは従来どおりの相互スワップ挙動。
+hooks:
+  on_startup:
+    preload:
+      - gemma4-26b-a4b-qat
