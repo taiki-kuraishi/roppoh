@@ -180,7 +180,7 @@ version = "1.13.0"
 backend = "npm:bats"
 
 [[tools."npm:turbo"]]
-version = "2.10.4"
+version = "2.10.5"
 backend = "npm:turbo"
 
 [[tools.sops]]
