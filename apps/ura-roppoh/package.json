@@ -18,7 +18,7 @@
     "@roppoh/better-auth-query": "workspace:*",
     "@roppoh/shadcn": "workspace:*",
     "@ssgoi/react": "catalog:",
-    "@tanstack/react-form": "1.33.1",
+    "@tanstack/react-form": "1.33.2",
     "@tanstack/react-query": "catalog:",
     "babel-plugin-react-compiler": "1.0.0",
     "better-auth": "catalog:",
