@@ -48,7 +48,7 @@
         "@tanstack/react-query": "catalog:",
         "better-auth": "catalog:",
         "drizzle-orm": "0.45.2",
-        "hono": "4.12.29",
+        "hono": "4.12.30",
         "jotai": "2.20.0",
         "lucide-react": "1.24.0",
         "nuqs": "2.9.0",
@@ -182,7 +182,7 @@
         "@tanstack/react-form": "1.33.1",
         "@tanstack/react-query": "catalog:",
         "better-auth": "catalog:",
-        "hono": "4.12.29",
+        "hono": "4.12.30",
         "jotai": "2.20.0",
         "lucide-react": "1.24.0",
         "nuqs": "2.9.0",
@@ -2072,7 +2072,7 @@
 
     "headers-polyfill": ["headers-polyfill@5.0.1", "", { "dependencies": { "@types/set-cookie-parser": "^2.4.10", "set-cookie-parser": "^3.0.1" } }, "sha512-1TJ6Fih/b8h5TIcv+1+Hw0PDQWJTKDKzFZzcKOiW1wJza3XoAQlkCuXLbymPYB8+ZQyw8mHvdw560e8zVFIWyA=="],
 
-    "hono": ["hono@4.12.29", "", {}, "sha512-1hNiRjawYrLq/4m3DQQjPGFg0VZkk4RjQJDff/excI6Dm9BiL75qxGrd7/c6YOxPdq6AscP3LiXhQ6fKFC1Waw=="],
+    "hono": ["hono@4.12.30", "", {}, "sha512-emn+JoJjrN9YTpRDS5it/UI2SO9BAE37T6I3d963RxcZ81G9A4pr2SZTEiiaiKbzx+NKRg5BZ89fCL7gCJCUog=="],
 
     "html-escaper": ["html-escaper@3.0.3", "", {}, "sha512-RuMffC89BOWQoY0WKGpIhn5gX3iI54O6nRA0yC124NYVtzjmFWBIiFd8M0x+ZdX0P9R4lADg1mgP8C7PxGOWuQ=="],
 
