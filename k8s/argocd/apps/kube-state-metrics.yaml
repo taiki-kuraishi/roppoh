@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-state-metrics
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-state-metrics
+    targetRevision: 7.8.1
+    helm:
+      valuesObject:
+        # -----------------------------------------------------------------------
+        # クラスタ状態メトリクス (Pod restart / Deployment ready-vs-desired /
+        # Node 状態 / PVC / Job・CronJob / GPU allocatable 等)。
+        # Deployment (レプリカ 1) として稼働し、Pod 単位で grafana-alloy から
+        # 「自ノードで稼働している Alloy のみがスクレイプする」パターンで
+        # 重複スクレイプを避ける (k8s/argocd/apps/grafana-alloy.yaml を参照)。
+        # -----------------------------------------------------------------------
+        replicas: 1
+
+        # ノード配置: n100 に固定
+        nodeSelector:
+          kubernetes.io/hostname: n100
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

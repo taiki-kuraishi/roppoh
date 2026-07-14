@@ -1,0 +1,165 @@
+# モデル DL(初回 -hf)がヘルスチェックで中断されないよう長めに取る。
+# 実回線は約 5MB/s と遅く、最大級のモデル(qwen3.6 MTP UD-Q5_K_XL = 27.2GB)は初回 DL に
+# ~90分かかる。3600(1h)では DL 途中で kill される実績があった(q6k が 95% で被弾)ため
+# 10800(3h)に引き上げる。健全でないモデルはプロセス即 exit で早期検知されるため、
+# この値を大きくしても「壊れたモデルの検知」は遅延しない(遅い DL の完走のみを許容する)。
+healthCheckTimeout: 10800
+logLevel: info
+# ${PORT} マクロの起点。各モデルに一意ポートを自動割当
+startPort: 10001
+
+# 全モデル共通の llama-server フラグ(MoE 固有の --cpu-moe はモデル側に置く)
+# -b/-ub 4096: 大きいプロンプトの prefill を高速化する。ubatch を既定 512 から広げると
+#   CPU 上のエキスパート行列演算のバッチ効率が上がり、大プロンプトの TTFT を大幅短縮できる
+#   (実測: 512→2048 で prefill 約3倍、12k トークン cold が 186s→59s)。4096 で更に上限を拡張。
+macros:
+  llama-server: >
+    /app/llama-server
+    --host 127.0.0.1 --port ${PORT}
+    -ngl 99 -fa on --jinja
+    -ctk q8_0 -ctv q8_0
+    -b 4096 -ub 4096
+
+models:
+  # Qwen3.6-35B-A3B 公式 base model(unsloth GGUF、検閲あり)。
+  # MTP(Multi-Token Prediction)ドラフトヘッド付き GGUF + UD-Q4_K_XL(22.9GB)に変更し、
+  # llama.cpp の投機デコード(--spec-type draft-mtp)で tg の高速化を狙う(build b9870 で対応確認)。
+  # 量子化は Q5_K_XL(27.2GB)ではなく Q4_K_XL(22.9GB)を採用: Q4_K_XL は Qwen3.5 ベンチで
+  # KLD(99.9%) 0.41・フル比 PPL +0.87% と Q4 帯で最良かつ実質ロスレスで、Q5(+0.21%)との
+  # 品質差は誤差レベル。より小さいぶん RAM に余裕ができ、GPU 常駐の非-expert 層も小さくなり
+  # context を稼げる。
+  # 「MoE を全て CPU に寄せて context を稼ぐ」方針:
+  #   --cpu-moe            = 本体エキスパートを CPU RAM へ退避
+  #   --spec-draft-cpu-moe = MTP ドラフト側のエキスパートも CPU RAM へ退避
+  # これにより GPU 常駐は非-expert 層 + KV のみになり、VRAM を context に回す。
+  #
+  # ★ context 98304(実測確定)。当初 131072(=128k)で投入したが、MTP の投機デコードは本体とは
+  #   別に「ドラフト用コンテキスト」を GPU に確保し、その compute buffer(~1GB)が 6GB VRAM に
+  #   収まらず load 時 CUDA OOM(`failed to create MTP context` / `failed to allocate compute pp
+  #   buffers`)で毎回クラッシュした。DL 済み重みでクリーン実測(実生成込み)した結果、131072 は
+  #   NG・98304 はロード+実生成が通り生成後 空き 402MiB を確認したため 98304 を採用。
+  #   (KV を draft側も q4_0 に落としても 131072 は不可 = KV ではなく MTP compute buffer が律速)
+  #
+  # ★ 速度は要実測(採用可否の判断材料): MTP の 1.5-2x は full-GPU 前提の値で、本機は
+  #   --cpu-moe(tg が CPU 律速)のため効果は未知数。DL 後に tok/s を旧 Q4_K_M(~15-18 tok/s)
+  #   と比較し、明確に上回らなければ MTP をやめて素の Q4_K_XL へ戻すことも検討する。
+  #   なお MTP は tg のみ加速で prefill/長文 TTFT は速くならない点に留意。
+  #
+  # ★ RAM: 22.9GB は 30GB ノード(cgroup 26Gi)で旧 Q4_K_M(~20GB)並みに収まる(Q5 27.2GB より安全)。
+  qwen3.6-35b-a3b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_XL
+      --cpu-moe --spec-draft-cpu-moe
+      --spec-type draft-mtp --spec-draft-n-max 3
+      --reasoning auto --no-mmproj
+      --temp 0.6 --top-p 0.95 --top-k 20 --min-p 0.0
+      --presence-penalty 0.0 --repeat-penalty 1.0
+      -c 98304
+
+  # Gemma4-26B-A4B QAT(Quantization-Aware Trained)版、unsloth Dynamic UD-Q4_K_XL(14.2GB)。
+  # QAT は量子化を織り込んで学習済みのため 4bit でも品質劣化이 작고, unsloth 베ンチでは
+  # naive Q4_0 の top-1 精度 70.2% → QAT で 85.6% に改善。「ほぼ BF16 品質を Q4 サイズで」得られる。
+  # サイズは 14.2GB で base の Q4_K_M(16.8GB)より小さく、q6k(~23GB)より大幅に軽い
+  #   → RAM が最も軽く 30GB ノードに優しい。GPU 常駐の非-expert 層も小さく VRAM に余裕が出る。
+  # リポジトリ末尾が `-qat-GGUF`(非QAT の `-GGUF` とは別リポジトリ)。
+  # ※ 以前 #577 で追加→#579 で revert したが、これは同梱の TurboQuant 実験 pod ごと巻き戻した
+  #   巻き添えで、QAT モデル自体の不具合ではない。今回は現行の `--cpu-moe`(全 expert CPU)に
+  #   統一して単独で再導入する。
+  # context 262144(native 256K)。QAT の小ささ(14.2GB)で GPU 常駐の非-expert 層が軽く、
+  # KV に回せる VRAM が大きいため native 上限まで到達できる。DL 済み重みでクリーン実測
+  # (実生成込み): 163840 で生成後 空き 1404MiB と大幅に余裕 → native 262144 まで引き上げ、
+  # 262144 でもロード+実生成が通り生成後 空き 190MiB を確認(load 時 192MiB)。q6k の教訓に
+  # 倣い「実生成後」の空きで判定済み(KV は load 時前確保のため長プロンプトでも追加確保ほぼ無し)。
+  # ※ 190MiB はやや薄めのマージン(qwen3.6 base の 262144/残246 と同程度)。もし高負荷で
+  #   不安定なら 229376 等へ下げる余地あり。
+  # --temp/--top-p/--top-k は unsloth の gemma-4-26B-A4B 推奨サンプリング。
+  gemma4-26b-a4b-qat:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q4_0 -ctv q4_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
+      --cpu-moe --reasoning auto --no-mmproj
+      --temp 1.0 --top-p 0.95 --top-k 64
+      -c 262144
+
+  # Gemma4-E4B(Dense/MatFormer、非MoE)。ネイティブ context 128K。gemma4-12b と同様
+  # 全レイヤー VRAM 常駐、mmproj 無効化。
+  # 2026-07 ベンチ実施記録(PR参照): Q3_K_M(4.06GB)+ -b/-ub 2048 で c=131072 まで
+  # 安定動作(実測 VRAM 使用量 5019〜5021MiB で一定、context 深さ 0/8k/32k/93k を通じて
+  # 変動なし。Gemma のハイブリッド sliding-window attention により KV cache が
+  # ほぼ一定サイズに収まるためと見られる)。VRAM 余裕(残り約1.1GiB)は確保できているが
+  # Q4_K_M(4.98GB、+0.92GB)へ上げると残り約200MBまで縮小し危険なため Q3_K_M を採用。
+  # ネイティブ context 128K(131072)がベンチ確認済みの安全上限(実測 VRAM 5019MiB、残り約1.1GiB)。
+  # 一時 262144 に上げていたが、full-attention 層の KV 確保が 6GB VRAM を超えロード時 CUDA OOM で
+  # 即 exit(upstream command exited prematurely)したため 131072 に戻した。
+  gemma4-e4b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q8_0 -ctv q8_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
+      --no-mmproj
+      -c 131072
+
+  # Gemma4-E2B(Dense/MatFormer、非MoE、ファミリー最小)。ネイティブ context 128K。
+  # 2026-07 ベンチ実施記録(PR参照): 最小モデルのため VRAM 余裕が大きく(c=131072 で
+  # 実測 VRAM 使用量 3.2GB 前後、cold ~93k プロンプトでも同水準)、E4B/12B と異なり
+  # 量子化を上げても問題ない。品質重視で Q5_K_M を採用(残り約2.9GiB の余裕あり)。
+  gemma4-e2b:
+    ttl: 3600
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 99 -fa on --jinja
+      -ctk q8_0 -ctv q8_0
+      -b 2048 -ub 2048
+      -hf unsloth/gemma-4-E2B-it-GGUF:Q5_K_M
+      --no-mmproj
+      -c 131072
+
+  # openclaw の memory 検索(agents.defaults.memorySearch)用 embedding エンドポイント。
+  # llama-server 群はすべてチャット用起動(--embeddings なし)のため /v1/embeddings が
+  # 501 を返し memory index が openai へフォールバックして失敗していた。その専用エンドポイント。
+  #
+  # GPU(RTX 3050 6GB)は chat モデルが占有するため -ngl 0(CPU 実行)にして VRAM を一切使わない。
+  # 0.6B と小さく indexing 用途では CPU でも実用速度。下記 groups で persistent 指定し、
+  # chat モデルのロード/スワップで unload されず常駐する(embedding は都度必要になるため)。
+  # Qwen3-Embedding は last-token pooling 指定が必須(--pooling last)。出力次元 1024。
+  qwen3-embedding-0.6b:
+    # chat と違い常駐前提(groups.embeddings.persistent)。ttl は unload 抑止のため長めに。
+    ttl: 86400
+    cmd: >
+      /app/llama-server --host 127.0.0.1 --port ${PORT}
+      -ngl 0
+      --embeddings --pooling last
+      -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
+      -c 8192 -b 8192 -ub 8192
+
+# モデルの同時ロード制御。従来は暗黙のデフォルト挙動(単一モデルのみ、ロードで他を unload)
+# だったが、embedding を chat と同時常駐させるため明示的にグループ分けする。
+#   - chat: 従来どおり相互スワップ(swap: true)。exclusive: false で embeddings を unload しない
+#   - embeddings: persistent で chat のロード/スワップに巻き込まれず常駐。CPU 実行のため VRAM 競合なし
+groups:
+  chat:
+    swap: true
+    exclusive: false
+    members:
+      - qwen3.6-35b-a3b
+      - gemma4-26b-a4b-qat
+      - gemma4-e4b
+      - gemma4-e2b
+  embeddings:
+    swap: false
+    exclusive: false
+    persistent: true
+    members:
+      - qwen3-embedding-0.6b

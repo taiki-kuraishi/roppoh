@@ -18,6 +18,9 @@ spec:
   workflowSpec:
     serviceAccountName: argo-workflow
     entrypoint: main
+    # 全 step の Pod を n100 に固定
+    nodeSelector:
+      kubernetes.io/hostname: n100
     # ビルド成否を GitHub commit status へ通知（best-effort）
     onExit: notify-final
     activeDeadlineSeconds: 1800
@@ -106,7 +109,7 @@ spec:
               valueFrom:
                 path: /tmp/out/needs_bump
         script:
-          image: alpine:3.21
+          image: alpine:3.24
           command: [sh]
           env:
             - name: REPO
@@ -174,7 +177,7 @@ spec:
             - name: image_sha
         initContainers:
           - name: clone
-            image: alpine:3.21
+            image: alpine:3.24
             command: [sh, -c]
             env:
               - name: REPO
@@ -244,7 +247,7 @@ spec:
           parameters:
             - name: image_sha
         script:
-          image: alpine:3.21
+          image: alpine:3.24
           command: [sh]
           env:
             - name: IMAGE_SHA
@@ -299,7 +302,7 @@ spec:
             - name: state
             - name: description
         script:
-          image: alpine:3.21
+          image: alpine:3.24
           command: [sh]
           env:
             - name: SHA

@@ -1,0 +1,39 @@
+name: dashboard-drift-ci
+
+# packages/grafana-dashboards (Foundation SDK) の TypeScript ソースから
+# `bun run build` で k8s/monitoring/dashboards/*.json を生成している。
+# ソースだけ変更して JSON の再生成・コミットを忘れると ArgoCD が古い JSON を
+# デプロイし続けるため、CI で強制的にビルドし直して差分が無いことを検証する。
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    paths:
+      - "packages/grafana-dashboards/**"
+      - "k8s/monitoring/dashboards/**"
+      - ".github/actions/setup-bun/**"
+      - ".github/actions/setup-turbo/**"
+      - ".github/workflows/dashboard-drift-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - uses: ./.github/actions/setup-turbo
+      - name: Regenerate dashboard JSON from TypeScript source
+        run: bun turbo build --filter=@roppoh/grafana-dashboards --force
+      - name: Fail if generated JSON drifted from committed JSON
+        run: |
+          if ! git diff --exit-code -- k8s/monitoring/dashboards/; then
+            echo "::error::k8s/monitoring/dashboards/*.json is out of date with packages/grafana-dashboards/src. Run 'bun run --filter @roppoh/grafana-dashboards build' and commit the result."
+            exit 1
+          fi

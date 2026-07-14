@@ -1,0 +1,21 @@
+# k3s 標準バンドルの Traefik (kube-system, kind: HelmChart) に追加の Helm values を
+# マージする k3s 独自 CRD。同名 (traefik) の HelmChartConfig を kube-system に置くと
+# k3s の helm-controller が既存の HelmChart とマージしてデプロイし直す。
+#
+# service/router レベルの Prometheus メトリクス (traefik_service_requests_total /
+# traefik_router_requests_total) はデフォルト無効。entrypoint レベルのメトリクス
+# (traefik_entrypoint_requests_total) のみでは Grafana の
+# "Request rate by service" / "5xx rate by service" / "Router request rate"
+# パネルが常に No Data になるため、以下の引数で有効化する。
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    additionalArguments:
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus.addRoutersLabels=true"
+    nodeSelector:
+      kubernetes.io/hostname: n100

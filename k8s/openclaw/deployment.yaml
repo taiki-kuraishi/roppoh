@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openclaw
+  namespace: openclaw
+  labels:
+    app.kubernetes.io/name: openclaw
+    app.kubernetes.io/managed-by: argocd
+spec:
+  # Gateway は単一プロセス + 永続 state(PVC) 前提のため必ず単一 Pod。
+  # ローリング更新で新旧 Pod が同時に PVC を掴むのを避けるため Recreate を使う。
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: openclaw
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: openclaw
+    spec:
+      serviceAccountName: openclaw
+      nodeSelector:
+        kubernetes.io/hostname: n100
+      securityContext:
+        runAsNonRoot: true
+        # 公式イメージの既定ユーザー(node)
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: openclaw
+          # 【自己更新】このタグは Renovate が更新する
+          image: ghcr.io/openclaw/openclaw:2026.7.1
+          command:
+            - node
+            - dist/index.js
+            - gateway
+            - --bind
+            - lan
+            - --port
+            - "18789"
+            # models/agents/gateway.mode は Git 管理しない(Control UI
+            # ダッシュボードから設定する前提のため)。config が空の状態でも
+            # 起動できるようにする。
+            - --allow-unconfigured
+          ports:
+            - name: http
+              containerPort: 18789
+              protocol: TCP
+          env:
+            - name: HOME
+              value: /home/node
+            - name: XDG_CONFIG_HOME
+              value: /home/node/.openclaw
+            - name: NODE_ENV
+              value: production
+            # mDNS(Bonjour) は Kubernetes 環境では動作しないため無効化必須
+            - name: OPENCLAW_DISABLE_BONJOUR
+              value: "1"
+            - name: OPENCLAW_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw
+                  key: gateway-token
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw
+                  key: discord-bot-token
+            # GitHub App(roppoh-agent 用)。App ID/Installation ID は機密ではないため平文。
+            - name: GITHUB_APP_ID
+              value: "4221710"
+            - name: GITHUB_APP_INSTALLATION_ID
+              value: "144549550"
+            - name: GITHUB_APP_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openclaw
+                  key: github-app-private-key
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 198m / メモリ最大 592Mi。ただし
+          # llama-cpp モデルとのストリーミングチャット時、CPU limit 400m によるスロットリングで
+          # イベントループが最大約6秒遅延し、セッションストアへの楽観的ロック書き込みが
+          # リトライしても衝突し続け "reply session initialization conflicted" エラーを
+          # 誘発することを確認(2026-07)。CPU limit を 1000m に緩和して event loop starvation を解消。
+          resources:
+            requests:
+              cpu: 150m
+              memory: 640Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 18789
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 18789
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            # HOME 全体を永続化(state/workspace/.openclaw)。readOnlyRootFilesystem のため必須。
+            - name: home
+              mountPath: /home/node
+            - name: tmp
+              mountPath: /tmp
+            - name: scripts
+              mountPath: /home/node/.local/scripts/gh-app-token.js
+              subPath: gh-app-token.js
+      volumes:
+        - name: home
+          persistentVolumeClaim:
+            claimName: openclaw
+        - name: tmp
+          emptyDir: {}
+        - name: scripts
+          configMap:
+            name: openclaw-scripts

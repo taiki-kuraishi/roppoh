@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: grafana-tempo
   namespace: argocd
-  annotations:
-    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
 spec:
   project: default
   source:
@@ -57,6 +55,29 @@ spec:
                   endpoint: "0.0.0.0:4318"
 
           # -----------------------------------------------------------------------
+          # metrics-generator: トレースから RED メトリクス (service-graphs /
+          # span-metrics) を生成し Mimir へ書き出す。cf-workers-otel /
+          # discord-gateway-proxy ダッシュボードで rate/error/duration の
+          # 時系列パネルとして使う (TraceQL 検索だけでは直近 500 件・時間窓
+          # 制限があるため)。
+          # 注意: remoteWriteUrl は Mimir の push エンドポイント (/api/v1/push)。
+          # /prometheus 配下 (読み取り専用クエリ API) ではない
+          # (k8s/argocd/apps/grafana-alloy.yaml で修正した問題と同じ落とし穴)。
+          # -----------------------------------------------------------------------
+          metricsGenerator:
+            enabled: true
+            remoteWriteUrl: http://grafana-mimir-gateway.monitoring.svc.cluster.local/api/v1/push
+            processor:
+              span_metrics:
+                enable_target_info: true
+          overrides:
+            defaults:
+              metrics_generator:
+                processors:
+                  - service-graphs
+                  - span-metrics
+
+          # -----------------------------------------------------------------------
           # 設定ファイル内の ${AWS_*} を env 展開するフラグ
           # extraArgs は dict 形式 (key: value → --key=value として渡される)
           # -----------------------------------------------------------------------
@@ -67,6 +88,12 @@ spec:
           extraEnvFrom:
             - secretRef:
                 name: grafana-object-storage
+
+        # -----------------------------------------------------------------------
+        # ノード配置: n100 に固定(このキーは tempo: の外側、chartのトップレベル)
+        # -----------------------------------------------------------------------
+        nodeSelector:
+          kubernetes.io/hostname: n100
 
   destination:
     server: https://kubernetes.default.svc

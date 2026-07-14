@@ -13,6 +13,9 @@ export default defineConfig({
     "packages/shadcn/src",
     "**/worker-configuration.d.ts",
     "packages/domain/src",
+    // K8s/ 配下の configMapGenerator ソース(コンテナ内で standalone 実行する
+    // スクリプト。アプリコードの規約は適用対象外)
+    "k8s/**",
   ],
   jsPlugins: ["@roppoh/oxlint-plugins"],
   options: {
@@ -27,7 +30,25 @@ export default defineConfig({
         "max-lines-per-function": ["error", { max: 100 }],
         "roppoh/file-structure": "error",
         "roppoh/no-cross-feature-import": "error",
+        "roppoh/one-function-per-tsx": "error",
         "roppoh/prefer-alias-import": "error",
+      },
+    },
+    {
+      // Inertia resolves pages by PascalCase name (c.render('User/Index') ->
+      // App/pages/User/Index.tsx), which conflicts with the repo-wide
+      // Kebab-case filename rule below. Exempt only the pages tree.
+      files: ["apps/web-console/app/pages/**"],
+      rules: {
+        "unicorn/filename-case": "off",
+      },
+    },
+    {
+      // Foundation SDK の DashboardBuilder/VariableBuilder は配列ではなく
+      // 独自の .sort() を持つため、Array 前提の unicorn/no-array-sort は誤検知する
+      files: ["packages/grafana-dashboards/**"],
+      rules: {
+        "unicorn/no-array-sort": "off",
       },
     },
   ],

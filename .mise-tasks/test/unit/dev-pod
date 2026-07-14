@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Run unit tests for dev-pod bin scripts"
+#MISE dir="{{config_root}}/.docker/dev-pod/files/bin"
+
+set -euo pipefail
+
+bats test

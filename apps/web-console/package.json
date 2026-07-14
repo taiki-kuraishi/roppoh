@@ -1,0 +1,60 @@
+{
+  "name": "@roppoh/web-console",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./app/server.ts",
+  "scripts": {
+    "build": "vite build",
+    "cf-typegen": "wrangler types --strict-vars=false",
+    "type-check": "tsc --noEmit",
+    "dev": "vite dev",
+    "deploy": "bun run build && wrangler deploy",
+    "test:e2e": "playwright test --config=e2e.playwright.config.ts",
+    "test:vrt": "playwright test --config=vrt.playwright.config.ts"
+  },
+  "dependencies": {
+    "@better-auth/oauth-provider": "catalog:",
+    "@better-auth/passkey": "catalog:",
+    "@hono/inertia": "catalog:",
+    "@inertiajs/react": "catalog:",
+    "@roppoh/better-auth-query": "workspace:*",
+    "@roppoh/shadcn": "workspace:*",
+    "@tanstack/react-form": "1.33.1",
+    "@tanstack/react-query": "catalog:",
+    "better-auth": "catalog:",
+    "hono": "4.12.29",
+    "jotai": "2.20.0",
+    "lucide-react": "1.24.0",
+    "nuqs": "2.9.0",
+    "oauth4webapi": "3.8.6",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "sonner": "catalog:",
+    "valibot": "1.4.2",
+    "vite-ssr-components": "catalog:"
+  },
+  "devDependencies": {
+    "@better-auth/drizzle-adapter": "catalog:",
+    "@cloudflare/vite-plugin": "catalog:",
+    "@libsql/client": "0.17.4",
+    "@playwright/test": "catalog:",
+    "@roppoh/better-auth": "workspace:*",
+    "@tailwindcss/vite": "4.3.2",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
+    "drizzle-kit": "catalog:",
+    "drizzle-orm": "0.45.2",
+    "msw": "2.15.0",
+    "playwright-msw": "3.0.1",
+    "tailwindcss": "catalog:",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "6.1.1",
+    "wrangler": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:"
+  }
+}

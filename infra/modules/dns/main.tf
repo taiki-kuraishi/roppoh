@@ -49,9 +49,90 @@ resource "cloudflare_dns_record" "ollama" {
   ttl     = 1
 }
 
+resource "cloudflare_dns_record" "llama_cpp" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "llama-cpp.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "llama_swap" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "llama-swap.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_dns_record" "zot" {
   zone_id = data.cloudflare_zone.this.zone_id
   name    = "zot.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "openclaw" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "openclaw.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "hermes" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "hermes.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "hermes_dashboard" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "hermes-dashboard.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "dev_pod" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "dev-pod.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "dev_pod_orca" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "dev-pod-orca.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "argo_workflow" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "argo-workflow.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+resource "cloudflare_dns_record" "alertmanager" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "alertmanager.${var.zone_name}"
   type    = "CNAME"
   content = var.tunnel_cname
   proxied = true

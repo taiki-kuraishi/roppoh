@@ -1,10 +1,10 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.25
 
 # Build context is the repository root so the single root go.mod/go.sum is available:
 #   docker build -f .docker/discord-gateway-proxy/Dockerfile -t discord-gateway-proxy .
 #
 # Keep the builder Go version in sync with `go = "..."` in mise.toml.
-FROM golang:1.26.4-bookworm AS builder
+FROM golang:1.26.5-bookworm AS builder
 
 WORKDIR /src
 

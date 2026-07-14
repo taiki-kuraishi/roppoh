@@ -1,0 +1,139 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mimir-alerting-bootstrap
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: mimir-alerting-bootstrap
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # Sync: ruler/alertmanager は常時 Ready (ヘルスチェックがこの Job の完了を
+    # 待つ構造ではない) なので PostSync にする必然性が無く、garage-bootstrap-job.yaml
+    # と同じ Sync hook で揃える。
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 5
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mimir-alerting-bootstrap
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
+      restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      # grafana/mimirtool は distroless イメージ(shell無し)なので、
+      # gateway 疎通待ち + Secret 値のテンプレート置換は alpine の initContainer で
+      # 済ませ、mimirtool 自体は「引数付きで叩くだけ」の initContainer/container に
+      # 分離する(Job の initContainers は逐次実行される)。
+      initContainers:
+        - name: render-config
+          image: alpine:3.24
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Waiting for grafana-mimir-gateway to accept connections..."
+              until nc -z grafana-mimir-gateway.monitoring.svc.cluster.local 80 > /dev/null 2>&1; do
+                echo "  not ready, retrying in 3s..."
+                sleep 3
+              done
+              echo "grafana-mimir-gateway is up."
+              cp /config/rules.yaml /shared/rules.yaml
+              sed "s|__DISCORD_WEBHOOK_URL__|${DISCORD_WEBHOOK_URL}|" \
+                /config/alertmanager-config.yaml.tmpl > /shared/alertmanager-config.yaml
+          env:
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-discord-webhook
+                  key: webhook-url
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+            - name: shared
+              mountPath: /shared
+            - name: tmp
+              mountPath: /tmp
+        - name: load-rules
+          image: grafana/mimirtool:3.1.2
+          args: [rules, load, /shared/rules.yaml]
+          env:
+            - name: MIMIR_ADDRESS
+              value: http://grafana-mimir-gateway.monitoring.svc.cluster.local
+            - name: MIMIR_TENANT_ID
+              value: anonymous
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: load-alertmanager-config
+          image: grafana/mimirtool:3.1.2
+          args: [alertmanager, load, /shared/alertmanager-config.yaml]
+          env:
+            - name: MIMIR_ADDRESS
+              value: http://grafana-mimir-gateway.monitoring.svc.cluster.local
+            - name: MIMIR_TENANT_ID
+              value: anonymous
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 64Mi
+          volumeMounts:
+            - name: shared
+              mountPath: /shared
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: mimir-alerting-config
+        - name: shared
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

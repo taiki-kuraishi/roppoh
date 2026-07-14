@@ -20,6 +20,8 @@ spec:
       labels:
         app.kubernetes.io/name: discord-gateway-proxy
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       securityContext:
         runAsNonRoot: true
         # distroless:nonroot の既定ユーザー
@@ -33,7 +35,7 @@ spec:
           # 【自己更新】このタグは discord-gateway-proxy-build の CronWorkflow が commit-back する。
           # registry.roppoh.local は各ノードの /etc/rancher/k3s/registries.yaml ミラーで
           # zot(NodePort)へ解決される（匿名 read のため imagePullSecret 不要）。
-          image: registry.roppoh.local/discord-gateway-proxy:22c8658
+          image: registry.roppoh.local/discord-gateway-proxy:cb21371
           env:
             - name: DISCORD_BOT_TOKEN
               valueFrom:
@@ -62,15 +64,30 @@ spec:
               value: Authorization=Bearer $(OTLP_TOKEN)
             - name: OTEL_RESOURCE_ATTRIBUTES
               value: deployment.environment=prod,service.namespace=discord
+            # ---- Cloudflare Pipelines: activity/presence events -> R2 Data Catalog ----
+            # infra/env/prod (module.pipelines) の terraform output *_ingest_endpoint。
+            # stream ID は機密ではない。token は3ストリーム共通(account スコープ)。
+            - name: PRESENCE_UPDATE_INGEST_ENDPOINT
+              value: "https://366575e479b844a0bdbebb1ff74af001.ingest.cloudflare.com"
+            - name: GUILD_PRESENCE_SNAPSHOT_INGEST_ENDPOINT
+              value: "https://c8877a06251e47f8a24571cef3711d5c.ingest.cloudflare.com"
+            - name: VOICE_STATE_UPDATE_INGEST_ENDPOINT
+              value: "https://fadcb79abf784e99ac90e18c6968ed43.ingest.cloudflare.com"
+            - name: PIPELINE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: discord-gateway-proxy
+                  key: pipeline-api-token
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 13m / メモリ最大 19Mi
           resources:
             requests:
-              cpu: 25m
-              memory: 64Mi
+              cpu: 15m
+              memory: 32Mi
             limits:
-              cpu: 200m
-              memory: 128Mi
+              cpu: 100m
+              memory: 64Mi

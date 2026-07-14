@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# claude コンテナのエントリポイント。Orca Remote Server
+# (https://www.onorca.dev/docs/remote-servers)を headless 起動する。
+# デスクトップの Orca クライアントから接続する運用のため --mobile-pairing は
+# 付けない(このフラグは公式ドキュメント上「クライアントが Orca モバイルアプリの
+# 場合に使う」ものであり、付けるとデスクトップクライアントから repo.add などの
+# 一部メソッドが呼べなくなる)。
+# ペアリング(認証)は自動化せず、人間が SSH 経由でこの Pod に入って
+# ログ(ペアリング URL / QR)を確認し、手元の Orca クライアントで手動ペアリングする。
+set -euo pipefail
+export LIBGL_ALWAYS_SOFTWARE=1
+
+APPDIR="${ORCA_APPDIR:-/opt/orca/app}"
+export APPDIR
+
+exec "$APPDIR/AppRun" serve \
+  --port 6768 \
+  --pairing-address "${ORCA_PAIRING_ADDRESS:?ORCA_PAIRING_ADDRESS is required}"

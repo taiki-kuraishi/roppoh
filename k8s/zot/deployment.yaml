@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: zot
     app.kubernetes.io/managed-by: argocd
 spec:
-  # ストレージは R2 のため複数レプリカも可だが、dedupe ローカルキャッシュ整合のため単一に。
+  # ストレージは Garage(S3 互換、クラスタ内)のため、dedupe ローカルキャッシュ整合のため単一レプリカに固定。
   replicas: 1
   strategy:
     type: Recreate
@@ -19,6 +19,8 @@ spec:
       labels:
         app.kubernetes.io/name: zot
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -30,14 +32,14 @@ spec:
       containers:
         - name: zot
           # 【自己更新】Renovate が追従
-          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.17
+          image: ghcr.io/project-zot/zot-linux-amd64:v2.1.18
           args: ["serve", "/etc/zot/config.json"]
           ports:
             - name: http
               containerPort: 5000
               protocol: TCP
           envFrom:
-            # R2(S3) 認証情報: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
+            # Garage(S3 互換)認証情報: AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY
             - secretRef:
                 name: zot-object-storage
           # 認証有効時 /v2/ は匿名で 401 を返しうるため HTTP probe は使わず TCP で死活監視
@@ -57,12 +59,13 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 5m / メモリ最大 163Mi
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 30m
+              memory: 192Mi
             limits:
-              cpu: 500m
+              cpu: 300m
               memory: 512Mi
           volumeMounts:
             - name: config

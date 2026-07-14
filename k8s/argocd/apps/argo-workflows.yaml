@@ -3,24 +3,34 @@ kind: Application
 metadata:
   name: argo-workflows
   namespace: argocd
-  annotations:
-    notifications.argoproj.io/subscribe.on-app-deployed.github: ""
 spec:
   project: default
   source:
     repoURL: https://argoproj.github.io/argo-helm
     chart: argo-workflows
-    targetRevision: 1.0.18
+    targetRevision: 1.0.19
     helm:
       valuesObject:
-        # UI/API サーバは不要（CronWorkflow の実行は workflow-controller が担う）。
-        # 攻撃面を減らすため server は無効化。
+        # UI/API サーバを有効化し、Cloudflare Tunnel + Access(kuraishi-only)で公開する。
+        # 攻撃面は Cloudflare Access(argo-workflow.tsar-bmb.org)が前段で塞ぐ。
         server:
-          enabled: false
+          enabled: true
+          # Cloudflare Access を前段の認証ゲートにするため、argo-server 自体の
+          # SSO/ログインは行わない(--auth-mode=server 相当)。
+          authModes:
+            - server
+          # cloudflared が HTTP で到達できるよう自己署名 TLS を無効化(平文 HTTP)。
+          secure: false
+          # ノード配置: n100 に固定
+          nodeSelector:
+            kubernetes.io/hostname: n100
         controller:
           # Workflow / CronWorkflow を実行する namespace
           workflowNamespaces:
             - argo
+          # ノード配置: n100 に固定
+          nodeSelector:
+            kubernetes.io/hostname: n100
         # Workflow Pod 用の ServiceAccount(argo-workflow) と最小 RBAC を作成
         workflow:
           serviceAccount:

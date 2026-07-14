@@ -16,6 +16,12 @@ module "kv" {
   account_id = var.cloudflare_account_id
 }
 
+# ----- API Token (GitHub Actions Workers deploy) -----
+module "api_token" {
+  source     = "../../modules/api-token"
+  account_id = var.cloudflare_account_id
+}
+
 # ----- Secrets Store -----
 module "secrets_store" {
   source     = "../../modules/secrets-store"
@@ -33,4 +39,10 @@ module "dns" {
   source       = "../../modules/dns"
   zone_name    = "tsar-bmb.org"
   tunnel_cname = module.zero_trust.tunnel_cname
+}
+
+# ----- Pipelines (Discord activity/presence events -> R2 Data Catalog) -----
+module "pipelines" {
+  source     = "../../modules/pipelines"
+  account_id = var.cloudflare_account_id
 }

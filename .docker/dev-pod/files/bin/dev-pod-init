@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# initContainer 用: dotfiles(yadm)の同期と Git 認証設定の生成。
+# roppoh-dev-pod-plan.md の「dotfiles との契約」参照。
+set -euo pipefail
+
+# dotfiles 同期(初回 clone は --bootstrap 付き。bootstrap は mise install 等で数分かかる)
+if [ ! -d "$HOME/.local/share/yadm/repo.git" ]; then
+  yadm clone --bootstrap https://github.com/taiki-kuraishi/dotfiles.git
+else
+  yadm pull --rebase || echo "yadm pull failed (offline?) — continuing"
+  # Nix 本体はイメージ(コンテナ rootfs)に焼き込まれているため Pod 再作成後も
+  # 常に存在する。一方 Home Manager が作るユーザープロファイル
+  # ($HOME/.nix-profile)は PVC 側にあるため、yadm repo が残っていてもこれが
+  # 無ければ home-manager switch がまだ当たっていない状態なので bootstrap を実行する。
+  if [ ! -e "$HOME/.nix-profile" ]; then
+    echo "$HOME/.nix-profile not found — re-running yadm bootstrap"
+    yadm bootstrap
+  fi
+fi
+
+# Git 認証: dotfiles の .gitconfig 末尾の include から読まれるファイルを生成
+cat > "$HOME/.gitconfig.local" <<'EOF'
+# dev-pod Pod が生成する(手で編集しない)。GitHub App の短命トークンで認証する。
+[credential]
+	useHttpPath = true
+[credential "https://github.com"]
+	helper =
+	helper = "!/usr/local/bin/git-credential-github-app"
+EOF

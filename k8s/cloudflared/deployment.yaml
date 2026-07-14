@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: cloudflared
     spec:
+      # n100/z390 どちらにも配置できるようにし、podAntiAffinity で
+      # 2レプリカを別ノードへ散らして冗長性を確保する(ノード指定はしない)。
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -37,7 +39,7 @@ spec:
       containers:
         - name: cloudflared
           # 【自己更新】このイメージタグは Renovate が更新する
-          image: cloudflare/cloudflared:2026.6.1
+          image: cloudflare/cloudflared:2026.7.1
           args:
             - tunnel
             - --no-autoupdate
@@ -77,10 +79,11 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU 最大 34m / メモリ最大 32Mi
           resources:
             requests:
-              cpu: 10m
-              memory: 64Mi
+              cpu: 40m
+              memory: 48Mi
             limits:
-              cpu: 200m
+              cpu: 100m
               memory: 128Mi

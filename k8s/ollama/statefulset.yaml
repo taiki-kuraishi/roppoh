@@ -6,8 +6,15 @@ metadata:
   labels:
     app.kubernetes.io/name: ollama
     app.kubernetes.io/managed-by: argocd
+  annotations:
+    # GPU 推論のバースト・CFS スロットリング回避のため memory limit をあえて設定しない
+    # (詳細は spec.template.spec.containers[0].resources のコメント参照)
+    ignore-check.kube-linter.io/unset-memory-requirements: "intentionally unbounded for GPU inference burst; CPU/memory limits omitted by design"
 spec:
-  replicas: 1
+  # GPU(RTX 3050 6GB)は1基のみで llama-cpp と排他。巨大 MoE を --cpu-moe で動かす
+  # llama-cpp(k8s/llama-cpp)へ GPU を譲るため 0 にスケールダウンして常駐を止める。
+  # モデルデータ(PVC)と本 manifest は残すため、切り戻しは replicas を 1 に戻すだけでよい。
+  replicas: 0
   serviceName: ollama
   selector:
     matchLabels:
@@ -17,6 +24,9 @@ spec:
       labels:
         app.kubernetes.io/name: ollama
     spec:
+      # GPU搭載ノード(z390)にのみスケジュール
+      nodeSelector:
+        nvidia.com/gpu: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -27,7 +37,7 @@ spec:
       containers:
         - name: ollama
           # 【自己更新】このイメージタグは Renovate が更新する
-          image: ollama/ollama:0.30.11
+          image: ollama/ollama:0.31.2
           ports:
             - name: http
               containerPort: 11434
@@ -35,7 +45,19 @@ spec:
           env:
             - name: OLLAMA_HOST
               value: "0.0.0.0:11434"
-            # 同時にロードするモデルを1つに制限（N100 CPU 推論・メモリ節約）
+            # デフォルト（4096）だと opencode 等の長いシステムプロンプト/ツール定義で溢れるため拡張
+            # 262144（ネイティブ最大）だと GPU VRAM 6GB に収まらず大半がCPUオフロードされ
+            # 生成速度が実用に耐えないほど低下する（実測 5〜9 tokens/s）。実機スイープの結果、
+            # 32768 は元のエラー原因(9061トークン)に3倍以上の余裕を持ちつつ速度低下を抑えられる値
+            - name: OLLAMA_CONTEXT_LENGTH
+              value: "32768"
+            # Flash Attention を有効化（コンテキストが伸びるほどメモリ使用量を削減）
+            - name: OLLAMA_FLASH_ATTENTION
+              value: "1"
+            # KVキャッシュを量子化してVRAM消費を削減（デフォルトはf16）
+            - name: OLLAMA_KV_CACHE_TYPE
+              value: "q4_0"
+            # 同時にロードするモデルを1つに制限（GPU VRAM 6GB のため節約）
             - name: OLLAMA_MAX_LOADED_MODELS
               value: "1"
             - name: OLLAMA_NUM_PARALLEL
@@ -66,14 +88,16 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+          # 実測(Grafana Mimir, 過去7日): CPU p95 0.69 コア / メモリ p95 2005Mi
           resources:
             requests:
-              cpu: 500m
+              cpu: 700m
               memory: 2Gi
             limits:
-              # N100 は 4 コア。モデルロード中に他の処理を圧迫しないよう上限を設定
-              cpu: "4"
-              memory: 8Gi
+              # CPU/memory limit はあえて設定しない（GPU 推論のバースト・CFS スロットリング回避のため）。
+              # requests で既にスケジューリング上の優先度は確保済み。
+              # GPU 1基を占有（RTX 3050 6GB）
+              nvidia.com/gpu: 1
           volumeMounts:
             - name: models
               mountPath: /data/models

@@ -6,7 +6,9 @@ export default {
     css: (text: string) => [...text.matchAll(/(?<=@)import[^;]+/g)].join("\n"),
   },
   entry: [],
-  ignore: [],
+  // K8s/ 配下の configMapGenerator ソースはコンテナ内で standalone 実行する
+  // スクリプトで、JS/TS の依存グラフには含まれない
+  ignore: ["k8s/**"],
   ignoreBinaries: [".*"],
   ignoreDependencies: [],
   project: [],
@@ -20,10 +22,13 @@ export default {
       ignore: ["src/**"],
     },
     "apps/roppoh": {},
-    "packages/better-auth": {},
-    "packages/better-auth-database": {
-      entry: ["src/auth.ts"],
-      ignore: ["src/relations.ts"], // Generated code
+    "apps/web-console": {
+      // No index.html: the HTML shell is emitted by app/server.ts's rootView
+      // (auto-detected by knip's wrangler plugin via the `main` field), and
+      // Pages are loaded via import.meta.glob in app/client.tsx, so those two
+      // Need to be listed explicitly.
+      entry: ["app/client.tsx", "app/pages/**/*.tsx"],
     },
+    "packages/better-auth": {},
   },
 } satisfies KnipConfig;

@@ -1,0 +1,136 @@
+name: deploy-cloudflare
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      roppoh: ${{ steps.filter.outputs.roppoh }}
+      ura-roppoh: ${{ steps.filter.outputs['ura-roppoh'] }}
+      emdash: ${{ steps.filter.outputs.emdash }}
+      neo-fujimatsu: ${{ steps.filter.outputs.neo-fujimatsu }}
+      web-console: ${{ steps.filter.outputs['web-console'] }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            roppoh:
+              - 'apps/roppoh/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+            ura-roppoh:
+              - 'apps/ura-roppoh/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+            emdash:
+              - 'apps/emdash/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+            neo-fujimatsu:
+              - 'apps/neo-fujimatsu/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+            web-console:
+              - 'apps/web-console/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+
+  deploy-roppoh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.roppoh == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/roppoh
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/roppoh
+          command: deploy
+
+  deploy-ura-roppoh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs['ura-roppoh'] == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/ura-roppoh
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/ura-roppoh
+          command: deploy
+
+  deploy-emdash:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.emdash == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/emdash
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/emdash
+          command: deploy
+
+  deploy-neo-fujimatsu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.neo-fujimatsu == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/neo-fujimatsu
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/neo-fujimatsu
+          command: deploy
+
+  deploy-web-console:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs['web-console'] == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/web-console
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/web-console
+          command: deploy

@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#MISE description="Run VRT for @roppoh/web-console"
+#MISE depends=["test:vrt:build-container"]
+#USAGE flag "-u --update-snapshots" help="Update VRT screenshots"
+
+set -euo pipefail
+
+IMAGE="roppoh-playwright:latest"
+
+CMD="bun run --filter @roppoh/web-console test:vrt"
+if [ "${usage_update_snapshots:-false}" = "true" ]; then
+  CMD+=" -- --update-snapshots"
+fi
+
+docker run --rm \
+  -v "$PWD/apps/web-console/test/vrt":/app/apps/web-console/test/vrt \
+  -v "$PWD/apps/web-console/test-results":/app/apps/web-console/test-results \
+  "$IMAGE" \
+  bash -c "$CMD"

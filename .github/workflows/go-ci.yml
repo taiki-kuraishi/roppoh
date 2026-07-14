@@ -25,12 +25,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup-go
-      # golangci-lint run checks linters and (via enabled formatters) formatting.
-      - uses: golangci/golangci-lint-action@v9
-        with:
-          version: v2.12.2 # keep in sync with mise.toml
-      - run: go build ./...
-      - run: go test ./...
+      - parallel:
+          - run: golangci-lint run
+          - run: go build ./...
+          - run: go test ./...
 
   docker:
     runs-on: ubuntu-latest

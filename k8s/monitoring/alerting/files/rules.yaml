@@ -1,0 +1,37 @@
+groups:
+  - name: dev-pod-alerts
+    rules:
+      # waiting_reason を直接見る(restarts_total の increase() 閾値と違い、
+      # 単発リスタートを誤検知しない)。
+      - alert: DevPodClaudeCrashLooping
+        expr: kube_pod_container_status_waiting_reason{job="kube-state-metrics", namespace="dev-pod", container="claude", reason="CrashLoopBackOff"} == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: dev-pod の claude コンテナが CrashLoopBackOff になっています
+          description: "{{ $labels.namespace }}/{{ $labels.pod }} の claude コンテナが 5 分以上 CrashLoopBackOff です。claude の OAuth トークン失効、または別要因のクラッシュの可能性があります。"
+
+  - name: argo-workflow-alerts
+    rules:
+      - alert: ArgoWorkflowFailed
+        expr: argo_workflows_workflow_status_count{status="Failed"} > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Argo Workflow failed"
+          description: "An Argo Workflow has failed in namespace {{ $labels.namespace }}. Workflow name: {{ $labels.workflow_name }}"
+
+  - name: argocd-app-alerts
+    rules:
+      # ArgoCD app_health が Healthy 以外の Application を検知
+      # (notifications-cm の on-app-degraded と同等、ただし Prometheus 経由)
+      - alert: ArgoCDAppDegraded
+        expr: argocd_app_info{health_status!="Healthy"} == 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "ArgoCD app {{ $labels.name }} is degraded in {{ $labels.namespace }}"
+          description: "Application {{ $labels.name }} in namespace {{ $labels.namespace }} has health_status={{ $labels.health_status }}. See: https://argocd.tsar-bmb.org/applications/{{ $labels.name }}"

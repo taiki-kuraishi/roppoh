@@ -1,0 +1,45 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dcgm-exporter
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://nvidia.github.io/dcgm-exporter/helm-charts
+    chart: dcgm-exporter
+    targetRevision: 4.8.2
+    helm:
+      valuesObject:
+        # -----------------------------------------------------------------------
+        # z390 (nvidia.com/gpu=true) 限定の DaemonSet。
+        # nvidia-device-plugin/ollama と同じ nodeSelector を使う (k8s/ollama,
+        # k8s/nvidia-device-plugin を参照)。
+        # -----------------------------------------------------------------------
+        nodeSelector:
+          nvidia.com/gpu: "true"
+
+        # -----------------------------------------------------------------------
+        # GPU デバイスアクセス: k8s の nvidia.com/gpu リソースは要求しない
+        # (要求すると ollama が保持する唯一の GPU と競合し Pending になる)。
+        # 代わりに RuntimeClass "nvidia" (nvidia-container-runtime) を指定し、
+        # コンテナイメージ側の NVIDIA_VISIBLE_DEVICES=all によりホストの GPU を
+        # 監視専用で参照する (k8s スケジューラのリソース会計には乗らない)。
+        # -----------------------------------------------------------------------
+        runtimeClassName: nvidia
+
+        # このクラスタには Prometheus Operator (ServiceMonitor CRD) が無いため、
+        # 既定の ServiceMonitor 作成は無効化する。スクレイプは grafana-alloy.yaml
+        # 側で明示的に (自ノードのみ keep する discovery.relabel で) 行う
+        serviceMonitor:
+          enabled: false
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

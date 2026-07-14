@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev-pod
+  labels:
+    app.kubernetes.io/name: dev-pod
+    app.kubernetes.io/managed-by: argocd

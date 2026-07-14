@@ -30,6 +30,8 @@ spec:
       labels:
         app.kubernetes.io/name: garage-bootstrap
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
       restartPolicy: OnFailure
       securityContext:
         runAsNonRoot: true
@@ -40,7 +42,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: bootstrap
-          image: alpine:3.21
+          image: alpine:3.24
           # Alpine busybox の wget / grep / sed / awk のみ使用。
           # apk add は行わないため readOnlyRootFilesystem: true を維持できる。
           command:
