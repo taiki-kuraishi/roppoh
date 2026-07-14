@@ -20,7 +20,7 @@
     "@inertiajs/react": "catalog:",
     "@roppoh/better-auth-query": "workspace:*",
     "@roppoh/shadcn": "workspace:*",
-    "@tanstack/react-form": "1.33.1",
+    "@tanstack/react-form": "1.33.2",
     "@tanstack/react-query": "catalog:",
     "better-auth": "catalog:",
     "hono": "4.12.30",
