@@ -48,13 +48,20 @@ models:
   #   と比較し、明確に上回らなければ MTP をやめて素の Q4_K_XL へ戻すことも検討する。
   #   なお MTP は tg のみ加速で prefill/長文 TTFT は速くならない点に留意。
   #
+  # ★ -t 6(スレッド数明示): statefulset は CPU limit なし=「全6コア使わせる」意図だが、実測は
+  #   CPU p95 1.6 コアしか使えておらず、prefill/tg とも CPU 律速の MoE で明らかに過少利用だった。
+  #   -t 未指定だと期待どおりに全コアへ展開されないため 6 を明示(両方遅い症状の第一レバー)。
+  #   6 コアノードなので 6。tg が伸びなければ 5(1コアを OS/スケジューラに残す)も試す。
+  #   ※ MTP(--spec-*)の要否は別途 ON/n=2/OFF の実測比較で判断(--cpu-moe 下では MTP が
+  #     逆効果=帯域律速で N トークン検証コストだけ増える可能性あり。速くならなければ削除)。
+  #
   # ★ RAM: 22.9GB は 30GB ノード(cgroup 26Gi)で旧 Q4_K_M(~20GB)並みに収まる(Q5 27.2GB より安全)。
   qwen3.6-35b-a3b:
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
       -ctk q4_0 -ctv q4_0
-      -b 2048 -ub 2048
+      -t 6 -b 2048 -ub 2048
       -hf unsloth/Qwen3.6-35B-A3B-MTP-GGUF:UD-Q4_K_XL
       --cpu-moe --spec-draft-cpu-moe
       --spec-type draft-mtp --spec-draft-n-max 3
@@ -72,24 +79,25 @@ models:
   # ※ 以前 #577 で追加→#579 で revert したが、これは同梱の TurboQuant 実験 pod ごと巻き戻した
   #   巻き添えで、QAT モデル自体の不具合ではない。今回は現行の `--cpu-moe`(全 expert CPU)に
   #   統一して単独で再導入する。
-  # context 262144(native 256K)。QAT の小ささ(14.2GB)で GPU 常駐の非-expert 層が軽く、
-  # KV に回せる VRAM が大きいため native 上限まで到達できる。DL 済み重みでクリーン実測
-  # (実生成込み): 163840 で生成後 空き 1404MiB と大幅に余裕 → native 262144 まで引き上げ、
-  # 262144 でもロード+実生成が通り生成後 空き 190MiB を確認(load 時 192MiB)。q6k の教訓に
-  # 倣い「実生成後」の空きで判定済み(KV は load 時前確保のため長プロンプトでも追加確保ほぼ無し)。
-  # ※ 190MiB はやや薄めのマージン(qwen3.6 base の 262144/残246 と同程度)。もし高負荷で
-  #   不安定なら 229376 等へ下げる余地あり。
+  # ★ KV 量子化と context の方針変更(品質優先): 従来は -ctk/-ctv q4_0・context 262144(native 256K)
+  #   だったが、実運用で推論品質が不足していた。K=q4_0 は一貫性(coherence)を壊しやすい攻めた設定の
+  #   ため、品質改善を狙って KV を q8_0(K/V とも)へ上げ、その VRAM 原資を作るため context を 128K
+  #   (131072)へ下げた。128K 以下のプロンプト用途なら context 削減による品質劣化はない。
+  #   参考: q4_0 KV 時代の実測では 163840 で生成後 空き 1404MiB、262144 で 190MiB(load 時 192MiB)。
+  #   q8_0 KV は q4_0 の約2倍サイズになるため、6GB VRAM に収まるかは ★要再実測★(q6k の教訓に倣い
+  #   「実生成後」の空きで判定すること)。もし CUDA OOM / マージン不足なら context を 98304 等へ
+  #   さらに下げるか、V のみ q4_0 に戻す(-ctk q8_0 -ctv q4_0 の非対称)で調整する。
   # --temp/--top-p/--top-k は unsloth の gemma-4-26B-A4B 推奨サンプリング。
   gemma4-26b-a4b-qat:
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
-      -ctk q4_0 -ctv q4_0
-      -b 2048 -ub 2048
+      -ctk q8_0 -ctv q8_0
+      -t 6 -b 2048 -ub 2048
       -hf unsloth/gemma-4-26B-A4B-it-qat-GGUF:UD-Q4_K_XL
       --cpu-moe --reasoning auto --no-mmproj
       --temp 1.0 --top-p 0.95 --top-k 64
-      -c 262144
+      -c 131072
 
   # Gemma4-E4B(Dense/MatFormer、非MoE)。ネイティブ context 128K。gemma4-12b と同様
   # 全レイヤー VRAM 常駐、mmproj 無効化。
@@ -106,7 +114,7 @@ models:
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
       -ctk q8_0 -ctv q8_0
-      -b 2048 -ub 2048
+      -t 6 -b 2048 -ub 2048
       -hf unsloth/gemma-4-E4B-it-GGUF:Q3_K_M
       --no-mmproj
       -c 131072
@@ -120,7 +128,7 @@ models:
       /app/llama-server --host 127.0.0.1 --port ${PORT}
       -ngl 99 -fa on --jinja
       -ctk q8_0 -ctv q8_0
-      -b 2048 -ub 2048
+      -t 6 -b 2048 -ub 2048
       -hf unsloth/gemma-4-E2B-it-GGUF:Q5_K_M
       --no-mmproj
       -c 131072
@@ -135,9 +143,12 @@ models:
   # Qwen3-Embedding は last-token pooling 指定が必須(--pooling last)。出力次元 1024。
   qwen3-embedding-0.6b:
     # chat と違い常駐前提(groups.embeddings.persistent)。globalTTL=0 で自動 unload されず常駐する。
+    # -t 6: 他モデルと合わせて明示。CPU 実行(-ngl 0)かつ chat と常駐共存するため、chat 生成中に
+    #   embedding リクエストが重なると 6+6 スレッドで 6 コアを取り合う瞬間はあるが、embedding は
+    #   indexing 時のみ短時間稼働で大半アイドルのため実害は小さい(未指定でも既定は概ね全コア)。
     cmd: >
       /app/llama-server --host 127.0.0.1 --port ${PORT}
-      -ngl 0
+      -ngl 0 -t 6
       --embeddings --pooling last
       -hf Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
       -c 8192 -b 8192 -ub 8192
