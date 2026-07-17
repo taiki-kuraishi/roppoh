@@ -40,7 +40,7 @@ spec:
               # 【自己更新】このイメージタグは Renovate が更新する。
               # itzg/mc-backup は rcon-cli / rclone / tar / gzip を同梱するツールボックス。
               # entrypoint は使わず、ConfigMap のスクリプトを直接実行する。
-              image: itzg/mc-backup:2026.7.1
+              image: itzg/mc-backup:2026.7.2
               command: ["bash", "/scripts/backup.sh"]
               env:
                 - name: TZ
