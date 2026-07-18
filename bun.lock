@@ -104,7 +104,7 @@
       },
       "devDependencies": {
         "@cloudflare/vite-plugin": "catalog:",
-        "@cloudflare/workers-types": "5.20260716.1",
+        "@cloudflare/workers-types": "5.20260717.1",
         "@tailwindcss/vite": "4.3.3",
         "@types/node": "25.9.5",
         "@types/react": "catalog:",
@@ -226,7 +226,7 @@
         "drizzle-orm": "0.45.2",
       },
       "devDependencies": {
-        "@cloudflare/workers-types": "5.20260716.1",
+        "@cloudflare/workers-types": "5.20260717.1",
         "drizzle-kit": "catalog:",
       },
       "peerDependencies": {
@@ -660,7 +660,7 @@
 
     "@cloudflare/workerd-windows-64": ["@cloudflare/workerd-windows-64@1.20260701.1", "", { "os": "win32", "cpu": "x64" }, "sha512-ngxCiIN9s/fM2o1IBMD0o1/mcXrv2NJVdyznh51UH8sQuvrTrXvV2nM0Uj/qU2wMwF6prgNBcdcd7AZeZGiBQA=="],
 
-    "@cloudflare/workers-types": ["@cloudflare/workers-types@5.20260716.1", "", {}, "sha512-LqQPmGAvdpQxzZGAMlDI6fnCsTlr8nRQibWsREaERqD0PucwFl25aXpUskSob70uSY2n6K1sp6Te9xkmzSFgaw=="],
+    "@cloudflare/workers-types": ["@cloudflare/workers-types@5.20260717.1", "", {}, "sha512-En+uoU8kbQoUcJMAPOQU+3hyQ4INEpiPO04GIyuh5b0Q5+uPB6az+icvkl+SoSzN3gbQFHZACpShRY+AK3zD1Q=="],
 
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
 
