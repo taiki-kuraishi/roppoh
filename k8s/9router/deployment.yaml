@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 9router
+  namespace: 9router
+  labels:
+    app.kubernetes.io/name: 9router
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # 公式イメージの entrypoint は root で起動して /app/data を chown した後、
+    # su-exec で node(uid 1000)へ降格する仕組みのため、
+    # readOnlyRootFilesystem/runAsNonRoot は設定できない(下記 securityContext コメントも参照)。
+    ignore-check.kube-linter.io/no-read-only-root-fs: "official image entrypoint chowns /app/data as root before dropping to node(uid 1000) via su-exec"
+    ignore-check.kube-linter.io/run-as-non-root: "official image entrypoint must start as root to chown /app/data and su-exec to node(uid 1000)"
+spec:
+  # SQLite は単一ライタ + 永続 state(PVC) 前提のため必ず単一 Pod。
+  # ローリング更新で新旧 Pod が同時に PVC を掴むのを避けるため Recreate を使う。
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: 9router
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: 9router
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: n100
+      containers:
+        - name: 9router
+          # 【自己更新】このタグは Renovate が更新する
+          image: ghcr.io/decolua/9router:0.5.35
+          ports:
+            - name: http
+              containerPort: 20128
+              protocol: TCP
+          env:
+            - name: DATA_DIR
+              value: /app/data
+            - name: PORT
+              value: "20128"
+            - name: HOSTNAME
+              value: 0.0.0.0
+            # 外部公開 URL(API エンドポイント)。ダッシュボードは別ホスト。
+            - name: BASE_URL
+              value: https://9router.tsar-bmb.org
+            # セッション署名鍵。未設定だと起動ごとに自動生成され再起動でセッションが失効するため固定値を注入する。
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: 9router
+                  key: jwt-secret
+            # 初回ダッシュボードログインパスワード(既定 123456 を上書き)。
+            - name: INITIAL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: 9router
+                  key: initial-password
+          securityContext:
+            # 公式イメージの entrypoint は root で起動して /app/data を chown した後、
+            # su-exec で node(uid 1000)へ降格する仕組みのため、
+            # runAsNonRoot/runAsUser/readOnlyRootFilesystem/capabilities.drop は設定しない
+            # (設定すると chown・su-exec に必要な権限が失われ起動に失敗する)。
+            allowPrivilegeEscalation: false
+          # 暫定値。デプロイ後 Grafana Mimir の実測で調整する。
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 20128
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 20128
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          volumeMounts:
+            # SQLite(/app/data/db/data.sqlite)とバックアップを永続化する。
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: 9router

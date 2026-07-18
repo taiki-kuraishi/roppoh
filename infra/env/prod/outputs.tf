@@ -16,6 +16,18 @@ output "ollama_service_token_client_secret" {
   sensitive   = true
 }
 
+output "nine_router_service_token_client_id" {
+  description = "CF-Access-Client-Id header value for 9router API access"
+  value       = module.zero_trust.nine_router_service_token_client_id
+  sensitive   = true
+}
+
+output "nine_router_service_token_client_secret" {
+  description = "CF-Access-Client-Secret header value for 9router API access"
+  value       = module.zero_trust.nine_router_service_token_client_secret
+  sensitive   = true
+}
+
 output "presence_update_ingest_endpoint" {
   description = "HTTP ingest endpoint for live PresenceUpdate events"
   value       = module.pipelines.presence_update_ingest_endpoint

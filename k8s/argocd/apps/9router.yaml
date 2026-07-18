@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: 9router
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/taiki-kuraishi/roppoh
+    targetRevision: main
+    path: k8s/9router
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: 9router
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

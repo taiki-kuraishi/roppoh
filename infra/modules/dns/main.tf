@@ -138,3 +138,23 @@ resource "cloudflare_dns_record" "alertmanager" {
   proxied = true
   ttl     = 1
 }
+
+# 9router: API 用ホスト(service-token 認証)
+resource "cloudflare_dns_record" "nine_router" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "9router.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}
+
+# 9router: ダッシュボード用ホスト(メール SSO)
+resource "cloudflare_dns_record" "nine_router_dashboard" {
+  zone_id = data.cloudflare_zone.this.zone_id
+  name    = "9router-dashboard.${var.zone_name}"
+  type    = "CNAME"
+  content = var.tunnel_cname
+  proxied = true
+  ttl     = 1
+}

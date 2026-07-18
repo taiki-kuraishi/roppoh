@@ -27,3 +27,4 @@ resources:
   - dev-pod.yaml
   - dev-pod-build.yaml
   - minecraft.yaml
+  - 9router.yaml

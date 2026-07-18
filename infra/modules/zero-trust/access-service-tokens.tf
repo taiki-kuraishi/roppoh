@@ -7,3 +7,11 @@ resource "cloudflare_zero_trust_access_service_token" "ollama" {
   account_id = var.account_id
   name       = "ollama"
 }
+
+# ----- Cloudflare Access Service Token: 9router -----
+# 9router.tsar-bmb.org(OpenAI 互換 API)を Service Token 認証で保護する。
+# クライアントは CF-Access-Client-Id / CF-Access-Client-Secret ヘッダを付与してリクエストする。
+resource "cloudflare_zero_trust_access_service_token" "nine_router" {
+  account_id = var.account_id
+  name       = "9router"
+}
