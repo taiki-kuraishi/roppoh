@@ -14,3 +14,15 @@ output "ollama_service_token_client_secret" {
   value       = cloudflare_zero_trust_access_service_token.ollama.client_secret
   sensitive   = true
 }
+
+output "nine_router_service_token_client_id" {
+  description = "CF-Access-Client-Id header value for 9router API access"
+  value       = cloudflare_zero_trust_access_service_token.nine_router.client_id
+  sensitive   = true
+}
+
+output "nine_router_service_token_client_secret" {
+  description = "CF-Access-Client-Secret header value for 9router API access"
+  value       = cloudflare_zero_trust_access_service_token.nine_router.client_secret
+  sensitive   = true
+}

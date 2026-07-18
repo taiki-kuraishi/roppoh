@@ -74,6 +74,45 @@ resource "cloudflare_zero_trust_access_application" "llama_swap" {
   ]
 }
 
+# ----- Cloudflare Access: 9router (API, service-token-only) -----
+# OpenAI 互換 API。ollama と同型の service-token 認証。
+resource "cloudflare_zero_trust_access_application" "nine_router" {
+  account_id = var.account_id
+  name       = "9router"
+  domain     = "9router.tsar-bmb.org"
+  type       = "self_hosted"
+
+  policies = [
+    {
+      name       = "service-token-only"
+      decision   = "non_identity"
+      precedence = 1
+      include    = [{ service_token = { token_id = cloudflare_zero_trust_access_service_token.nine_router.id } }]
+    }
+  ]
+}
+
+# ----- Cloudflare Access: 9router-dashboard (Web UI, kuraishi-only) -----
+# 9router のダッシュボードをブラウザ SSO で保護する。API 用 9router とは別アプリ。
+resource "cloudflare_zero_trust_access_application" "nine_router_dashboard" {
+  account_id                 = var.account_id
+  name                       = "9router-dashboard"
+  domain                     = "9router-dashboard.tsar-bmb.org"
+  type                       = "self_hosted"
+  session_duration           = "730h"
+  http_only_cookie_attribute = false
+  auto_redirect_to_identity  = false
+  enable_binding_cookie      = false
+  options_preflight_bypass   = false
+
+  policies = [
+    {
+      id         = var.kuraishi_only_policy_id
+      precedence = 1
+    },
+  ]
+}
+
 # ----- Cloudflare Access: zot -----
 resource "cloudflare_zero_trust_access_application" "zot" {
   account_id                 = var.account_id

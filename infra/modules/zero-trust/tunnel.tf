@@ -82,6 +82,18 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "n100_k3s" {
         hostname = "llama-swap.tsar-bmb.org"
         service  = "http://llama-cpp.llama-cpp.svc.cluster.local:8080"
       },
+      # 9router: AI ルーティングプロキシ。ダッシュボードと API を別ホストに分離する
+      # (llama-cpp / llama-swap と同じパターン)。両ホストとも同一 Service を指す。
+      # 9router.tsar-bmb.org は API(service-token 認証)、
+      # 9router-dashboard.tsar-bmb.org はダッシュボード(メール SSO)。
+      {
+        hostname = "9router.tsar-bmb.org"
+        service  = "http://9router.9router.svc.cluster.local:20128"
+      },
+      {
+        hostname = "9router-dashboard.tsar-bmb.org"
+        service  = "http://9router.9router.svc.cluster.local:20128"
+      },
       # fallback rule (required: must be last and have no hostname)
       {
         service = "http_status:404"
