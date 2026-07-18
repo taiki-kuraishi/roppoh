@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "catalog:",
-    "@cloudflare/vitest-pool-workers": "0.16.20",
+    "@cloudflare/vitest-pool-workers": "0.18.5",
     "@playwright/test": "catalog:",
     "@tailwindcss/vite": "4.3.3",
     "@types/react": "catalog:",
