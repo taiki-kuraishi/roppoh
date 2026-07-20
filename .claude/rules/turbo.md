@@ -1,263 +1,178 @@
 # Turbo Tasks Guide
 
-This document describes the Turbo tasks defined in `turbo.json` and when to use them.
+This document describes the Turbo tasks defined in the root `turbo.json` (and per-workspace
+overrides such as `apps/roppoh/turbo.json`) and when to use them.
 
 ## Overview
 
-Turbo is a monorepo task orchestration tool that efficiently executes tasks across multiple workspaces. It provides:
+Turbo orchestrates tasks across workspaces with:
 
-- **Parallel Execution**: Run tasks in multiple workspaces simultaneously
-- **Smart Caching**: Skip tasks if nothing changed
-- **Dependency Management**: Automatically run dependent tasks in correct order
-- **Performance**: Optimize task execution across the monorepo
+- **Parallel Execution** across workspaces
+- **Smart Caching** (skip when inputs unchanged)
+- **Dependency Management** (`^task` runs the task in dependency workspaces first)
+
+Turbo is pinned via mise (`npm:turbo`), so invoke it directly as `turbo <task>`
+(the mise tasks call it this way). `bun turbo <task>` also works.
 
 ### Task Execution
 
 ```bash
 # Run a turbo task
-bun turbo <task-name>
+turbo <task-name>
 
 # Force execution (skip cache)
-bun turbo --force <task-name>
+turbo --force <task-name>
 
-# Run tasks in specific workspace
-bun turbo <task-name> --filter=<workspace>
+# Run in a specific workspace
+turbo <task-name> --filter=@roppoh/roppoh
 
-# Watch mode (if supported)
-bun turbo <task-name> --watch
+# Watch mode
+turbo <task-name> --watch
 ```
+
+## Root `turbo.json`
+
+```jsonc
+{
+  "tasks": {
+    "build": { "cache": true, "dependsOn": ["^build"] },
+    "cf-typegen": {
+      "cache": true,
+      "dependsOn": ["^cf-typegen"],
+      "outputs": ["worker-configuration.d.ts"],
+    },
+    "type-check": { "cache": true, "dependsOn": ["^type-check"], "outputs": [] },
+    "dev": { "cache": false, "persistent": true },
+    "test": { "cache": false },
+  },
+}
+```
+
+Workspaces may extend this (e.g. `apps/roppoh/turbo.json` uses `"extends": ["//"]` and
+adds `inputs`/`outputs` for `build`, `cf-typegen`, `type-check`).
 
 ## Available Tasks
 
 ### 1. `build`
 
-**Description**: Build all workspaces
+**Cache**: Enabled ✅ · **Dependencies**: `^build`
 
-**Task file**: `turbo.json` - `tasks.build`
-
-**What it does**:
-See [turbo.json](./turbo.json) for full configuration
-
-**Cache**: Enabled ✅
-
-**Dependencies**: Runs `^build` (dependent workspace builds first)
-
-**When to use**:
-
-- ✅ Before deploying to production
-- ✅ Validating entire project builds successfully
-- ✅ Creating production bundles
-- ✅ Part of CI/CD pipeline
-- ✅ Before pushing code to remote
-- ✅ When you need a clean build output
-
-**Command**:
+Builds all workspaces that define a `build` script. Dependency workspaces build first.
 
 ```bash
-bun turbo build
+turbo build
 ```
 
-**Workspace Order**:
+**Which workspaces build**: only workspaces with a `build` script participate. Currently:
 
-1. `packages/better-auth-database` builds first
-2. `apps/roppoh` builds after (depends on packages build)
+- `packages/grafana-dashboards` — `bun run ./src/generate.ts`
+- `apps/roppoh`, `apps/ura-roppoh`, `apps/neo-fujimatsu`, `apps/web-console` — `vite build`
+- `apps/emdash` — Astro build
+
+> Type-only packages (`@roppoh/better-auth`, `@roppoh/better-auth-query`, `@roppoh/domain`,
+> `@roppoh/shadcn`) have no `build` script; they are consumed as source via workspace
+> `paths`/exports and only run `type-check`.
 
 **Notes**:
 
-- First run builds everything
-- Subsequent runs skip unchanged workspaces (cached)
-- Use `bun turbo --force build` to rebuild everything
-- Output goes to `dist/` directories in each workspace
-
-**Related Scripts**:
-
-- `apps/roppoh`: `bun run build` (React Router build)
+- First run builds everything; unchanged workspaces are skipped (cached).
+- Use `turbo --force build` to rebuild everything.
+- Output goes to each workspace's `dist/`.
 
 ---
 
 ### 2. `type-check`
 
-**Description**: Type checking across all workspaces
+**Cache**: Enabled ✅ · **Dependencies**: `^type-check`
 
-**Task file**: `turbo.json` - `tasks.type-check`
-
-**What it does**:
-See [turbo.json](./turbo.json) for full configuration
-
-**Cache**: Enabled ✅
-
-**Dependencies**: Runs after `^build` (dependent workspace builds first)
-
-**When to use**:
-
-- ✅ Before committing code
-- ✅ Verifying TypeScript compilation (no output)
-- ✅ Catching type errors early
-- ✅ During development workflow
-- ✅ Part of pre-commit hooks
-- ✅ CI/CD validation
-
-**Command**:
+Runs `tsc --noEmit` in each workspace. Emits no JS output.
 
 ```bash
-bun turbo type-check
+turbo type-check
 ```
 
-**What's Checked**:
-
-1. TypeScript compilation errors
-2. Type safety across all `.ts` and `.tsx` files
-3. Strict mode compliance
-
-**Notes**:
-
-- Does NOT emit JavaScript output (just checks)
-- Fast compared to `build`
-- First run performs full type check
-- Subsequent runs skip unchanged files (cached)
-- Use `bun turbo --force type-check` to re-type-check everything
-
-**Related Scripts**:
-
-- `apps/roppoh`: `bun run type-check`
-- Root: `turbo type-check` + `react-router typegen`
+**Notes**: fast relative to `build`; cached per workspace. `turbo --force type-check`
+to re-check everything.
 
 ---
 
 ### 3. `cf-typegen`
 
-**Description**: Generate CloudFlare Worker type definitions
+**Cache**: Enabled ✅ · **Dependencies**: `^cf-typegen` · **Output**: `worker-configuration.d.ts`
 
-**Task file**: `turbo.json` - `tasks.cf-typegen`
-
-**What it does**:
-See [turbo.json](./turbo.json) for full configuration
-
-**Cache**: Enabled ✅
-
-**Dependencies**: Runs after `^build` (dependent workspace builds first)
-
-**Output**: Generates `worker-configuration.d.ts`
-
-**When to use**:
-
-- ✅ After adding CloudFlare Worker configuration
-- ✅ Before type checking CloudFlare-related code
-- ✅ When CloudFlare environment variables change
-- ✅ Part of CI/CD pipeline
-- ✅ Automatic pre-commit check
-
-**Command**:
+Generates Cloudflare Worker type definitions (`wrangler types --strict-vars=false`) for
+the Cloudflare-backed apps.
 
 ```bash
-bun turbo cf-typegen
+turbo cf-typegen
 ```
 
-**What's Generated**:
-
-- `worker-configuration.d.ts` - Type definitions for CloudFlare environment/config
-- Enables strongly-typed CloudFlare API access
-
-**Notes**:
-
-- Runs `wrangler types --strict-vars=false`
-- Outputs file tracked by Turbo cache
-- Safe to run frequently (cached)
-
-**Related Scripts**:
-
-- `apps/roppoh`: `bun run cf-typegen`
+**Notes**: output file is tracked by the Turbo cache; safe to run frequently.
 
 ---
 
-### 4. `test`
+### 4. `dev`
 
-**Description**: Run tests across workspaces
+**Cache**: Disabled ❌ · **Persistent**: yes
 
-**Task file**: `turbo.json` - `tasks.test`
-
-**What it does**:
-See [turbo.json](./turbo.json) for full configuration
-
-**Cache**: Disabled ❌
-
-**Dependencies**: None (runs independently)
-
-**When to use**:
-
-- ✅ Running test suite before committing
-- ✅ Validating code changes don't break tests
-- ✅ CI/CD pipeline validation
-- ✅ Pre-push verification
-- ✅ Local development testing
-- ✅ Continuous integration
-
-**Command**:
+Runs each workspace's dev server. Invoked by `mise run dev` as `turbo dev --ui tui`.
 
 ```bash
-bun turbo test
+turbo dev --ui tui
 ```
 
-**Test Types** (in `apps/roppoh`):
+Persistent task — stays running until you stop it (`Ctrl+C`).
 
-- Unit tests: `bun run test:unit` or `bun turbo test --filter=roppoh`
-- Visual tests: `bun run test:visual` or `bun turbo test --filter=roppoh`
-- All tests: `bun turbo test`
+---
 
-**Notes**:
+### 5. `test`
 
-- Cache is **disabled** intentionally (tests must always run)
-- Tests run in each workspace's context
-- Test files use `.test.ts` / `.test.tsx` naming
-- Failures block progress
+**Cache**: Disabled ❌ · **Dependencies**: none
 
-**Related Scripts**:
+Runs tests in each workspace. Cache is intentionally disabled so tests always execute.
 
-- `apps/roppoh`: `bun run test`
-- `apps/roppoh`: `bun run test:unit`
-- `apps/roppoh`: `bun run test:visual`
+```bash
+turbo test
+turbo test --filter=@roppoh/roppoh
+```
+
+> For the full test matrix (unit / e2e / VRT, including the Dockerized visual regression
+> flow) prefer the mise tasks — see `.claude/rules/mise-tasks.md`.
 
 ---
 
 ## Caching Strategy
 
-### Cached Tasks ✅
+### Cached ✅
 
-- `build` - Skip if source code unchanged
-- `type-check` - Skip if TypeScript files unchanged
-- `cf-typegen` - Skip if CloudFlare config unchanged
+- `build` — skip if inputs unchanged
+- `type-check` — skip if inputs unchanged
+- `cf-typegen` — skip if `wrangler.jsonc` / `.env.local` unchanged
 
-### Non-Cached Tasks ❌
+### Non-Cached ❌
 
-- `test` - Always runs (tests should always execute)
+- `dev` — persistent
+- `test` — always runs
 
 ### Force Execution
 
 ```bash
-# Re-run all builds (ignore cache)
-bun turbo --force build
-
-# Re-run type check (ignore cache)
-bun turbo --force type-check
-
-# Re-generate CloudFlare types (ignore cache)
-bun turbo --force cf-typegen
+turbo --force build
+turbo --force type-check
+turbo --force cf-typegen
 ```
 
 ### When Cache Gets Stale
 
 Cache is invalidated when:
 
-- Source code changes
+- Source (declared `inputs`) changes
 - Dependencies change (`bun.lock`)
 - Configuration files change
 
 To manually invalidate:
 
 ```bash
-# Clear Turbo cache
-rm -rf .turbo
-
-# Or use mise task
-mise run clear-cache
+rm -rf .turbo        # or per-workspace dist/.turbo
+mise run clear-cache # removes dist / .turbo / node_modules / etc.
 ```

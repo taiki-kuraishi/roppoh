@@ -1,10 +1,13 @@
 # Mise Tasks Guide
 
-This document describes the custom tasks defined in `.mise-tasks/` and when to use them.
+This document describes the tasks defined in `.mise-tasks/` (and inline in `mise.toml`)
+and when to use them.
 
 ## Overview
 
-Mise tasks are shorthand commands that wrap common project operations. They provide a convenient way to execute multi-step workflows with a single command.
+Mise tasks wrap common project operations. They are file-based tasks under `.mise-tasks/`
+(hierarchical directories become `parent:child` task names), plus a few inline tasks in
+`mise.toml`.
 
 ### Task Execution
 
@@ -12,31 +15,42 @@ Mise tasks are shorthand commands that wrap common project operations. They prov
 # Run a mise task
 mise run <task-name>
 
-# Alternative syntax (if configured)
-<task-name>
+# Hierarchical (nested) task
+mise run <group>:<subtask>
 ```
 
-## Available Tasks
+Nested directories map to `:`-separated names. For example
+`.mise-tasks/lint/bun` → `lint:bun`, and `.mise-tasks/test/vrt/roppoh` → `test:vrt:roppoh`.
+A `_default` file (or inline `[tasks.<group>]`) is the group's default that `depends` on
+its children.
 
-### 1. `install`
+## Top-Level Tasks
 
-**Description**: Setup project environment
+| Task            | Kind   | Description                                      |
+| --------------- | ------ | ------------------------------------------------ |
+| `install`       | group  | Setup project environment (bun / go / terraform) |
+| `clean-install` | group  | `clear-cache` → `install` (hard reset)           |
+| `clear-cache`   | file   | Remove build/cache/`node_modules` directories    |
+| `dev`           | group  | Run development servers                          |
+| `format`        | inline | Format code with `oxfmt`                         |
+| `lint`          | group  | Full quality check (bun / go / k8s / terraform)  |
+| `test`          | group  | Run all tests (e2e / unit / vrt)                 |
+| `env-decrypt`   | group  | Decrypt sops-encrypted env files                 |
+| `env-encrypt`   | group  | Encrypt env files with sops                      |
 
-**Dependencies**: Runs after `clear-cache`
+---
 
-**Task file**: `.mise-tasks/install`
+### `install`
 
-**What it does**:
-See [.mise-tasks/install](./.mise-tasks/install) for full implementation
+**What it does**: `mise install`, `lefthook install`, then (post) `install:bun`,
+`install:go`, `env-decrypt`, `install:terraform`.
 
-**When to use**:
+- `install:bun` — `bun install --frozen-lockfile`, then `playwright install chromium` for neo-fujimatsu
+- `install:go` — `go mod download`
+- `install:terraform` / `install:terraform:prod` — `terraform init` + `tflint --init` (via sops) in `infra/env/prod`
 
-- ✅ Initial project setup after cloning
-- ✅ When dependencies change (after `git pull`)
-- ✅ After deleting `node_modules` or cache
-- ✅ Setting up development environment for the first time
-
-**Command**:
+**When to use**: initial setup after cloning, after `git pull` with dependency changes,
+after deleting `node_modules`.
 
 ```bash
 mise run install
@@ -44,173 +58,140 @@ mise run install
 
 ---
 
-### 2. `dev`
+### `clean-install`
 
-**Description**: Run development server
-
-**Task file**: `.mise-tasks/dev`
-
-**What it does**:
-See [.mise-tasks/dev](./.mise-tasks/dev) for full implementation
-
-**When to use**:
-
-- ✅ Starting local development
-- ✅ Before making code changes
-- ✅ When you need a live-reloading development environment
-
-**Command**:
+`clear-cache` → `install`. Use for a full hard reset when caches are corrupt.
 
 ```bash
-mise run dev
+mise run clean-install
 ```
-
-**Notes**:
-
-- This is an interactive task (runs in foreground)
-- Database migrations are applied automatically
-- Press `Ctrl+C` to stop the server
 
 ---
 
-### 3. `format`
+### `clear-cache`
 
-**Description**: Format code (auto-fix)
+Removes `dist`, `.turbo`, `.astro`, `.wrangler`, `node_modules`, `.react-router`,
+`.vitest-attachments` directories recursively.
 
-**Task file**: `.mise-tasks/format`
+```bash
+mise run clear-cache
+```
 
-**What it does**:
-See [.mise-tasks/format](./.mise-tasks/format) for full implementation
+**Note**: after clearing you must run `mise run install` to restore dependencies
+(or use `mise run clean-install`).
 
-**When to use**:
+---
 
-- ✅ Before committing code
-- ✅ To automatically fix formatting/linting issues
-- ✅ When `biome` or `dprint` shows formatting errors
-- ✅ Part of your pre-commit workflow
+### `dev`
 
-**Command**:
+**What it does**: `dev:bun` runs `turbo dev --ui tui` (all JS/TS apps).
+`dev:cmd:discord-gateway-proxy` runs the Go gateway proxy via `dotenvx run -- go run .`.
+
+```bash
+mise run dev            # or: mise run dev:bun
+mise run dev:cmd:discord-gateway-proxy
+```
+
+**Notes**: interactive/foreground. Press `Ctrl+C` to stop.
+
+---
+
+### `format`
+
+Inline task in `mise.toml`: `bun run oxfmt`. Formats the whole repo with **oxfmt**.
 
 ```bash
 mise run format
 ```
 
-**Relation to Pre-commit Hooks**:
-This task is similar to what Lefthook runs, but runs on-demand instead of automatically.
+Run before committing (Lefthook runs a similar check automatically).
 
 ---
 
-### 4. `lint`
+### `lint`
 
-**Description**: Comprehensive code quality check
-
-**Task file**: `.mise-tasks/lint/` (hierarchical task)
-
-**What it does**:
-See [.mise-tasks/lint/](./.mise-tasks/lint/) for full implementation
-
-**When to use**:
-
-- ✅ Before pushing code to remote
-- ✅ Running full quality checks
-- ✅ CI/CD pipeline validation
-- ✅ Final verification before pull request
-- ✅ When you want to verify everything is working
-
-**Command**:
+`lint` (`lint:_default`) bundles 4 groups via `depends`. Groups run in parallel
+(mise default, max 4 jobs); commands inside a single group file run sequentially.
 
 ```bash
-# Run all lint groups (bun / go / k8s / terraform)
-mise run lint
-
-# Or run a single group
-mise run lint:bun
+mise run lint          # all groups
+mise run lint:bun      # single group
 mise run lint:go
 mise run lint:k8s
 mise run lint:terraform
 ```
 
-**Structure**:
+| Subtask               | What's checked                                                                                      |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| `lint:bun`            | `oxlint --fix` → `turbo type-check` → `turbo build` → grafana `dashboard-linter` → `knip`           |
+| `lint:go`             | `golangci-lint run` → `go build ./...`                                                              |
+| `lint:k8s`            | `kubeconform` (ignores `patches/`, `dashboards/`, `files/`) → `kube-linter`                         |
+| `lint:terraform:fmt`  | `terraform fmt -check -recursive` (`infra` 全体)                                                    |
+| `lint:terraform:prod` | `terraform validate` → `tflint` (`infra/env/prod`; `terraform init` は `mise run install` 済み前提) |
 
-`lint` (`lint:_default`) は 4 グループを `depends` で束ねる。グループ間は並列実行(mise デフォルト最大 4 ジョブ)、各グループ内のコマンドは 1 ファイル内で順次実行される。`lint:terraform` はさらに `fmt` / `prod` サブタスクに分かれる(`install:terraform` と同じ構造)。
-
-| Subtask               | What's checked                                                                                           |
-| --------------------- | -------------------------------------------------------------------------------------------------------- |
-| `lint:bun`            | oxlint (`--fix`) → `turbo type-check` → `turbo build` → knip                                             |
-| `lint:go`             | `golangci-lint run` → `go build ./...`                                                                   |
-| `lint:k8s`            | `kubeconform` (manifest 検証、patches は除外) → `kube-linter`                                            |
-| `lint:terraform:fmt`  | `terraform fmt -check -recursive`(`infra` 全体)                                                          |
-| `lint:terraform:prod` | `terraform validate` → `tflint`(`infra/env/prod`。`terraform init` は `mise run install` で実施済み前提) |
-
-**Duration**: This task takes longer as it runs a full build. Use selectively. 特定カテゴリだけ確認したいときは個別サブタスク (`lint:go` など) を使うと速い。
+**Duration**: `lint:bun` runs a full build, so it is the slow one. Use individual
+subtasks (`lint:go` など) when you only need one category.
 
 ---
 
-### 5. `clear-cache`
+### `test`
 
-**Description**: Clear cache directories
-
-**Task file**: `.mise-tasks/clear-cache`
-
-**What it does**:
-See [.mise-tasks/clear-cache](./.mise-tasks/clear-cache) for full implementation
-
-**When to use**:
-
-- ✅ After upgrading dependencies
-- ✅ When build/type-check fails unexpectedly
-- ✅ When experiencing cache-related issues
-- ✅ Troubleshooting "hard reset" scenario
-- ✅ Freeing disk space
-
-**Command**:
+`test` (`test:_default`) depends on `test:e2e`, `test:unit`, `test:vrt`.
 
 ```bash
-mise run clear-cache
+mise run test          # everything
+mise run test:unit     # oxlint-plugins + dev-pod bats
+mise run test:e2e      # neo-fujimatsu + web-console
+mise run test:vrt      # visual regression (all apps)
 ```
 
-**Note**: After clearing cache, you must run `mise run install` to restore dependencies.
+**Unit** (`test:unit`):
 
-**Common Workflow**:
+- `test:unit:oxlint-plugins` — `bun run test` in `packages/oxlint-plugins`
+- `test:unit:dev-pod` — `bats test` for dev-pod bin scripts
+
+**E2E** (`test:e2e`): `test:e2e:neo-fujimatsu`, `test:e2e:web-console` (Playwright).
+
+**VRT** (`test:vrt`): builds a Playwright Docker container (`test:vrt:build-container`,
+image `roppoh-playwright:latest`) then runs per-app visual regression:
+`test:vrt:neo-fujimatsu`, `test:vrt:web-console`, `test:vrt:roppoh`, `test:vrt:ura-roppoh`.
+
+Each per-app VRT task accepts `-u/--update-snapshots`:
 
 ```bash
-mise run clear-cache
-mise run install  # Automatically runs after clear-cache due to dependency
+mise run test:vrt:roppoh --update-snapshots
 ```
+
+**Requirements**: Docker (BuildKit) for VRT — a Linux container ensures consistent
+visual rendering.
 
 ---
 
-### 6. `update-vrt-screenshots`
+### `test:vrt:update-screen-shots`
 
-**Description**: Update Visual Regression Test (VRT) screenshots
-
-**Task file**: `.mise-tasks/update-vrt-screenshots`
-
-**What it does**:
-See [.mise-tasks/update-vrt-screenshots](./.mise-tasks/update-vrt-screenshots) for full implementation
-
-**When to use**:
-
-- ✅ After intentional UI changes (when visual changes are correct)
-- ✅ When visual tests fail due to expected design changes
-- ✅ Updating reference screenshots in the repository
-- ✅ Ensuring VRT baselines match current UI
-
-**Command**:
+Updates VRT baseline screenshots for **all** apps by running each per-app VRT task
+with `--update-snapshots`.
 
 ```bash
-mise run update-vrt-screenshots
+mise run test:vrt:update-screen-shots
 ```
-
-**Requirements**:
-
-- Docker and Docker Compose must be installed
-- Linux container is used for consistent visual rendering
 
 **Workflow**:
 
-1. Make UI changes in code
-2. Visual tests fail (because screenshots don't match)
-3. Review the differences to ensure they're intentional
-4. Run this task to update the reference screenshots
-5. Commit the updated screenshots
+1. Make UI changes.
+2. VRT fails (screenshots don't match).
+3. Review the diffs to confirm they're intentional.
+4. Run this task (or a single `mise run test:vrt:<app> --update-snapshots`).
+5. Commit the updated screenshots.
+
+---
+
+### `env-decrypt` / `env-encrypt`
+
+sops-based env file management. Targets: `apps/emdash`, `apps/neo-fujimatsu`,
+`cmd/discord-gateway-proxy`, `infra/env/prod`.
+
+```bash
+mise run env-decrypt
+mise run env-encrypt
+```
