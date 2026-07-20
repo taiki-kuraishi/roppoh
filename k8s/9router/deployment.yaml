@@ -31,7 +31,7 @@ spec:
       containers:
         - name: 9router
           # 【自己更新】このタグは Renovate が更新する
-          image: ghcr.io/decolua/9router:0.5.35
+          image: ghcr.io/decolua/9router:0.5.40
           ports:
             - name: http
               containerPort: 20128
