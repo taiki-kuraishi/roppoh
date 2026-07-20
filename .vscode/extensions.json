@@ -1,9 +1,0 @@
-{
-  "recommendations": [
-    "bradlc.vscode-tailwindcss",
-    "biomejs.biome",
-    "hverlin.mise-vscode",
-    "vitest.explorer",
-    "ms-playwright.playwright"
-  ]
-}
