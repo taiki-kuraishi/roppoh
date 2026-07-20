@@ -1,3 +1,9 @@
+---
+paths:
+  - "**/*.tsx"
+  - "!packages/shadcn/**"
+---
+
 # React Component Architecture & Patterns
 
 React 系アプリ(`apps/roppoh`, `apps/ura-roppoh`, `apps/neo-fujimatsu`)のコンポーネント規約。
@@ -9,7 +15,7 @@ React 系アプリ(`apps/roppoh`, `apps/ura-roppoh`, `apps/neo-fujimatsu`)のコ
 ```text
 apps/<app>/src/          # neo-fujimatsu のみ src/client/ 配下に同じ構造を持つ
 ├── main.tsx             # エントリポイント
-├── router.tsx           # ルーター定義
+├── router.ts            # ルーター定義(JSX を含まないため .ts)
 ├── root/                # アプリルート(プロバイダ・エラーバウンダリ)
 │   ├── index.tsx
 │   ├── error-boundary.tsx

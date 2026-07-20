@@ -1,162 +1,151 @@
+---
+paths:
+  - "apps/roppoh/**"
+---
+
 # Directory Structure
 
 ## Overview
 
-The `apps/roppoh` application is built with **React Router v7** and follows a feature-based architecture with nested layouts. Key characteristics:
+The `apps/roppoh` application is a **client-side React SPA** bundled with **Vite** and
+deployed to **Cloudflare Workers**. Routing uses **react-router** in library mode
+(`createBrowserRouter`), not the framework/SSR mode.
 
-- **Framework**: React Router v7 with SSR (Server-Side Rendering)
-- **Bundler**: Vite
-- **Styling**: Tailwind CSS
-- **Architecture**: Feature-based with nested layout composition
-- **Database**: CloudFlare D1 with better-auth
+- **Framework**: React 19 + react-router (library mode, `createBrowserRouter`)
+- **Bundler**: Vite (`@vitejs/plugin-react`, `@cloudflare/vite-plugin`)
+- **Styling**: Tailwind CSS v4 (`@tailwindcss/vite`, `src/global.css`)
+- **Auth**: better-auth via the `@roppoh/better-auth-query` workspace package
+- **UI**: `@roppoh/shadcn` workspace package (shadcn/ui lives in the package, not in-app)
+- **State/data**: TanStack Query, Jotai, nuqs
+- **PWA**: `vite-plugin-pwa` + `workbox-window`
+- **Deploy target**: Cloudflare Workers (`wrangler.jsonc`, `worker-configuration.d.ts`)
+- **Tests**: Vitest (browser mode via Playwright) + visual regression
+
+> The component/architecture conventions (naming, colocation, import boundaries, size
+> limits) are documented in `.claude/rules/roppoh/react-components.md` and enforced by
+> oxlint. This file focuses on the overall file layout.
 
 ## Directory Tree with Descriptions
 
 ```text
 apps/roppoh/
-├── app                          # Application source code
-│   ├── apis                     # React Router v7 action handlers & API routes
-│   │                            # Server actions, API routes, form mutations
+├── src                          # Application source code
+│   ├── main.tsx                 # Entry point (mounts the router)
+│   ├── router.ts                # react-router route tree (createBrowserRouter, lazy pages)
+│   ├── global.css               # Tailwind CSS entry / global styles
 │   │
-│   ├── components               # Reusable React components
-│   │                            # Generic UI components used across pages/features
+│   ├── root/                    # App root (providers + error boundary)
+│   │   ├── index.tsx            # Root component (exports `Root`)
+│   │   ├── error-boundary.tsx   # Router-level error boundary
+│   │   └── components/          # App-wide providers (importable from anywhere)
+│   │       ├── auth-provider/   # Auth context/provider
+│   │       │   ├── index.tsx
+│   │       │   ├── provider.tsx
+│   │       │   ├── context.ts
+│   │       │   ├── constant.ts
+│   │       │   └── use-auth.ts
+│   │       └── theme-provider.ts
 │   │
-│   ├── entry.server.tsx         # React Router v7 server entry point
-│   │                            # SSR handler: converts app to HTML stream
+│   ├── pages/                   # Route pages (one dir per route)
+│   │   ├── index/               # Home page          → page.tsx
+│   │   ├── login/               # Login page         → page.tsx (+ components/)
+│   │   ├── callback/            # OAuth callback      → page.tsx
+│   │   └── consent/             # OIDC consent page   → page.tsx
 │   │
-│   ├── features                 # Feature-specific implementations
-│   │   └── dokploy-server-management    # Dokploy server management feature
-│   │                            # Isolated feature folder containing related logic
+│   ├── layouts/                 # Layout components
+│   │   ├── authenticated-layout.tsx   # Single-file layout (auth guard)
+│   │   └── sidebar-layout/            # Directory-type layout
+│   │       ├── index.tsx
+│   │       └── components/
 │   │
-│   ├── layouts                  # Layout wrapper components
-│   │   ├── authenticated-layout # Protected routes layout (auth required)
-│   │   ├── client-side-root     # Client-side root layout (hydration)
-│   │   ├── guild-authorized-layout      # Guild/Discord authorized layout
-│   │   └── sidebar-layout       # Main layout with sidebar navigation
+│   ├── components/              # Components shared across pages/layouts
+│   │   └── header.tsx
 │   │
-│   ├── libs                     # External library integrations & adapters
-│   │   ├── better-auth          # Authentication library integration
-│   │   ├── discord-js           # Discord.js integration
-│   │   ├── dokploy-sdk          # Dokploy SDK wrapper
-│   │   ├── pino                 # Logging library setup
-│   │   └── react-query          # TanStack Query (data fetching) setup
-│   │
-│   ├── pages                    # Page components (routes)
-│   │   ├── 404                  # 404 Not Found page
-│   │   ├── index                # Home/index page
-│   │   ├── login                # Login/authentication page
-│   │   └── unity-sports-resort  # Unity Sports Resort feature page
-│   │
-│   ├── root.tsx                 # React Router v7 root component
-│   │                            # Outermost layout: global providers, error handling
-│   │
-│   ├── routes.ts                # React Router v7 route configuration
-│   │                            # Defines routes with layout nesting, import routes.tsx from here
-│   │
-│   ├── shadcn                   # shadcn/ui pre-built components
-│   │                            # Copy-paste UI component library
-│   │
-│   ├── tailwind.css             # Tailwind CSS global styles & directives
-│   │
-│   └── utils                    # Utility functions & helpers
-│       ├── base-meta-function.ts        # Meta tags helper (SEO)
-│       ├── dependency-injection.server.ts  # Server-side DI container
-│       ├── sessions.server.ts   # Session management utilities
-│       └── theme-color-to-hex-color.ts # Theme color converter utility
-│
-├── build                        # Production build output
-│                                # Generated by build process (dist)
-│
-├── components.json              # shadcn/ui configuration
-│                                # Defines component library settings
-│
-├── package.json                 # Workspace package configuration
-│                                # Dependencies, scripts, metadata
-│
-├── public                       # Static public assets
-│   ├── favicon.ico              # Browser tab icon
-│   ├── icons                    # App icons for PWA/mobile
-│   │   ├── tsar-192x192.png     # 192x192 icon
-│   │   ├── tsar-512x512.png     # 512x512 icon
-│   │   └── tsar-icon.png        # Default app icon
-│   ├── offline.html             # Offline fallback page (PWA)
-│   └── robots.txt               # SEO robots directive
-│
-├── react-router.config.ts       # React Router v7 configuration
-│                                # SSR enabled, Vite environment API config
-│
-├── server.ts                    # React Router v7 dev/production server
-│                                # Handles SSR, Vite HMR, API routing
+│   └── libs/                    # External library setup/adapters
+│       ├── better-auth.ts       # better-auth client wiring
+│       └── ssgoi.ts             # SSGOI (view transitions) setup
 │
 ├── test                         # Test files
-│   ├── unit                     # Unit tests (*.test.ts, *.test.tsx)
-│   │                            # Component, function, integration tests
-│   │
-│   └── visual-regression        # Visual regression tests (VRT)
-│                                # Screenshot-based UI testing
+│   └── visual-regression        # VRT (Playwright/Vitest browser, __screenshots__)
+│       ├── helpers
+│       └── pages
 │
-├── tsconfig.json                # TypeScript configuration
-│                                # Compiler options, path aliases
+├── public                       # Static public assets
 │
-├── turbo.json                   # Turbo configuration (local override)
-│                                # Task definitions for this workspace
+├── dist                         # Vite build output (generated)
 │
-├── vite.config.ts               # Vite bundler configuration
-│                                # Module resolution, plugins
-│
-├── vitest.config.ts             # Vitest test runner configuration
-│                                # Test environment, reporters
-│
-├── worker-configuration.d.ts    # CloudFlare Worker type definitions
-│                                # Auto-generated by turbo cf-typegen
-│
-└── wrangler.jsonc               # CloudFlare Wrangler configuration
-                                 # Worker environment, bindings, triggers
+├── package.json                 # Workspace package (@roppoh/roppoh)
+├── tsconfig.json                # TS config; path aliases (@/*, @/test/*, @roppoh/shadcn/*)
+├── turbo.json                   # Per-workspace Turbo overrides (extends "//")
+├── vite.config.ts               # Vite config (react, cloudflare, tailwind, pwa)
+├── vitest.config.ts             # Vitest config (browser mode)
+├── vite-env.d.ts                # Vite ambient types
+├── worker-configuration.d.ts    # Cloudflare Worker types (generated by cf-typegen)
+└── wrangler.jsonc               # Cloudflare Wrangler config
 ```
+
+> Note: shadcn/ui components are **not** vendored into this app — they come from the
+> `@roppoh/shadcn` workspace package (`@roppoh/shadcn/*` alias). There is no in-app
+> `shadcn/` folder or `components.json`.
 
 ## Architecture Patterns
 
-### Feature-Based Organization
+### Routing (library mode)
 
-Features are grouped together (e.g., `features/dokploy-server-management`):
+Routes are declared in `src/router.ts` with `createBrowserRouter`. Pages and layouts are
+loaded lazily via dynamic `import()` (`lazy: { Component }`). The route tree nests
+`root` → `authenticated-layout` → `sidebar-layout` → page, with public routes
+(`/login`, `/callback`, `/consent`) as siblings.
 
-```text
-features/
-└── dokploy-server-management/
-    ├── components/
-    ├── hooks/
-    ├── types/
-    └── utils/
-```
+### Page structure
 
-This keeps related code together and makes features easy to maintain or remove.
+Each route is a directory under `src/pages/<name>/` whose entry is **`page.tsx`**
+(this exact filename). Page-private components live in `src/pages/<name>/components/`.
+See `react-components.md` for the full colocation and import-boundary rules.
 
-### Server vs. Client Code
+### Path Aliases
 
-Files with `.server.ts` or `.server.tsx` extension:
+From `tsconfig.json`:
 
-- Run only on the server (Node.js runtime)
-- Cannot be imported by client code
-- Examples: `dependency-injection.server.ts`, `sessions.server.ts`
+- `@/*` → `src/*`
+- `@/test/*` → `test/*`
+- `@roppoh/shadcn/*` → the shadcn workspace package
+
+Cross-boundary imports use `@/`; same-boundary imports use relative paths.
 
 ---
 
 ## Naming Conventions
 
-| Type       | Naming                      | Example                         |
-| ---------- | --------------------------- | ------------------------------- |
-| Components | PascalCase                  | `UserProfile.tsx`, `Button.tsx` |
-| Pages      | PascalCase                  | `index.tsx`, `Login.tsx`        |
-| Utilities  | camelCase                   | `base-meta-function.ts`         |
-| Types      | PascalCase                  | `User.ts`, `Session.ts`         |
-| Tests      | `*.test.ts` or `*.test.tsx` | `Button.test.tsx`               |
-| Config     | kebab-case                  | `vite.config.ts`                |
+Naming is **kebab-case** across the board and enforced by oxlint
+(`unicorn/filename-case`). See `react-components.md` for details.
+
+| Type           | Naming       | Example                           |
+| -------------- | ------------ | --------------------------------- |
+| Files          | kebab-case   | `login-button.tsx`, `use-auth.ts` |
+| Directories    | kebab-case   | `sidebar-layout`, `auth-provider` |
+| Page entry     | `page.tsx`   | `pages/login/page.tsx`            |
+| Dir-type entry | `index.tsx`  | `sidebar-layout/index.tsx`        |
+| Custom hooks   | `use-*.ts`   | `use-auth.ts`                     |
+| Tests          | `*.spec.tsx` | `login.spec.tsx` (VRT)            |
+| Config         | kebab-case   | `vite.config.ts`                  |
+
+> PascalCase component filenames are **not** used here (that was the old convention).
 
 ---
 
 ## File Size Considerations
 
-- Keep components focused (single responsibility)
-- Split large features into sub-folders
-- Move shared utilities to `/utils`
-- Use feature folders for isolated functionality
+Enforced by oxlint for `apps/roppoh/src/**` (see `react-components.md`):
+
+- 1 file ≤ 150 lines (`max-lines`)
+- 1 function ≤ 100 lines (`max-lines-per-function`)
+- 1 top-level function per `.tsx` (`roppoh/one-function-per-tsx`)
+
+Split components into `components/` and extract logic into `use-*.ts` hooks when limits
+are exceeded.
+
+## Related Documentation
+
+- `.claude/rules/roppoh/react-components.md` — component patterns, naming, import boundaries
+- `packages/oxlint-plugins/` — custom lint rule implementations
