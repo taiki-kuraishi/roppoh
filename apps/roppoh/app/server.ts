@@ -9,6 +9,11 @@ import { rootView } from "./root-view";
 export const app = new Hono()
   .use(inertia({ rootView, version: "v1" }))
   .get("/health", (c) => c.json({ message: "ok" }, 200))
+  // Public pages (no auth guard)
+  .get("/login", (c) => c.render("Login/Index", {}))
+  .get("/callback", (c) => c.render("Callback/Index", {}))
+  // Guarded page — the client decides (see app/guards/**, app/layouts/compose.tsx).
+  // Hono never inspects auth/session (dumb Inertia renderer).
   .get("/", (c) => c.render("Index", {}));
 
 export default { fetch: app.fetch } satisfies ExportedHandler<Cloudflare.Env>;

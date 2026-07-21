@@ -24,5 +24,7 @@ export default defineConfig({
   resolve: {
     dedupe: ["react", "react-dom"],
   },
-  server: { port: 51_733 },
+  // Port must match the localhost redirect_uri registered for the roppoh OAuth
+  // Client in neo-fujimatsu's D1 (http://localhost:51730/callback).
+  server: { port: 51_730 },
 });

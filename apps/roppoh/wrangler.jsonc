@@ -20,7 +20,7 @@
     // Inertia owns routing (server-rendered per route); there is no static
     // index.html SPA fallback, so every navigable page route must be listed
     // here to reach the Worker.
-    "run_worker_first": ["/", "/health"],
+    "run_worker_first": ["/", "/login", "/callback", "/health"],
   },
   "preview_urls": false,
   "routes": [
@@ -30,5 +30,9 @@
       "zone_name": "tsar-bmb.org",
     },
   ],
+  "vars": {
+    "VITE_OIDC_ISSUER": "https://neo-fujimatsu.tsar-bmb.org/api",
+    "VITE_OIDC_CLIENT_ID": "ZagxZfQuBthqZGMZZNPzSMKSmAfTVAXy",
+  },
   "workers_dev": false,
 }

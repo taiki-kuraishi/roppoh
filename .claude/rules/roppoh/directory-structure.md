@@ -5,33 +5,54 @@ paths:
 
 # roppoh — Directory Structure
 
-`apps/roppoh` は **Vite + Inertia** の最小アプリ。ソースは **`app/`** 配下
+`apps/roppoh` は **Vite + Inertia** のアプリ。ソースは **`app/`** 配下
 (web-console と同じ構成)。**ページは Inertia 解決に合わせて PascalCase**。
-認証・DB・状態管理は持たず、`/` に "Hello world" を出すだけの最小構成。
+neo-fujimatsu(better-auth の OIDC/OAuth 認可サーバ)による認証を持つ。
+認証は web-console と同じ **oauth4webapi ベースの public PKCE クライアント**で、
+ガードは**すべてクライアントサイド**(Hono はセッションを見ない dumb Inertia renderer)。
 
 ## ディレクトリツリー
 
 ```text
 apps/roppoh/
 ├── app
-│   ├── client.tsx               # クライアントエントリ(createInertiaApp)
+│   ├── client.tsx               # クライアントエントリ(ErrorBoundary > AppProviders > App)
 │   ├── server.ts                # サーバエントリ(Hono + @hono/inertia)
 │   ├── root-view.tsx            # ルートビュー(hono/jsx の HTML シェル)
-│   ├── global.css               # Tailwind エントリ(shadcn なし)
+│   ├── global.css               # Tailwind エントリ(+ @roppoh/shadcn)
+│   ├── guards/                  # auth-guard.tsx(未ログインなら /login へ)
+│   ├── layouts/                 # compose.tsx(appLayout = AuthGuard)
+│   ├── providers/               # auth-provider/, app-providers, theme-provider, query-client, error-boundary
 │   └── pages/                   # Inertia ページ(PascalCase)
-│       └── Index.tsx
+│       ├── Index.tsx            # ガード対象(Index.layout = appLayout)
+│       ├── Login/Index.tsx      # 公開(.layout なし)
+│       └── Callback/Index.tsx   # 公開(OIDC リダイレクト処理後 / へ)
 │
 ├── test
 │   ├── unit/health.test.ts      # bun test(app.request で /health を検証)
-│   ├── e2e/index.spec.tsx       # Playwright e2e(振る舞い)
-│   └── vrt/index/page.spec.tsx  # Playwright VRT(ビジュアル回帰)
+│   ├── helpers/                 # discovery-handler, create-logged-in-user, test-with-msw-mock
+│   ├── e2e/index.spec.tsx       # Playwright e2e(AuthGuard の振る舞い)
+│   └── vrt/{index,login}/       # Playwright VRT(ログイン済み / と /login)
 │
 ├── e2e.playwright.config.ts     # e2e 設定
 ├── vrt.playwright.config.ts     # VRT 設定
-├── wrangler.jsonc
-├── vite.config.ts
+├── wrangler.jsonc               # vars: VITE_OIDC_ISSUER / VITE_OIDC_CLIENT_ID
+├── vite-env.d.ts                # import.meta.env(VITE_OIDC_*)の型
+├── vite.config.ts               # dev port 51730(D1 の localhost redirect_uri と一致)
 └── package.json / tsconfig.json / turbo.json
 ```
+
+## 認証
+
+- **フロー**: oauth4webapi による Authorization Code + PKCE。`app/providers/auth-provider/`
+  が本体(web-console からの移植)。ログイン状態は `oidc:state` localStorage(jotai)に永続化。
+- **ガード**: `app/guards/auth-guard.tsx` が `useAuth().isAuthenticated` を見て未ログインなら
+  `/login` へ。ガード対象ページは `Index.layout = appLayout`(`app/layouts/compose.tsx`)を付ける。
+  Login / Callback は公開ページ(`.layout` なし)。
+- **設定**: `VITE_OIDC_ISSUER`(`https://neo-fujimatsu.tsar-bmb.org/api`)と
+  `VITE_OIDC_CLIENT_ID` を `wrangler.jsonc` の `vars` と `.env.local` に置く(**public クライアントで secret なし**)。
+  client は neo-fujimatsu の D1(`roppoh-better-auth`)に登録済み(redirect_uri: `http://localhost:51730/callback`,
+  `https://roppoh.tsar-bmb.org/callback`)。dev port を 51730 に固定しているのはこの localhost redirect と一致させるため。
 
 ## ルール(web-console と同じ)
 
