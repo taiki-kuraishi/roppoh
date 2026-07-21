@@ -1,9 +1,15 @@
 import type { BrowserContext } from "@playwright/test";
 
+import { oidcUserStorageKey, serializeOidcUser } from "@roppoh/oidc-client/testing";
+
 import type { TestBetterAuthDatabase } from "./test-better-auth-database";
 
 type Auth = Awaited<ReturnType<TestBetterAuthDatabase["getTestBetterAuth"]>>;
 const API_HOST = "neo-fujimatsu.tsar-bmb.org";
+// Must match apps/web-console/wrangler.jsonc vars — the oidc-client-ts storage
+// Key is derived from the issuer + client_id.
+const OIDC_ISSUER = "https://neo-fujimatsu.tsar-bmb.org/api";
+const OIDC_CLIENT_ID = "kNQlBnNvdBPhYFKmdDRHbBzFVtHYiggd";
 
 interface Args {
   auth: Auth;
@@ -25,11 +31,12 @@ export async function createLoggedInUser({ auth, context, user }: Args) {
   const cookies = await auth.getCookies({ domain: API_HOST, userId: created.id });
   await context.addCookies(cookies);
 
-  await context.addInitScript(
-    ([email, name]) =>
-      localStorage.setItem("oidc:state", JSON.stringify({ user: { email, name } })),
-    [created.email, created.name] as const,
-  );
+  const oidcKey = oidcUserStorageKey(OIDC_ISSUER, OIDC_CLIENT_ID);
+  const oidcValue = serializeOidcUser({ email: created.email, name: created.name });
+  await context.addInitScript(([key, value]) => localStorage.setItem(key, value), [
+    oidcKey,
+    oidcValue,
+  ] as const);
 
   return { user: created };
 }

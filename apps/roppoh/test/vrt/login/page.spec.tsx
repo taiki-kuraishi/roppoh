@@ -1,12 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import { baseHandlers } from "../../helpers/discovery-handler";
-import { testWithMswMock } from "../../helpers/test-with-msw-mock";
 import { setTheme } from "../__helpers/theme";
 
-// Public page — no auth/session needed (no .layout).
+// Public page — no auth needed (no .layout).
 test.describe("vrt /login", () => {
-  testWithMswMock(baseHandlers)("dark", async ({ page }) => {
+  test("dark", async ({ page }) => {
     // Arrange
     await setTheme({ page, theme: "dark" });
 
@@ -17,7 +15,7 @@ test.describe("vrt /login", () => {
     await expect(page).toHaveScreenshot({ fullPage: true });
   });
 
-  testWithMswMock(baseHandlers)("light", async ({ page }) => {
+  test("light", async ({ page }) => {
     // Arrange
     await setTheme({ page, theme: "light" });
 

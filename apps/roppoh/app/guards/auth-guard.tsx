@@ -1,8 +1,7 @@
 import { router } from "@inertiajs/react";
+import { useAuth } from "@roppoh/oidc-client";
 import { useEffect } from "react";
 import { toast } from "sonner";
-
-import { useAuth } from "@/providers/auth-provider";
 
 // Client-side auth guard (ported from apps/web-console/app/guards/auth-guard.tsx).
 // Hono never inspects auth (dumb Inertia renderer) — this effect is the only

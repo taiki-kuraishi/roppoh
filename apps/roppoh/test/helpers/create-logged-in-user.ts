@@ -1,5 +1,12 @@
 import type { BrowserContext } from "@playwright/test";
 
+import { oidcUserStorageKey, serializeOidcUser } from "@roppoh/oidc-client/testing";
+
+// Must match apps/roppoh/wrangler.jsonc vars / .env.local — the oidc-client-ts
+// Storage key is derived from the issuer + client_id.
+const ISSUER = "https://neo-fujimatsu.tsar-bmb.org/api";
+const CLIENT_ID = "ZagxZfQuBthqZGMZZNPzSMKSmAfTVAXy";
+
 interface User {
   email: string;
   name: string;
@@ -10,20 +17,18 @@ interface Args {
   user?: User;
 }
 
-// Seeds the single auth layer roppoh's AuthGuard checks: the OIDC "oidc:state"
-// LocalStorage entry read via useAuth() (isAuthenticated = Boolean(user)).
-// Roppoh has no session-cookie guard (no useSession()), so unlike web-console
-// This does not mint a real better-auth session. Must be called before
-// Page.goto() — addInitScript only affects future navigations.
+// Seeds a logged-in user into oidc-client-ts storage so react-oidc-context's
+// UseAuth().isAuthenticated is true (the only auth layer roppoh's AuthGuard
+// Checks). Must be called before page.goto() — addInitScript only affects
+// Future navigations.
 export async function createLoggedInUser({
   context,
   user = { email: "user@example.com", name: "Regular User" },
 }: Args) {
-  await context.addInitScript(
-    ([email, name]) =>
-      localStorage.setItem("oidc:state", JSON.stringify({ user: { email, name } })),
-    [user.email, user.name] as const,
-  );
+  const key = oidcUserStorageKey(ISSUER, CLIENT_ID);
+  const value = serializeOidcUser(user);
+
+  await context.addInitScript(([k, v]) => localStorage.setItem(k, v), [key, value] as const);
 
   return { user };
 }

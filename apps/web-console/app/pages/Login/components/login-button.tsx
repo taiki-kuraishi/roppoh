@@ -1,14 +1,13 @@
+import { useAuth } from "@roppoh/oidc-client";
 import { Button } from "@roppoh/shadcn/components/ui/button";
 import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { useTransition } from "react";
 
-import { useAuth } from "@/providers/auth-provider";
-
 export function LoginButton() {
   const [isPending, startTransition] = useTransition();
-  const { login } = useAuth();
+  const auth = useAuth();
 
-  const signIn = async () => startTransition(async () => await login());
+  const signIn = () => startTransition(async () => await auth.signinRedirect());
 
   return (
     <Button className="w-full" disabled={isPending} onClick={signIn} type="button">

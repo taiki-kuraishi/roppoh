@@ -1,13 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 import { createLoggedInUser } from "../../helpers/create-logged-in-user";
-import { baseHandlers } from "../../helpers/discovery-handler";
-import { testWithMswMock } from "../../helpers/test-with-msw-mock";
 import { setTheme } from "../__helpers/theme";
 
 // "/" is guarded (AuthGuard), so it needs an authenticated user to render.
 test.describe("vrt /", () => {
-  testWithMswMock(baseHandlers)("dark", async ({ context, page }) => {
+  test("dark", async ({ context, page }) => {
     // Arrange
     await createLoggedInUser({ context });
     await setTheme({ page, theme: "dark" });
@@ -19,7 +17,7 @@ test.describe("vrt /", () => {
     await expect(page).toHaveScreenshot({ fullPage: true });
   });
 
-  testWithMswMock(baseHandlers)("light", async ({ context, page }) => {
+  test("light", async ({ context, page }) => {
     // Arrange
     await createLoggedInUser({ context });
     await setTheme({ page, theme: "light" });

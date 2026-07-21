@@ -22,7 +22,7 @@ apps/roppoh/
 │   ├── global.css               # Tailwind エントリ(+ @roppoh/shadcn)
 │   ├── guards/                  # auth-guard.tsx(未ログインなら /login へ)
 │   ├── layouts/                 # compose.tsx(appLayout = AuthGuard)
-│   ├── providers/               # auth-provider/, app-providers, theme-provider, query-client, error-boundary
+│   ├── providers/               # app-providers, theme-provider, error-boundary
 │   └── pages/                   # Inertia ページ(PascalCase)
 │       ├── Index.tsx            # ガード対象(Index.layout = appLayout)
 │       ├── Login/Index.tsx      # 公開(.layout なし)
@@ -30,7 +30,7 @@ apps/roppoh/
 │
 ├── test
 │   ├── unit/health.test.ts      # bun test(app.request で /health を検証)
-│   ├── helpers/                 # discovery-handler, create-logged-in-user, test-with-msw-mock
+│   ├── helpers/                 # create-logged-in-user(oidc-client-ts storage を seed)
 │   ├── e2e/index.spec.tsx       # Playwright e2e(AuthGuard の振る舞い)
 │   └── vrt/{index,login}/       # Playwright VRT(ログイン済み / と /login)
 │
@@ -44,8 +44,10 @@ apps/roppoh/
 
 ## 認証
 
-- **フロー**: oauth4webapi による Authorization Code + PKCE。`app/providers/auth-provider/`
-  が本体(web-console からの移植)。ログイン状態は `oidc:state` localStorage(jotai)に永続化。
+- **フロー**: Authorization Code + PKCE。共有パッケージ **`@roppoh/oidc-client`**
+  (`react-oidc-context` / `oidc-client-ts` のラッパ)が本体で、`app-providers.tsx` で
+  `OidcAuthProvider`(issuer / clientId を渡す)を配置し、`useAuth()` を re-export する。
+  PKCE・callback 処理・トークン保存はライブラリが担当(web-console と共通)。
 - **ガード**: `app/guards/auth-guard.tsx` が `useAuth().isAuthenticated` を見て未ログインなら
   `/login` へ。ガード対象ページは `Index.layout = appLayout`(`app/layouts/compose.tsx`)を付ける。
   Login / Callback は公開ページ(`.layout` なし)。

@@ -25,7 +25,7 @@ apps/web-console/
 │   │   └── ...                  # Callback, Consent, Organization
 │   ├── layouts/                 # compose.tsx, sidebar-layout/
 │   ├── guards/                  # admin-guard.tsx, auth-guard.tsx
-│   ├── providers/               # auth-provider/, error-boundary, query-client, theme-provider
+│   ├── providers/               # app-providers, error-boundary, query-client, theme-provider
 │   ├── components/              # 共有コンポーネント(site-header など)
 │   └── libs/                    # better-auth, nuqs-adapter など
 │

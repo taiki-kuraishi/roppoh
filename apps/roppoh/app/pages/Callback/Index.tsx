@@ -1,7 +1,6 @@
 import { router } from "@inertiajs/react";
+import { useAuth } from "@roppoh/oidc-client";
 import { useEffect } from "react";
-
-import { useAuth } from "@/providers/auth-provider";
 
 // Public page — no .layout. Once the OIDC redirect is processed and the user
 // Is authenticated, send them to "/".
