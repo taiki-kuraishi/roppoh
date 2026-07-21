@@ -15,7 +15,7 @@ paths:
 | `emdash`        | Astro + CF Worker               | `src/`(Astro ファイルベース)      | `emdash/directory-structure.md`        |
 
 - `neo-fujimatsu` の `src/client` のコンポーネント規約は
-  `roppoh/react-components.md`(oxlint で強制)。
+  `neo-fujimatsu/react-components.md`(oxlint で強制)。
 - `web-console`(Inertia/PascalCase)と `emdash`(Astro)はその規約の対象外。
 
 ## 新しいアプリを追加するとき

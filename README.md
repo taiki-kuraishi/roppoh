@@ -41,7 +41,7 @@ Use Docker to generate Linux-compatible screenshots:
 mise run test:vrt:update-screen-shots
 
 # The screenshots will be saved to:
-# apps/neo-fujimatsu/test/vrt/**/__screenshots__/*-linux.png
+# apps/neo-fujimatsu/test/vrt/**/*.spec.tsx-snapshots/*-linux.png
 ```
 
 **Important:** After generating Linux screenshots, commit them to the repository so CI tests pass.

@@ -31,7 +31,7 @@
 - `.claude/rules/better-auth.md` — `packages/better-auth/**`
 - `.claude/rules/shadcn.md` — `packages/shadcn/**`
 - `.claude/rules/skills.md` — `.claude/skills/**`, `.agents/skills/**`
-- `.claude/rules/roppoh/react-components.md` — `**/*.tsx`(`packages/shadcn` 除く)
+- `.claude/rules/neo-fujimatsu/react-components.md` — `**/*.tsx`(`packages/shadcn` 除く)
 
 ## コード修正後
 
