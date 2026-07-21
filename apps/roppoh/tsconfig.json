@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "lib": ["DOM", "DOM.Iterable", "esnext", "WebWorker"],
+    "paths": {
+      "@/*": ["./app/*"],
+      "@/test/*": ["./test/*"]
+    },
+    "resolveJsonModule": true,
+    "types": ["./worker-configuration.d.ts", "vite/client", "bun"],
+    "verbatimModuleSyntax": true
+  },
+  "extends": "../../tsconfig.json",
+  "include": ["app", "test", "./*.ts"]
+}

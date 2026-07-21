@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "compatibility_date": "2025-11-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./app/server.ts",
+  "name": "roppoh",
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "destinations": ["alloy-logs"],
+    },
+    "traces": {
+      "enabled": true,
+      "destinations": ["alloy-traces"],
+    },
+  },
+  "assets": {
+    "directory": "./dist/client",
+    // Inertia owns routing (server-rendered per route); there is no static
+    // index.html SPA fallback, so every navigable page route must be listed
+    // here to reach the Worker.
+    "run_worker_first": ["/", "/health"],
+  },
+  "preview_urls": false,
+  "routes": [
+    {
+      "custom_domain": true,
+      "pattern": "roppoh.tsar-bmb.org",
+      "zone_name": "tsar-bmb.org",
+    },
+  ],
+  "workers_dev": false,
+}

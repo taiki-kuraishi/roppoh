@@ -12,6 +12,7 @@ COPY package.json bun.lock bunfig.toml ./
 
 COPY apps/emdash/package.json    ./apps/emdash/
 COPY apps/neo-fujimatsu/package.json ./apps/neo-fujimatsu/
+COPY apps/roppoh/package.json        ./apps/roppoh/
 COPY apps/web-console/package.json   ./apps/web-console/
 
 COPY packages/domain/package.json            ./packages/domain/

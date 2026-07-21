@@ -1,0 +1,42 @@
+{
+  "name": "@roppoh/roppoh",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./app/server.ts",
+  "scripts": {
+    "build": "vite build",
+    "cf-typegen": "wrangler types --strict-vars=false",
+    "type-check": "tsc --noEmit",
+    "dev": "vite dev",
+    "deploy": "bun run build && wrangler deploy",
+    "test:unit": "bun test ./test/unit",
+    "test:e2e": "playwright test --config=e2e.playwright.config.ts",
+    "test:vrt": "playwright test --config=vrt.playwright.config.ts"
+  },
+  "dependencies": {
+    "@hono/inertia": "catalog:",
+    "@inertiajs/react": "catalog:",
+    "hono": "4.12.31",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "vite-ssr-components": "catalog:"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "catalog:",
+    "@playwright/test": "catalog:",
+    "@tailwindcss/vite": "4.3.3",
+    "@types/bun": "1.3.14",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "babel-plugin-react-compiler": "1.0.0",
+    "tailwindcss": "catalog:",
+    "vite": "catalog:",
+    "vite-tsconfig-paths": "6.1.1",
+    "wrangler": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:"
+  }
+}

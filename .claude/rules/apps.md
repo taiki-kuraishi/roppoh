@@ -12,11 +12,12 @@ paths:
 | --------------- | ------------------------------- | --------------------------------- | -------------------------------------- |
 | `neo-fujimatsu` | Vite + Hono/Inertia + CF Worker | `src/client/` + `src/server/`     | `neo-fujimatsu/directory-structure.md` |
 | `web-console`   | Vite + Inertia + CF Worker      | `app/`(Inertia, PascalCase pages) | `web-console/directory-structure.md`   |
+| `roppoh`        | Vite + Inertia + CF Worker      | `app/`(Inertia, PascalCase pages) | `roppoh/directory-structure.md`        |
 | `emdash`        | Astro + CF Worker               | `src/`(Astro ファイルベース)      | `emdash/directory-structure.md`        |
 
 - `neo-fujimatsu` の `src/client` のコンポーネント規約は
   `neo-fujimatsu/react-components.md`(oxlint で強制)。
-- `web-console`(Inertia/PascalCase)と `emdash`(Astro)はその規約の対象外。
+- `web-console` / `roppoh`(Inertia/PascalCase)と `emdash`(Astro)はその規約の対象外。
 
 ## 新しいアプリを追加するとき
 
