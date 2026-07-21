@@ -6,7 +6,7 @@ paths:
 
 # React Component Architecture & Patterns
 
-React 系アプリ(`apps/roppoh`, `apps/ura-roppoh`, `apps/neo-fujimatsu`)のコンポーネント規約。
+React 系アプリ(`apps/neo-fujimatsu` の `src/client`)のコンポーネント規約。
 
 この規約の大部分は **oxlint で機械的に強制されている**(末尾の「Lint による強制」を参照)。
 
@@ -114,19 +114,19 @@ import { ConsentButton } from "@/pages/consent/components/consent-button";
 
 規約は root の `oxlint.config.ts` と `packages/oxlint-plugins`(カスタムプラグイン `roppoh`)で強制される。
 
-| 規約                                   | ルール                           | 適用範囲          |
-| -------------------------------------- | -------------------------------- | ----------------- |
-| ファイル名 kebab-case                  | `unicorn/filename-case`          | リポジトリ全体    |
-| ディレクトリ名 kebab-case / pages 構造 | `roppoh/file-structure`          | React 系 3 アプリ |
-| コロケーション境界                     | `roppoh/no-cross-feature-import` | React 系 3 アプリ |
-| 境界をまたぐ相対 import 禁止           | `roppoh/prefer-alias-import`     | React 系 3 アプリ |
-| .tsx のトップレベル関数は 1 つまで     | `roppoh/one-function-per-tsx`    | React 系 3 アプリ |
-| ファイル 150 行制限                    | `max-lines`                      | React 系 3 アプリ |
-| 関数 100 行制限                        | `max-lines-per-function`         | React 系 3 アプリ |
+| 規約                                   | ルール                           | 適用範囲       |
+| -------------------------------------- | -------------------------------- | -------------- |
+| ファイル名 kebab-case                  | `unicorn/filename-case`          | リポジトリ全体 |
+| ディレクトリ名 kebab-case / pages 構造 | `roppoh/file-structure`          | neo-fujimatsu  |
+| コロケーション境界                     | `roppoh/no-cross-feature-import` | neo-fujimatsu  |
+| 境界をまたぐ相対 import 禁止           | `roppoh/prefer-alias-import`     | neo-fujimatsu  |
+| .tsx のトップレベル関数は 1 つまで     | `roppoh/one-function-per-tsx`    | neo-fujimatsu  |
+| ファイル 150 行制限                    | `max-lines`                      | neo-fujimatsu  |
+| 関数 100 行制限                        | `max-lines-per-function`         | neo-fujimatsu  |
 
 カスタムルールの実装は `packages/oxlint-plugins/src/`、テストは `packages/oxlint-plugins/test/`(`*.spec.ts`)にある。ルールを変更したら `bun run --filter @roppoh/oxlint-plugins test` で検証すること。
 
 ## Related Documentation
 
-- `.claude/rules/roppoh/directory-structure.md` - プロジェクト全体の構造
+- `.claude/rules/neo-fujimatsu/directory-structure.md` - neo-fujimatsu のディレクトリ構造
 - `packages/oxlint-plugins/` - カスタムリントルールの実装

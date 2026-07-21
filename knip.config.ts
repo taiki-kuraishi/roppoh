@@ -21,7 +21,6 @@ export default {
       },
       ignore: ["src/**"],
     },
-    "apps/roppoh": {},
     "apps/web-console": {
       // No index.html: the HTML shell is emitted by app/server.ts's rootView
       // (auto-detected by knip's wrangler plugin via the `main` field), and

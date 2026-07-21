@@ -21,8 +21,6 @@
 - `.claude/rules/docker.md` — `.docker/**`
 - `.claude/rules/github-actions.md` — `.github/**`
 - `.claude/rules/apps.md` — `apps/**`(1 アプリ = 1 デプロイ単位)
-- `.claude/rules/roppoh/directory-structure.md` — `apps/roppoh/**`
-- `.claude/rules/ura-roppoh/directory-structure.md` — `apps/ura-roppoh/**`
 - `.claude/rules/neo-fujimatsu/directory-structure.md` — `apps/neo-fujimatsu/**`
 - `.claude/rules/web-console/directory-structure.md` — `apps/web-console/**`
 - `.claude/rules/emdash/directory-structure.md` — `apps/emdash/**`

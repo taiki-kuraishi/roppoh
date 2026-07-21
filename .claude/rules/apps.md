@@ -8,16 +8,14 @@ paths:
 `apps/*` は**デプロイ可能な単位**で分割する。各アプリは独立した Cloudflare Worker として
 デプロイされ、それぞれ `wrangler.jsonc` と `deploy` スクリプトを持つ。
 
-| App             | Stack                                 | 構造(ディレクトリ)                | ディレクトリ定義                       |
-| --------------- | ------------------------------------- | --------------------------------- | -------------------------------------- |
-| `roppoh`        | Vite + react-router (SPA) + CF Worker | `src/`                            | `roppoh/directory-structure.md`        |
-| `ura-roppoh`    | Vite + react-router (SPA) + CF Worker | `src/`(roppoh と同一構造)         | `ura-roppoh/directory-structure.md`    |
-| `neo-fujimatsu` | Vite + Hono/Inertia + CF Worker       | `src/client/` + `src/server/`     | `neo-fujimatsu/directory-structure.md` |
-| `web-console`   | Vite + Inertia + CF Worker            | `app/`(Inertia, PascalCase pages) | `web-console/directory-structure.md`   |
-| `emdash`        | Astro + CF Worker                     | `src/`(Astro ファイルベース)      | `emdash/directory-structure.md`        |
+| App             | Stack                           | 構造(ディレクトリ)                | ディレクトリ定義                       |
+| --------------- | ------------------------------- | --------------------------------- | -------------------------------------- |
+| `neo-fujimatsu` | Vite + Hono/Inertia + CF Worker | `src/client/` + `src/server/`     | `neo-fujimatsu/directory-structure.md` |
+| `web-console`   | Vite + Inertia + CF Worker      | `app/`(Inertia, PascalCase pages) | `web-console/directory-structure.md`   |
+| `emdash`        | Astro + CF Worker               | `src/`(Astro ファイルベース)      | `emdash/directory-structure.md`        |
 
-- React 系 3 アプリ(`roppoh` / `ura-roppoh` / `neo-fujimatsu` の `src/client`)の
-  コンポーネント規約は `roppoh/react-components.md`(oxlint で強制)。
+- `neo-fujimatsu` の `src/client` のコンポーネント規約は
+  `roppoh/react-components.md`(oxlint で強制)。
 - `web-console`(Inertia/PascalCase)と `emdash`(Astro)はその規約の対象外。
 
 ## 新しいアプリを追加するとき
