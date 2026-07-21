@@ -1,3 +1,6 @@
 #!/usr/bin/env bash
-#MISE description="Lint terraform code"
-#MISE depends=["lint:terraform:fmt", "lint:terraform:prod"]
+#MISE description="Setup terraform environment"
+#MISE dir="{{config_root}}/infra/env/prod"
+#MISE depends_post=["install:terraform:prod"]
+
+mise trust --all
