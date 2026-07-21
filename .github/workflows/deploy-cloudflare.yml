@@ -15,6 +15,7 @@ jobs:
     outputs:
       emdash: ${{ steps.filter.outputs.emdash }}
       neo-fujimatsu: ${{ steps.filter.outputs.neo-fujimatsu }}
+      roppoh: ${{ steps.filter.outputs.roppoh }}
       web-console: ${{ steps.filter.outputs['web-console'] }}
     steps:
       - uses: actions/checkout@v7
@@ -29,6 +30,11 @@ jobs:
               - 'mise.toml'
             neo-fujimatsu:
               - 'apps/neo-fujimatsu/**'
+              - 'packages/**'
+              - 'bun.lock'
+              - 'mise.toml'
+            roppoh:
+              - 'apps/roppoh/**'
               - 'packages/**'
               - 'bun.lock'
               - 'mise.toml'
@@ -70,6 +76,23 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/neo-fujimatsu
+          command: deploy
+
+  deploy-roppoh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.roppoh == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup-bun
+      - run: bun run build
+        working-directory: apps/roppoh
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/roppoh
           command: deploy
 
   deploy-web-console:

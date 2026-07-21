@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Run e2e tests for @roppoh/roppoh"
+#MISE dir="{{config_root}}/apps/roppoh"
+
+set -euo pipefail
+
+bun run test:e2e

@@ -21,6 +21,12 @@ export default {
       },
       ignore: ["src/**"],
     },
+    "apps/roppoh": {
+      // Same setup as apps/web-console: no index.html, the HTML shell comes
+      // From app/server.ts's rootView and pages are loaded via
+      // Import.meta.glob in app/client.tsx.
+      entry: ["app/client.tsx", "app/pages/**/*.tsx"],
+    },
     "apps/web-console": {
       // No index.html: the HTML shell is emitted by app/server.ts's rootView
       // (auto-detected by knip's wrangler plugin via the `main` field), and

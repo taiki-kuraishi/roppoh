@@ -1,0 +1,17 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "inputs": ["app", "./*.ts"],
+      "outputs": ["./dist/**"]
+    },
+    "cf-typegen": {
+      "inputs": ["wrangler.jsonc", ".env.local"],
+      "outputs": ["worker-configuration.d.ts"]
+    },
+    "type-check": {
+      "inputs": ["app", "test", "$TURBO_ROOT$/tsconfig.json", "./*.ts", "./tsconfig.json"]
+    }
+  }
+}
