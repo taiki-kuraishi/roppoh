@@ -1,7 +1,7 @@
 # Turbo Tasks Guide
 
 This document describes the Turbo tasks defined in the root `turbo.json` (and per-workspace
-overrides such as `apps/roppoh/turbo.json`) and when to use them.
+overrides such as `apps/neo-fujimatsu/turbo.json`) and when to use them.
 
 ## Overview
 
@@ -24,7 +24,7 @@ turbo <task-name>
 turbo --force <task-name>
 
 # Run in a specific workspace
-turbo <task-name> --filter=@roppoh/roppoh
+turbo <task-name> --filter=@roppoh/neo-fujimatsu
 
 # Watch mode
 turbo <task-name> --watch
@@ -48,7 +48,7 @@ turbo <task-name> --watch
 }
 ```
 
-Workspaces may extend this (e.g. `apps/roppoh/turbo.json` uses `"extends": ["//"]` and
+Workspaces may extend this (e.g. `apps/neo-fujimatsu/turbo.json` uses `"extends": ["//"]` and
 adds `inputs`/`outputs` for `build`, `cf-typegen`, `type-check`).
 
 ## Available Tasks
@@ -66,7 +66,7 @@ turbo build
 **Which workspaces build**: only workspaces with a `build` script participate. Currently:
 
 - `packages/grafana-dashboards` — `bun run ./src/generate.ts`
-- `apps/roppoh`, `apps/ura-roppoh`, `apps/neo-fujimatsu`, `apps/web-console` — `vite build`
+- `apps/neo-fujimatsu`, `apps/web-console` — `vite build`
 - `apps/emdash` — Astro build
 
 > Type-only packages (`@roppoh/better-auth`, `@roppoh/better-auth-query`, `@roppoh/domain`,
@@ -133,7 +133,7 @@ Runs tests in each workspace. Cache is intentionally disabled so tests always ex
 
 ```bash
 turbo test
-turbo test --filter=@roppoh/roppoh
+turbo test --filter=@roppoh/neo-fujimatsu
 ```
 
 > For the full test matrix (unit / e2e / VRT, including the Dockerized visual regression

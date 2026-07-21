@@ -20,7 +20,7 @@ mise run <group>:<subtask>
 ```
 
 Nested directories map to `:`-separated names. For example
-`.mise-tasks/lint/bun` → `lint:bun`, and `.mise-tasks/test/vrt/roppoh` → `test:vrt:roppoh`.
+`.mise-tasks/lint/bun` → `lint:bun`, and `.mise-tasks/test/vrt/neo-fujimatsu` → `test:vrt:neo-fujimatsu`.
 A `_default` file (or inline `[tasks.<group>]`) is the group's default that `depends` on
 its children.
 
@@ -154,12 +154,12 @@ mise run test:vrt      # visual regression (all apps)
 
 **VRT** (`test:vrt`): builds a Playwright Docker container (`test:vrt:build-container`,
 image `roppoh-playwright:latest`) then runs per-app visual regression:
-`test:vrt:neo-fujimatsu`, `test:vrt:web-console`, `test:vrt:roppoh`, `test:vrt:ura-roppoh`.
+`test:vrt:neo-fujimatsu`, `test:vrt:web-console`.
 
 Each per-app VRT task accepts `-u/--update-snapshots`:
 
 ```bash
-mise run test:vrt:roppoh --update-snapshots
+mise run test:vrt:neo-fujimatsu --update-snapshots
 ```
 
 **Requirements**: Docker (BuildKit) for VRT — a Linux container ensures consistent

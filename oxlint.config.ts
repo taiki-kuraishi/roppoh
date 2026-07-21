@@ -24,7 +24,7 @@ export default defineConfig({
   },
   overrides: [
     {
-      files: ["apps/roppoh/src/**", "apps/ura-roppoh/src/**", "apps/neo-fujimatsu/src/client/**"],
+      files: ["apps/neo-fujimatsu/src/client/**"],
       rules: {
         "max-lines": ["error", { max: 150 }],
         "max-lines-per-function": ["error", { max: 100 }],

@@ -52,14 +52,6 @@ jobs:
             package: "@roppoh/web-console"
             test_script: test:vrt
             vrt_dir: apps/web-console/test/vrt
-          - app: roppoh
-            package: "@roppoh/roppoh"
-            test_script: test:visual
-            vrt_dir: apps/roppoh/test/visual-regression
-          - app: ura-roppoh
-            package: "@roppoh/ura-roppoh"
-            test_script: test:visual
-            vrt_dir: apps/ura-roppoh/test/visual-regression
     steps:
       - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v4

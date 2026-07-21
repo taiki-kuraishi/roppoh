@@ -28,8 +28,8 @@ Visual regression tests compare screenshots to detect UI changes. Since screensh
 ### Running VRT locally (macOS)
 
 ```sh
-cd apps/roppoh
-bun run test:visual
+cd apps/neo-fujimatsu
+bun run test:vrt
 ```
 
 ### Generating Linux screenshots for CI
@@ -38,10 +38,10 @@ Use Docker to generate Linux-compatible screenshots:
 
 ```sh
 # Build and run Docker container to generate Linux screenshots
-mise run tasks update-linux-vrt-screenshots
+mise run test:vrt:update-screen-shots
 
 # The screenshots will be saved to:
-# apps/roppoh/tests/visual-regression/pages/__screenshots__/*-linux.png
+# apps/neo-fujimatsu/test/vrt/**/*.spec.tsx-snapshots/*-linux.png
 ```
 
 **Important:** After generating Linux screenshots, commit them to the repository so CI tests pass.
