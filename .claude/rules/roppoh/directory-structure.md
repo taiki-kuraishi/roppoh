@@ -51,8 +51,11 @@ apps/roppoh/
   Login / Callback は公開ページ(`.layout` なし)。
 - **設定**: `VITE_OIDC_ISSUER`(`https://neo-fujimatsu.tsar-bmb.org/api`)と
   `VITE_OIDC_CLIENT_ID` を `wrangler.jsonc` の `vars` と `.env.local` に置く(**public クライアントで secret なし**)。
-  client は neo-fujimatsu の D1(`roppoh-better-auth`)に登録済み(redirect_uri: `http://localhost:51730/callback`,
-  `https://roppoh.tsar-bmb.org/callback`)。dev port を 51730 に固定しているのはこの localhost redirect と一致させるため。
+  この `client_id` に対応する OAuth クライアントは neo-fujimatsu 側(認可サーバ)の D1(`roppoh-better-auth`)に
+  **out-of-band で登録する運用**(リポジトリに seeder/SQL は無い。web-console の client も同様に vars にしか現れない)。
+  想定 redirect_uri は `http://localhost:51730/callback` と `https://roppoh.tsar-bmb.org/callback`。
+  dev port を 51730 に固定しているのはこの localhost redirect と一致させるため。登録内容を変更したら
+  この記述も追従すること(DB の中身はリポジトリに無いため、静的には検証できない)。
 
 ## ルール(web-console と同じ)
 
