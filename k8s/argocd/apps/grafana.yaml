@@ -9,7 +9,7 @@ spec:
     # 2026-01-30 以降 Grafana Helm chart は grafana-community に移行済み
     repoURL: https://grafana-community.github.io/helm-charts
     chart: grafana
-    targetRevision: 12.7.2
+    targetRevision: 12.8.0
     helm:
       valuesObject:
         # -----------------------------------------------------------------------
