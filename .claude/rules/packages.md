@@ -23,14 +23,15 @@ paths:
 
 ## パッケージ一覧
 
-| Package              | 役割                                 | 個別ルール              |
-| -------------------- | ------------------------------------ | ----------------------- |
-| `better-auth`        | better-auth サーバ設定 + DB schema   | `better-auth.md`        |
-| `better-auth-query`  | better-auth 用 TanStack Query フック | —                       |
-| `shadcn`             | shadcn/ui 共有 UI(生成コード)        | `shadcn.md`             |
-| `grafana-dashboards` | TS→Grafana JSON 生成器               | → `k8s.md`              |
-| `oxlint-plugins`     | カスタム oxlint ルール               | → `react-components.md` |
-| `domain`             | 共有ドメイン層 **(廃止予定)**        | —(新規利用しない)       |
+| Package              | 役割                                                     | 個別ルール              |
+| -------------------- | -------------------------------------------------------- | ----------------------- |
+| `better-auth`        | better-auth サーバ設定 + DB schema                       | `better-auth.md`        |
+| `better-auth-query`  | better-auth 用 TanStack Query フック                     | —                       |
+| `oidc-client`        | 公開 SPA 用 OIDC クライアント(react-oidc-context ラッパ) | —                       |
+| `shadcn`             | shadcn/ui 共有 UI(生成コード)                            | `shadcn.md`             |
+| `grafana-dashboards` | TS→Grafana JSON 生成器                                   | → `k8s.md`              |
+| `oxlint-plugins`     | カスタム oxlint ルール                                   | → `react-components.md` |
+| `domain`             | 共有ドメイン層 **(廃止予定)**                            | —(新規利用しない)       |
 
 - `oxlint-plugins` を変更したら `bun run --filter @roppoh/oxlint-plugins test` で検証する。
 - `domain` は廃止予定。新しく依存を増やさない。

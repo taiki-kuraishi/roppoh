@@ -1,0 +1,22 @@
+{
+  "name": "@roppoh/oidc-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.tsx",
+    "./testing": "./src/testing.ts"
+  },
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "oidc-client-ts": "3.3.0",
+    "react-oidc-context": "3.3.0"
+  },
+  "peerDependencies": {
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  }
+}

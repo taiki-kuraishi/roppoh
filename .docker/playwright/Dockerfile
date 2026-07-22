@@ -19,6 +19,7 @@ COPY packages/domain/package.json            ./packages/domain/
 COPY packages/shadcn/package.json            ./packages/shadcn/
 COPY packages/better-auth/package.json       ./packages/better-auth/
 COPY packages/better-auth-query/package.json ./packages/better-auth-query/
+COPY packages/oidc-client/package.json       ./packages/oidc-client/
 COPY packages/oxlint-plugins/package.json    ./packages/oxlint-plugins/
 COPY packages/grafana-dashboards/package.json ./packages/grafana-dashboards/
 
