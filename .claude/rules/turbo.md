@@ -70,7 +70,7 @@ turbo build
 - `apps/emdash` — Astro build
 
 > Type-only packages (`@roppoh/better-auth`, `@roppoh/better-auth-query`, `@roppoh/domain`,
-> `@roppoh/shadcn`) have no `build` script; they are consumed as source via workspace
+> `@roppoh/oidc-client`, `@roppoh/shadcn`) have no `build` script; they are consumed as source via workspace
 > `paths`/exports and only run `type-check`.
 
 **Notes**:
