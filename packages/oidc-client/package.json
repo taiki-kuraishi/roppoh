@@ -11,7 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "oidc-client-ts": "3.3.0",
+    "oidc-client-ts": "3.5.0",
     "react-oidc-context": "3.3.1"
   },
   "peerDependencies": {
