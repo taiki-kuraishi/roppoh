@@ -4,6 +4,7 @@ import { findSrcRoot } from "../lib/paths.ts";
 
 const FILE_HEAD = { line: 1, column: 0 };
 
+// PascalCase(大文字始まりの英数字)にマッチ
 const PASCAL_CASE = /^[A-Z][a-zA-Z0-9]*$/;
 
 const isPascalCase = (segment: string): boolean => PASCAL_CASE.test(segment);

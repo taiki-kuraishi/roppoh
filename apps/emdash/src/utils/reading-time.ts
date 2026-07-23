@@ -2,7 +2,9 @@ import type { PortableTextBlock } from "emdash";
 
 const WORDS_PER_MINUTE = 200;
 const CJK_CHARACTERS_PER_MINUTE = 500;
+// 空白文字の連続にマッチ(単語分割用)
 const WHITESPACE_REGEX = /\s+/;
+// 漢字・ハングル・ひらがな・カタカナの1文字にマッチ(CJK文字数カウント用)
 const CJK_CHARACTER_REGEX =
   /\p{Script=Han}|\p{Script=Hangul}|\p{Script=Hiragana}|\p{Script=Katakana}/gu;
 

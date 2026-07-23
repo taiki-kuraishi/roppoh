@@ -26,6 +26,7 @@
 - `.claude/rules/web-console/directory-structure.md` — `apps/web-console/**`
 - `.claude/rules/roppoh/directory-structure.md` — `apps/roppoh/**`
 - `.claude/rules/emdash/directory-structure.md` — `apps/emdash/**`
+- `.claude/rules/regex-comments.md` — `**/*.ts`, `**/*.tsx`, `**/*.go`
 - `.claude/rules/go.md` — `**/*.go`, `go.mod`, `go.sum`(`cmd/` / `internal/`)
 - `.claude/rules/terraform.md` — `infra/**`
 - `.claude/rules/k8s.md` — `k8s/**`

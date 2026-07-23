@@ -1,5 +1,7 @@
+// Kebab-case(小文字英数字をハイフンで連結)にマッチ
 const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+// `.../apps/<app>/src` または `.../apps/<app>/app` までのパスにマッチし、group 1 でその prefix をキャプチャ
 const SRC_ROOT_PATTERN = /^(.*\/apps\/[^/]+\/(?:src|app))(?:\/|$)/;
 
 export const isKebabCase = (segment: string): boolean => KEBAB_CASE.test(segment);
