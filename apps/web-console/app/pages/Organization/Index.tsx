@@ -1,7 +1,7 @@
 import { Skeleton } from "@roppoh/shadcn/components/ui/skeleton";
 
 import { SiteHeader } from "@/components/site-header";
-import { adminLayout } from "@/layouts/compose";
+import { adminLayout } from "@/layouts/admin-layout";
 
 // Ported from apps/ura-roppoh/src/pages/organization/page.tsx (stub — not
 // Implemented, skeletons only). <SsgoiTransition> dropped (decision #6).

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { createLoggedInUser } from "../helpers/create-logged-in-user";
 
-// AuthGuard behaviour: "/" is guarded client-side (app/layouts/compose.tsx).
+// AuthGuard behaviour: "/" is guarded client-side (app/layouts/app-layout/**).
 test.describe("e2e / (auth guard)", () => {
   test("redirects unauthenticated visitors to /login", async ({ page }) => {
     // Act

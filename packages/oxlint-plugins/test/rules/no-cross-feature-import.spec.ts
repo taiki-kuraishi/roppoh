@@ -21,14 +21,9 @@ new RuleTester().run("no-cross-feature-import", rule, {
       code: `import { Field } from "./components/field";`,
     },
     {
-      name: "src/components は共有コンポーネントとしてどこからでも import できる",
+      name: "トップレベル直下の components は共有コンポーネントとしてどこからでも import できる",
       filename: `${roppohSrc}/pages/login/page.tsx`,
       code: `import { Header } from "@/components/header";`,
-    },
-    {
-      name: "root/components はアプリ全体で共有できる",
-      filename: `${roppohSrc}/layouts/sidebar-layout/index.tsx`,
-      code: `import { useAuth } from "@/root/components/auth-provider";`,
     },
     {
       name: "他ページの components 以外のファイルは対象外",
@@ -87,6 +82,12 @@ new RuleTester().run("no-cross-feature-import", rule, {
       name: "neo-fujimatsu の src/client 配下でも検出できる",
       filename: "/repo/apps/neo-fujimatsu/src/client/pages/sign-in/page.tsx",
       code: `import { Form } from "@/client/pages/account/components/form";`,
+      errors: [{ messageId: "crossFeature" }],
+    },
+    {
+      name: "pages/layouts 以外のディレクトリ配下の components も境界化される(root/components)",
+      filename: `${roppohSrc}/layouts/sidebar-layout/index.tsx`,
+      code: `import { useAuth } from "@/root/components/auth-provider";`,
       errors: [{ messageId: "crossFeature" }],
     },
   ],

@@ -1,5 +1,5 @@
 import { SiteHeader } from "@/components/site-header";
-import { appLayout } from "@/layouts/compose";
+import { appLayout } from "@/layouts/app-layout";
 
 // Ported from apps/ura-roppoh/src/pages/index/page.tsx (welcome screen).
 // <SsgoiTransition> dropped per decision #6 (ssgoi is not carried into

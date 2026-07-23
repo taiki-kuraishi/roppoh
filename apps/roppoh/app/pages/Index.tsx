@@ -1,6 +1,6 @@
-import { appLayout } from "@/layouts/compose";
+import { appLayout } from "@/layouts/app-layout";
 
-// Guarded page (see app/layouts/compose.tsx → AuthGuard). Unauthenticated
+// Guarded page (see app/layouts/app-layout → AuthGuard). Unauthenticated
 // Visitors are redirected to /login by the guard.
 function Index() {
   return <h1>Hello world</h1>;

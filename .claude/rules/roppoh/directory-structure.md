@@ -20,7 +20,8 @@ apps/roppoh/
 │   ├── server.ts                # サーバエントリ(Hono + @hono/inertia)
 │   ├── root-view.tsx            # ルートビュー(hono/jsx の HTML シェル)
 │   ├── global.css               # Tailwind エントリ(+ @roppoh/shadcn)
-│   ├── layouts/                 # compose.tsx(appLayout = AuthGuard 内包。未ログインなら /login へ)
+│   ├── layouts/
+│   │   └── app-layout/           # index.tsx(appLayout) + components/auth-guard.tsx
 │   ├── providers/               # app-providers, theme-provider, error-boundary
 │   └── pages/                   # Inertia ページ(PascalCase)
 │       ├── Index.tsx            # ガード対象(Index.layout = appLayout)
@@ -47,12 +48,12 @@ apps/roppoh/
   (`react-oidc-context` / `oidc-client-ts` のラッパ)が本体で、`app-providers.tsx` で
   `OidcAuthProvider`(issuer / clientId を渡す)を配置し、`useAuth()` を re-export する。
   PKCE・callback 処理・トークン保存はライブラリが担当(web-console と共通)。
-- **ガード**: `app/layouts/compose.tsx` の `AuthGuard`(同ファイルに内包)が
+- **ガード**: `app/layouts/app-layout/components/auth-guard.tsx` の `AuthGuard` が
   `useAuth().isAuthenticated` を見て未ログインなら `/login` へ。ガード対象ページは
-  `Index.layout = appLayout`(`app/layouts/compose.tsx`)を付ける。
+  `Index.layout = appLayout`(`app/layouts/app-layout/index.tsx`)を付ける。
   Login / Callback は公開ページ(`.layout` なし)。
   web-console は複数ガード(auth + admin)と sidebar-layout があるため `guards/` を
-  分離するが、roppoh は単一ガードなのでレイアウトに畳んでいる。
+  分離するが、roppoh は単一ガードなので `layouts/app-layout/` に閉じている。
 - **設定**: `VITE_OIDC_ISSUER`(`https://neo-fujimatsu.tsar-bmb.org/api`)と
   `VITE_OIDC_CLIENT_ID` を `wrangler.jsonc` の `vars` と `.env.local` に置く(**public クライアントで secret なし**)。
   この `client_id` に対応する OAuth クライアントは neo-fujimatsu 側(認可サーバ)の D1(`roppoh-better-auth`)に
@@ -66,7 +67,13 @@ apps/roppoh/
 - **ページは PascalCase**: Inertia が `c.render('Index')` → `app/pages/Index.tsx` で解決する。
   そのため oxlint の `unicorn/filename-case`(kebab-case)は **`app/pages/**` だけ除外**
 (`oxlint.config.ts`)。pages 以外は kebab-case。
-- **roppoh 系のカスタムルール(`roppoh/file-structure` など)の対象外**。
+- **roppoh 系のカスタムルール**(`oxlint.config.ts` の `apps/roppoh/app/**` override で有効化):
+  - `roppoh/file-structure-inertia` — `pages/<PascalName>/Index.tsx` を強制(neo-fujimatsu 向けの
+    `roppoh/file-structure` とは casing/エントリ名が逆なので別ルール)
+  - `roppoh/no-cross-feature-import` — `<name>/components/` はその境界の外から import 禁止
+    (ネストの全階層で最も内側の components が境界になる。トップレベル直下の `app/components/` は対象外)
+  - `roppoh/prefer-alias-import` — 境界の外を参照するときは相対パスでなく `@/` を使う
+  - `roppoh/one-function-per-tsx` — `.tsx` のトップレベル関数は 1 つまで(定数は無制限)
 - 新しいナビゲーブルルートを足したら `wrangler.jsonc` の `assets.run_worker_first` に追記する
   (Inertia がルーティングを所有し static フォールバックが無いため。抜けると 404)。
 

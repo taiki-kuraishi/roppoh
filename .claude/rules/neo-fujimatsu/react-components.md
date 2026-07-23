@@ -69,16 +69,15 @@ pages/account/
             └── form.tsx
 ```
 
-**境界ルール**: `pages/<name>/components/` と `layouts/<name>/components/` は、その境界の中からしか import できない。
+**境界ルール**: トップレベル直下の `src/components/` を除き、`<name>/components/` はその境界(ネストしていれば最も内側の `components/`)の中からしか import できない。`root/components/`(アプリ全体のプロバイダ置き場)も例外ではない。
 
 ```
-このコンポーネントは 2 つ以上のページ/レイアウトで使う?
+このコンポーネントは 2 つ以上の場所で使う?
   ├─ YES → src/components/ へ昇格する
-  └─ NO  → 使うページ/レイアウトの components/ に置く
+  └─ NO  → 使う場所の components/ に置く
 ```
 
-- `src/components/` — 複数ページ/レイアウトで共有するコンポーネント
-- `src/root/components/` — アプリ全体のプロバイダ(auth-provider, theme-provider)。どこからでも import 可
+- `src/components/` — 複数ページ/レイアウト/root で共有するコンポーネント(唯一の共有場所)
 
 ## Import 規約
 
@@ -88,7 +87,7 @@ pages/account/
 ```typescript
 // ✅ 境界の外は @/ エイリアス
 import { betterAuth } from "@/libs/better-auth";
-import { useAuth } from "@/root/components/auth-provider";
+import { Header } from "@/components/header";
 
 // ✅ 同一ページ内は相対パス
 import { LoginButton } from "./components/login-button";
@@ -98,6 +97,9 @@ import { betterAuth } from "../../libs/better-auth";
 
 // ❌ 他ページの components を import(共有するなら src/components/ へ昇格)
 import { ConsentButton } from "@/pages/consent/components/consent-button";
+
+// ❌ root/components も例外なく境界化される(共有するなら src/components/ へ昇格)
+import { useAuth } from "@/root/components/auth-provider";
 ```
 
 - workspace パッケージは bare specifier で import: `@roppoh/shadcn/components/ui/button`
@@ -114,15 +116,16 @@ import { ConsentButton } from "@/pages/consent/components/consent-button";
 
 規約は root の `oxlint.config.ts` と `packages/oxlint-plugins`(カスタムプラグイン `roppoh`)で強制される。
 
-| 規約                                   | ルール                           | 適用範囲       |
-| -------------------------------------- | -------------------------------- | -------------- |
-| ファイル名 kebab-case                  | `unicorn/filename-case`          | リポジトリ全体 |
-| ディレクトリ名 kebab-case / pages 構造 | `roppoh/file-structure`          | neo-fujimatsu  |
-| コロケーション境界                     | `roppoh/no-cross-feature-import` | neo-fujimatsu  |
-| 境界をまたぐ相対 import 禁止           | `roppoh/prefer-alias-import`     | neo-fujimatsu  |
-| .tsx のトップレベル関数は 1 つまで     | `roppoh/one-function-per-tsx`    | neo-fujimatsu  |
-| ファイル 150 行制限                    | `max-lines`                      | neo-fujimatsu  |
-| 関数 100 行制限                        | `max-lines-per-function`         | neo-fujimatsu  |
+| 規約                                   | ルール                           | 適用範囲                           |
+| -------------------------------------- | -------------------------------- | ---------------------------------- |
+| ファイル名 kebab-case                  | `unicorn/filename-case`          | リポジトリ全体(pages 配下除く)     |
+| ディレクトリ名 kebab-case / pages 構造 | `roppoh/file-structure`          | neo-fujimatsu                      |
+| pages/<PascalName>/Index.tsx 構造      | `roppoh/file-structure-inertia`  | roppoh, web-console                |
+| コロケーション境界                     | `roppoh/no-cross-feature-import` | neo-fujimatsu, roppoh, web-console |
+| 境界をまたぐ相対 import 禁止           | `roppoh/prefer-alias-import`     | neo-fujimatsu, roppoh, web-console |
+| .tsx のトップレベル関数は 1 つまで     | `roppoh/one-function-per-tsx`    | neo-fujimatsu, roppoh, web-console |
+| ファイル 150 行制限                    | `max-lines`                      | neo-fujimatsu                      |
+| 関数 100 行制限                        | `max-lines-per-function`         | neo-fujimatsu                      |
 
 カスタムルールの実装は `packages/oxlint-plugins/src/`、テストは `packages/oxlint-plugins/test/`(`*.spec.ts`)にある。ルールを変更したら `bun run --filter @roppoh/oxlint-plugins test` で検証すること。
 

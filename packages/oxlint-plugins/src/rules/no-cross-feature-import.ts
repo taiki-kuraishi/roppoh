@@ -7,8 +7,9 @@ interface Reportable {
 }
 
 /**
- * 解決済みパスの `components` セグメントから境界オーナー(`pages/<name>` / `layouts/<name>`)を
+ * 解決済みパスの `components` セグメントから境界オーナー(`<name>/components/` の `<name>`)を
  * 計算し、importer がその外にいる場合に srcRoot 相対のオーナーパスを返す。
+ * トップレベル直下の `components/`(共有コンポーネント置き場)は対象外。
  */
 const findViolatedOwner = (importer: string, srcRoot: string, resolved: string): string | null => {
   const segments = resolved.slice(srcRoot.length + 1).split("/");
@@ -16,7 +17,7 @@ const findViolatedOwner = (importer: string, srcRoot: string, resolved: string):
     const upper = segments.slice(0, i);
     if (
       segments[i] === "components" &&
-      (upper.includes("pages") || upper.includes("layouts")) &&
+      upper.length > 0 &&
       !importer.startsWith(`${srcRoot}/${upper.join("/")}/`)
     ) {
       return upper.join("/");

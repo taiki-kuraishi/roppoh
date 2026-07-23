@@ -12,7 +12,7 @@ export const app = new Hono()
   // Public pages (no auth guard)
   .get("/login", (c) => c.render("Login/Index", {}))
   .get("/callback", (c) => c.render("Callback/Index", {}))
-  // Guarded page — the client decides (see app/guards/**, app/layouts/compose.tsx).
+  // Guarded page — the client decides (see app/layouts/app-layout/**).
   // Hono never inspects auth/session (dumb Inertia renderer).
   .get("/", (c) => c.render("Index", {}));
 

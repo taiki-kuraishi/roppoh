@@ -1,6 +1,6 @@
 const KEBAB_CASE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-const SRC_ROOT_PATTERN = /^(.*\/apps\/[^/]+\/src)(?:\/|$)/;
+const SRC_ROOT_PATTERN = /^(.*\/apps\/[^/]+\/(?:src|app))(?:\/|$)/;
 
 export const isKebabCase = (segment: string): boolean => KEBAB_CASE.test(segment);
 
