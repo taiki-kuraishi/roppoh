@@ -35,7 +35,8 @@ spec:
       containers:
         - name: tailscale
           # 【自己更新】このイメージタグは Renovate が更新する
-          image: ghcr.io/tailscale/tailscale:v1.90.6
+          # 偶数マイナー(v1.98.x 等)が安定版。奇数マイナーは開発版なので選ばない。
+          image: ghcr.io/tailscale/tailscale:v1.98.9
           env:
             # 管理画面で発行した auth key(reusable + ephemeral + tag:minecraft)。
             # Secret は k8s/secrets/tailscale/tailscale-auth.sops.yaml。
