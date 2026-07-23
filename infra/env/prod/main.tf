@@ -46,3 +46,8 @@ module "pipelines" {
   source     = "../../modules/pipelines"
   account_id = var.cloudflare_account_id
 }
+
+# ----- Tailscale (mesh VPN: expose k8s Minecraft over tailnet) -----
+module "tailscale" {
+  source = "../../modules/tailscale"
+}

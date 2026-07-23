@@ -60,3 +60,9 @@ output "minecraft_world_backup_r2_secret_access_key" {
   value       = module.r2.minecraft_world_backup_r2_secret_access_key
   sensitive   = true
 }
+
+output "tailscale_minecraft_node_auth_key" {
+  description = "Tailscale auth key for the k8s tailscale node (paste into k8s/secrets/tailscale Secret TS_AUTHKEY)"
+  value       = module.tailscale.minecraft_node_auth_key
+  sensitive   = true
+}
