@@ -15,13 +15,18 @@ import { useTheme, useThemeProvider } from "./theme-provider";
 export function AppProviders({ children }: { children: React.ReactNode }) {
   // oxlint-disable-next-line no-empty-pattern
   const {} = useThemeProvider();
+  // `useThemeProvider()` above already subscribes to the same theme atom, so
+  // Calling the hook here (instead of handing the hook itself to <Toaster>)
+  // Adds no extra re-renders while satisfying the rule that hooks must be
+  // Called, not passed around as values.
+  const theme = useTheme();
 
   return (
     <>
       <NuqsAdapter>
         <QueryClientProvider client={queryClient}>
           <BetterAuthQueryProvider authClient={auth}>
-            <div style={{ minHeight: "100vh", position: "relative" }}>
+            <div style={{ minHeight: "100dvh", position: "relative" }}>
               <OidcAuthProvider
                 issuer={import.meta.env.VITE_OIDC_ISSUER}
                 clientId={import.meta.env.VITE_OIDC_CLIENT_ID}
@@ -32,7 +37,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           </BetterAuthQueryProvider>
         </QueryClientProvider>
       </NuqsAdapter>
-      <Toaster useTheme={useTheme} />
+      <Toaster useTheme={() => theme} />
     </>
   );
 }

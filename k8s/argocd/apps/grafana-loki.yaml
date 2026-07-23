@@ -9,7 +9,7 @@ spec:
     # 2026-03-16 以降 OSS Loki Helm chart は grafana-community に移行済み
     repoURL: https://grafana-community.github.io/helm-charts
     chart: loki
-    targetRevision: 18.5.1
+    targetRevision: 18.5.2
     helm:
       valuesObject:
         # -------------------------------------------------------------------------

@@ -8,8 +8,9 @@ import { authClient } from "@/client/libs/better-auth";
 
 import { useTheme, useThemeProvider } from "./components/theme-provider";
 
+const queryClient = new QueryClient();
+
 export function Root() {
-  const queryClient = new QueryClient();
   // oxlint-disable-next-line no-empty-pattern
   const {} = useThemeProvider();
 

@@ -38,7 +38,8 @@
     "type-check": "tsc --noEmit",
     "oxfmt": "oxfmt",
     "oxlint": "oxlint",
-    "knip": "knip --config='knip.config.ts'"
+    "knip": "knip --config='knip.config.ts'",
+    "doctor": "npx react-doctor@latest"
   },
   "devDependencies": {
     "@roppoh/oxlint-plugins": "workspace:*",
