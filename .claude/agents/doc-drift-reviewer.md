@@ -57,7 +57,7 @@ model: sonnet
      - **ツールのバージョン**(`conventions.md` の表 vs `mise.toml` / `go.mod`)
      - **ディレクトリ構成 / ファイルパス**の記述が実在するか
      - **`paths:` frontmatter のグロブ**が実際のディレクトリ構成と合っているか
-     - **ルート `CLAUDE.md` の「paths スコープ」一覧**が、各 `.claude/rules/*.md` の実際の
+     - **ルート `CLAUDE.md` の「paths スコープ」一覧**が、各 `.claude/rules/**/*.md` の実際の
        `paths:` frontmatter と一致しているか(rule の追加/削除/`paths:` 変更時の転記漏れ)
      - **設定値・依存・環境変数**の記述が実ファイルと一致するか
      - パッケージ増減時の **Dockerfile COPY 行**追従漏れ
