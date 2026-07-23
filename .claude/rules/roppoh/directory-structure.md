@@ -18,7 +18,7 @@ apps/roppoh/
 ├── app
 │   ├── client.tsx               # クライアントエントリ(ErrorBoundary > AppProviders > App)
 │   ├── server.ts                # サーバエントリ(Hono + @hono/inertia)
-│   ├── root-view.tsx            # ルートビュー(hono/jsx の HTML シェル)
+│   ├── root-view/                # index.tsx(ルートビュー) + components/react-refresh-preamble.tsx
 │   ├── global.css               # Tailwind エントリ(+ @roppoh/shadcn)
 │   ├── layouts/
 │   │   └── app-layout/           # index.tsx(appLayout) + components/auth-guard.tsx
@@ -67,13 +67,9 @@ apps/roppoh/
 - **ページは PascalCase**: Inertia が `c.render('Index')` → `app/pages/Index.tsx` で解決する。
   そのため oxlint の `unicorn/filename-case`(kebab-case)は **`app/pages/**` だけ除外**
 (`oxlint.config.ts`)。pages 以外は kebab-case。
-- **roppoh 系のカスタムルール**(`oxlint.config.ts` の `apps/roppoh/app/**` override で有効化):
-  - `roppoh/file-structure-inertia` — `pages/<PascalName>/Index.tsx` を強制(neo-fujimatsu 向けの
-    `roppoh/file-structure` とは casing/エントリ名が逆なので別ルール)
-  - `roppoh/no-cross-feature-import` — `<name>/components/` はその境界の外から import 禁止
-    (ネストの全階層で最も内側の components が境界になる。トップレベル直下の `app/components/` は対象外)
-  - `roppoh/prefer-alias-import` — 境界の外を参照するときは相対パスでなく `@/` を使う
-  - `roppoh/one-function-per-tsx` — `.tsx` のトップレベル関数は 1 つまで(定数は無制限)
+- **コンポーネント設計規約**(コロケーション境界・`@/` エイリアス・one-function-per-tsx 等)は
+  web-console と共通。`react-components.md` を参照
+  (`oxlint.config.ts` の `apps/roppoh/app/**` override で有効化)。
 - 新しいナビゲーブルルートを足したら `wrangler.jsonc` の `assets.run_worker_first` に追記する
   (Inertia がルーティングを所有し static フォールバックが無いため。抜けると 404)。
 
