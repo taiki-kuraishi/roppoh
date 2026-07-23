@@ -9,10 +9,13 @@ import { useTheme, useThemeProvider } from "./theme-provider";
 export function AppProviders({ children }: { children: React.ReactNode }) {
   // oxlint-disable-next-line no-empty-pattern
   const {} = useThemeProvider();
+  // Calling the hook here (instead of handing the hook itself to <Toaster>)
+  // Satisfies the rule that hooks must be called, not passed around as values.
+  const theme = useTheme();
 
   return (
     <>
-      <div style={{ minHeight: "100vh", position: "relative" }}>
+      <div style={{ minHeight: "100dvh", position: "relative" }}>
         <OidcAuthProvider
           issuer={import.meta.env.VITE_OIDC_ISSUER}
           clientId={import.meta.env.VITE_OIDC_CLIENT_ID}
@@ -20,7 +23,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
           {children}
         </OidcAuthProvider>
       </div>
-      <Toaster useTheme={useTheme} />
+      <Toaster useTheme={() => theme} />
     </>
   );
 }

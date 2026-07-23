@@ -35,15 +35,11 @@ jobs:
           fetch-depth: 0
 
       - uses: millionco/react-doctor@v2
-        # Advisory by default: React Doctor reports findings on every PR — a
-        # sticky summary comment, inline review comments, and a commit status
-        # with the health score — but never fails the check, so it won't red-X
-        # a teammate's PR on day one. When your team trusts the signal, graduate
-        # the gate: uncomment the block below and set blocking to "error" (fail
-        # on new error-severity findings) or "warning" (fail on any finding).
-        # Full reference: https://www.react.doctor/ci
-        # with:
-        #   blocking: error          # Gate level: "none" (advisory, the default) | "warning" | "error"
+        # Gated: fails the check on any new finding (error or warning) introduced
+        # relative to the merge base, so issues must be fixed before merge instead
+        # of lingering as an advisory comment. Full reference: https://www.react.doctor/ci
+        with:
+          blocking: warning # Gate level: "none" (advisory) | "warning" (this) | "error"
         #   scope: full              # On PRs, scan the whole project instead of just changed files
         #   comment: false           # Disable the sticky PR summary comment
         #   review-comments: false   # Disable inline review comments on changed lines
