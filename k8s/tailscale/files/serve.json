@@ -1,0 +1,7 @@
+{
+  "TCP": {
+    "25565": {
+      "TCPForward": "minecraft.minecraft.svc.cluster.local:25565"
+    }
+  }
+}

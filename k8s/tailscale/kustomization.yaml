@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tailscale
+
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - rbac.yaml
+  - deployment.yaml
+
+# ConfigMap はハッシュサフィックス付き命名(disableNameSuffixHash は使わない)。
+# serve.json 変更時に ConfigMap 名が変わり、NameReference transformer が
+# Deployment の volumes[].configMap.name を自動で書き換えてローリング再起動する。
+configMapGenerator:
+  - name: tailscale-serve-config
+    files:
+      - files/serve.json

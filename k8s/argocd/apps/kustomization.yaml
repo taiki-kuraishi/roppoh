@@ -28,3 +28,4 @@ resources:
   - dev-pod-build.yaml
   - minecraft.yaml
   - 9router.yaml
+  - tailscale.yaml

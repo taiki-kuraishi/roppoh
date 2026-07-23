@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale
+  namespace: tailscale
+  labels:
+    app.kubernetes.io/name: tailscale
+    app.kubernetes.io/managed-by: argocd
+  annotations:
+    # TS_KUBE_SECRET は「秘匿値」ではなく tailscale の状態保存先 Secret の"名前"を指す
+    # 設定値。env-var-secret チェックが変数名の SECRET 文字列に反応する誤検知のため無効化。
+    ignore-check.kube-linter.io/env-var-secret: "TS_KUBE_SECRET holds the name of the state Secret, not a secret value"
+spec:
+  # ノード状態を単一 Secret(tailscale-state)で持つため単一レプリカに固定。
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tailscale
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tailscale
+    spec:
+      serviceAccountName: tailscale
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        # /tmp・/var/run/tailscale の emptyDir を非 root で書けるように
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: tailscale
+          # 【自己更新】このイメージタグは Renovate が更新する
+          # 偶数マイナー(v1.98.x 等)が安定版。奇数マイナーは開発版なので選ばない。
+          image: ghcr.io/tailscale/tailscale:v1.98.9
+          env:
+            # 管理画面で発行した auth key(reusable + ephemeral + tag:minecraft)。
+            # Secret は k8s/secrets/tailscale/tailscale-auth.sops.yaml。
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-auth
+                  key: TS_AUTHKEY
+            # ノード状態(WireGuard 鍵等)を k8s Secret に保存(RBAC 必要)。
+            - name: TS_KUBE_SECRET
+              value: tailscale-state
+            # userspace ネットワーク: TUN 不要 = NET_ADMIN 不要。
+            - name: TS_USERSPACE
+              value: "true"
+            # AUTHKEY での再認証は初回のみ(以降は state Secret を使う)。
+            - name: TS_AUTH_ONCE
+              value: "true"
+            # tailnet 上のノード名 → minecraft.<tailnet>.ts.net
+            - name: TS_HOSTNAME
+              value: minecraft
+            # serve 設定: tailnet の TCP 25565 を minecraft Service へ転送(TLS 終端なしの素通し)。
+            - name: TS_SERVE_CONFIG
+              value: /etc/tailscale/serve.json
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          volumeMounts:
+            - name: serve-config
+              mountPath: /etc/tailscale
+              readOnly: true
+            # tailscaled のソケット(/var/run/tailscale/tailscaled.sock)書き込み用
+            - name: run
+              mountPath: /var/run/tailscale
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: serve-config
+          configMap:
+            name: tailscale-serve-config
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
