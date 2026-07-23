@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router";
 
 import { authClient } from "@/client/libs/better-auth";
 
-export default function () {
+export default function AuthenticatedLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: session, isPending } = authClient.useSession();
@@ -17,7 +17,7 @@ export default function () {
     }
     const redirectTo = location.pathname + location.search + location.hash;
     void navigate(`/sign-in?redirect=${encodeURIComponent(redirectTo)}`);
-  }, [session, isPending]);
+  }, [session, isPending, location.pathname, location.search, location.hash, navigate]);
 
   if (isPending || !session) {
     return null;

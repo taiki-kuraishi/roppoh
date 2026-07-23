@@ -3,8 +3,9 @@
 
 import { RESET } from "jotai/utils";
 import * as oauth from "oauth4webapi";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import * as v from "valibot";
 
 import { OIDC_STORAGE_KEY, PKCE_CODE_CHALLENGE_METHOD } from "./constant";
 import { AuthContext } from "./context";
@@ -16,10 +17,32 @@ interface LoginParams {
   redirectUri?: string;
 }
 
+const StoredOidcStateSchema = v.object({
+  code_verifier: v.string(),
+  nonce: v.string(),
+  redirectUri: v.string(),
+  state: v.string(),
+});
+
+type StoredOidcState = v.InferOutput<typeof StoredOidcStateSchema>;
+
+// `sessionStorage` round-trips through this app's own `JSON.stringify` call
+// Below, but the value can still be missing, cleared, or stale across a
+// Deploy, so parse it defensively rather than trusting its shape.
+const parseStoredOidcState = (raw: string): StoredOidcState | null => {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    const result = v.safeParse(StoredOidcStateSchema, parsed);
+    return result.success ? result.output : null;
+  } catch {
+    return null;
+  }
+};
+
 export const useAuth = () => {
   const { stored, setStored, client, as } = useContext(AuthContext);
-  const [isHandlingRedirect, setHandlingRedirect] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const isHandlingRedirectRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(() => globalThis.location.search.includes("code="));
 
   const login = async (params?: LoginParams) => {
     if (!as || !as.authorization_endpoint) {
@@ -33,7 +56,9 @@ export const useAuth = () => {
       const [firstUri] = client.redirect_uris;
       redirectUri = typeof firstUri === "string" ? firstUri : undefined;
     }
-    redirectUri ||= `${globalThis.location.origin}/callback`;
+    if (!redirectUri) {
+      redirectUri = `${globalThis.location.origin}/callback`;
+    }
 
     const code_verifier = oauth.generateRandomCodeVerifier();
     const code_challenge = await oauth.calculatePKCECodeChallenge(code_verifier);
@@ -60,81 +85,6 @@ export const useAuth = () => {
     globalThis.location.assign(authorizationUrl.toString());
   };
 
-  const handleLoginRedirect = async () => {
-    if (!as || isHandlingRedirect) {
-      return;
-    }
-
-    setHandlingRedirect(true);
-
-    const storage = sessionStorage.getItem(WEB_STORAGE_KEY);
-    if (!storage) {
-      console.error("No stored code_verifier and nonce found");
-      setHandlingRedirect(false);
-      return;
-    }
-    sessionStorage.removeItem(WEB_STORAGE_KEY);
-    const { code_verifier, state, nonce, redirectUri } = JSON.parse(storage);
-
-    try {
-      const currentUrl = new URL(globalThis.location.href);
-      // Throws on error in v3
-      const params = oauth.validateAuthResponse(as, client, currentUrl, state);
-
-      const authorizationResponse = await oauth.authorizationCodeGrantRequest(
-        as,
-        client,
-        oauth.None(),
-        params,
-        redirectUri,
-        code_verifier,
-      );
-
-      // Throws WWWAuthenticateChallengeError / ResponseBodyError in v3
-      const result = await oauth.processAuthorizationCodeResponse(
-        as,
-        client,
-        authorizationResponse,
-        {
-          expectedNonce: nonce,
-          requireIdToken: true,
-        },
-      );
-
-      setStored((prev) => ({ ...prev, accessToken: result.access_token }));
-      if (result.id_token) {
-        setStored((prev) => ({ ...prev, idToken: result.id_token }));
-      }
-
-      const claims = oauth.getValidatedIdTokenClaims(result);
-      if (!claims) {
-        console.error("No ID token claims found");
-        setHandlingRedirect(false);
-        return;
-      }
-
-      // Throws WWWAuthenticateChallengeError in v3
-      const userInfoResponse = await oauth.userInfoRequest(as, client, result.access_token);
-      const userInfo = await oauth.processUserInfoResponse(
-        as,
-        client,
-        claims.sub,
-        userInfoResponse,
-      );
-      setStored((prev) => ({ ...prev, user: userInfo as Record<string, unknown> }));
-
-      globalThis.history.replaceState(
-        {},
-        document.title,
-        redirectUri || globalThis.location.origin,
-      );
-    } catch (error) {
-      console.error("Error handling login redirect", error);
-    } finally {
-      setHandlingRedirect(false);
-    }
-  };
-
   const logout = () => {
     if (!as || !stored.idToken || !as.end_session_endpoint) {
       toast.error("Authentication server info dose not found.");
@@ -153,26 +103,112 @@ export const useAuth = () => {
 
   useEffect(() => {
     if (!as || !client) {
-      return;
+      return undefined;
     }
 
     if (!globalThis.location.search.includes("code=")) {
-      setIsLoading(false);
-      return;
+      return undefined;
     }
 
+    const handleLoginRedirect = async () => {
+      if (isHandlingRedirectRef.current) {
+        return;
+      }
+
+      isHandlingRedirectRef.current = true;
+
+      const storage = sessionStorage.getItem(WEB_STORAGE_KEY);
+      if (!storage) {
+        console.error("No stored code_verifier and nonce found");
+        isHandlingRedirectRef.current = false;
+        return;
+      }
+      sessionStorage.removeItem(WEB_STORAGE_KEY);
+      const parsedState = parseStoredOidcState(storage);
+      if (!parsedState) {
+        console.error("Stored OIDC state is missing or malformed");
+        isHandlingRedirectRef.current = false;
+        return;
+      }
+      const { code_verifier, state, nonce, redirectUri } = parsedState;
+
+      try {
+        const currentUrl = new URL(globalThis.location.href);
+        // Throws on error in v3
+        const params = oauth.validateAuthResponse(as, client, currentUrl, state);
+
+        const authorizationResponse = await oauth.authorizationCodeGrantRequest(
+          as,
+          client,
+          oauth.None(),
+          params,
+          redirectUri,
+          code_verifier,
+        );
+
+        // Throws WWWAuthenticateChallengeError / ResponseBodyError in v3
+        const result = await oauth.processAuthorizationCodeResponse(
+          as,
+          client,
+          authorizationResponse,
+          {
+            expectedNonce: nonce,
+            requireIdToken: true,
+          },
+        );
+
+        setStored((prev) => ({ ...prev, accessToken: result.access_token }));
+        if (result.id_token) {
+          setStored((prev) => ({ ...prev, idToken: result.id_token }));
+        }
+
+        const claims = oauth.getValidatedIdTokenClaims(result);
+        if (!claims) {
+          console.error("No ID token claims found");
+          isHandlingRedirectRef.current = false;
+          return;
+        }
+
+        // Throws WWWAuthenticateChallengeError in v3
+        const userInfoResponse = await oauth.userInfoRequest(as, client, result.access_token);
+        const userInfo = await oauth.processUserInfoResponse(
+          as,
+          client,
+          claims.sub,
+          userInfoResponse,
+        );
+        setStored((prev) => ({ ...prev, user: userInfo as Record<string, unknown> }));
+
+        globalThis.history.replaceState(
+          {},
+          document.title,
+          redirectUri || globalThis.location.origin,
+        );
+        isHandlingRedirectRef.current = false;
+      } catch (error) {
+        console.error("Error handling login redirect", error);
+        isHandlingRedirectRef.current = false;
+      }
+    };
+
+    let isCurrent = true;
     void handleLoginRedirect()
       .catch((error: unknown) => {
         console.error("Failed to handle login redirect", error);
       })
       .finally(() => {
-        setIsLoading(false);
+        if (isCurrent) {
+          setIsLoading(false);
+        }
       });
-  }, [globalThis.location.search, as, client]);
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [as, client, setStored]);
 
   return {
     accessToken: stored.accessToken,
-    handleLoginRedirect,
     isAuthenticated: Boolean(stored.user),
     isLoading,
     login,

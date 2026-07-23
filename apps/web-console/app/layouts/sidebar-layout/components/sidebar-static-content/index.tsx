@@ -17,12 +17,10 @@ export function SidebarStaticContent() {
   const roles = (data?.user.role ?? "").split(",");
   const isAdmin = roles.includes("admin");
 
-  const groups = sidebarContentList
-    .map((content) => ({
-      groupTitle: content.groupTitle,
-      items: content.items.filter((item) => !item.adminOnly || isAdmin),
-    }))
-    .filter((content) => content.items.length > 0);
+  const groups = sidebarContentList.flatMap((content) => {
+    const items = content.items.filter((item) => !item.adminOnly || isAdmin);
+    return items.length > 0 ? [{ groupTitle: content.groupTitle, items }] : [];
+  });
 
   return (
     <>

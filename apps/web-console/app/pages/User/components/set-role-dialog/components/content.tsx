@@ -32,7 +32,7 @@ interface Props {
 
 export const Content = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
-  const [role, setRole] = useState<Role>(ROLES.find((r) => r === props.user.role) ?? "user");
+  const [role, setRole] = useState<Role>(() => ROLES.find((r) => r === props.user.role) ?? "user");
 
   const { mutateAsync, isPending } = useSetUserRole({
     onError: () => void toast.error("Failed to set role."),
