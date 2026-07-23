@@ -20,42 +20,44 @@ function useNuqsInertiaAdapter(): AdapterInterface {
   // Flickering when the internal state is updated
   // But the URL is not yet updated.
   const [searchParams, setSearchParams] = React.useState(
-    new URL(currentUrl, location.origin).searchParams,
+    () => new URL(currentUrl, location.origin).searchParams,
   );
 
-  React.useEffect(() => {
+  // Adjust state during render (see https://react.dev/learn/you-might-not-need-an-effect)
+  // Instead of syncing via useEffect, so a URL change is reflected in the
+  // Same render pass rather than committing a stale render first.
+  const [syncedUrl, setSyncedUrl] = React.useState(currentUrl);
+  if (currentUrl !== syncedUrl) {
+    setSyncedUrl(currentUrl);
     setSearchParams(new URL(currentUrl, location.origin).searchParams);
-  }, [currentUrl]);
+  }
 
-  const updateUrl: UpdateUrlFunction = React.useCallback(
-    (search: URLSearchParams, options: AdapterOptions) => {
-      const url = new URL(globalThis.location.href);
-      url.search = renderQueryString(search);
-      setSearchParams(url.searchParams);
+  const updateUrl: UpdateUrlFunction = (search: URLSearchParams, options: AdapterOptions) => {
+    const url = new URL(globalThis.location.href);
+    url.search = renderQueryString(search);
+    setSearchParams(url.searchParams);
 
-      // Server-side request
-      if (options?.shallow === false) {
-        router.visit(url, {
-          replace: options.history === "replace",
-          preserveScroll: !options.scroll,
-          preserveState: true,
-          async: true,
-        });
-        return;
-      }
-
-      const method = options.history === "replace" ? "replace" : "push";
-
-      router[method]({
-        url: url.pathname + url.search + url.hash,
-        clearHistory: false,
-        encryptHistory: false,
+    // Server-side request
+    if (options?.shallow === false) {
+      router.visit(url, {
+        replace: options.history === "replace",
         preserveScroll: !options.scroll,
         preserveState: true,
+        async: true,
       });
-    },
-    [],
-  );
+      return;
+    }
+
+    const method = options.history === "replace" ? "replace" : "push";
+
+    router[method]({
+      url: url.pathname + url.search + url.hash,
+      clearHistory: false,
+      encryptHistory: false,
+      preserveScroll: !options.scroll,
+      preserveState: true,
+    });
+  };
 
   return {
     searchParams,

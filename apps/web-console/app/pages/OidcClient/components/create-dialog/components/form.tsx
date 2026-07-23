@@ -25,6 +25,7 @@ import { Spinner } from "@roppoh/shadcn/components/ui/spinner";
 import { revalidateLogic, useForm } from "@tanstack/react-form";
 import { Plus, X } from "lucide-react";
 import { useQueryStates } from "nuqs";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { dialogSearchParams } from "@/pages/OidcClient/params";
@@ -37,6 +38,9 @@ interface Props {
 
 export const Form = (props: Props) => {
   const [, setParams] = useQueryStates(dialogSearchParams);
+  const [redirectUriIds, setRedirectUriIds] = useState(() =>
+    defaultValues.redirect_uris.map(() => crypto.randomUUID()),
+  );
 
   const mutate = useCreateOidcClient({
     onError: () => void toast.error("Failed create OIDC client mutation."),
@@ -124,7 +128,7 @@ export const Form = (props: Props) => {
               <Label>Redirect URIs</Label>
               <div className="flex flex-col gap-3">
                 {field.state.value.map((_, index) => (
-                  <form.Field key={index} name={`redirect_uris[${index}]`}>
+                  <form.Field key={redirectUriIds[index]} name={`redirect_uris[${index}]`}>
                     {(itemField) => (
                       <Field>
                         <div className="flex items-center gap-2">
@@ -140,7 +144,10 @@ export const Form = (props: Props) => {
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={() => field.removeValue(index)}
+                            onClick={() => {
+                              field.removeValue(index);
+                              setRedirectUriIds((prev) => prev.filter((_id, i) => i !== index));
+                            }}
                           >
                             <X />
                           </Button>
@@ -151,7 +158,14 @@ export const Form = (props: Props) => {
                   </form.Field>
                 ))}
               </div>
-              <Button type="button" variant="outline" onClick={() => field.pushValue("")}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  field.pushValue("");
+                  setRedirectUriIds((prev) => [...prev, crypto.randomUUID()]);
+                }}
+              >
                 <Plus />
                 Add redirect uri
               </Button>

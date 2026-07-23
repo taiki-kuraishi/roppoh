@@ -1,8 +1,9 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import type { AuthClient } from "../types";
 
 import { useAuthClient } from "../hooks";
+import { LIST_USER_SESSIONS_KEY } from "../keys";
 import { toError } from "../utils";
 
 type Args = Parameters<NonNullable<AuthClient["admin"]["impersonateUser"]>>[0];
@@ -17,6 +18,7 @@ interface Options {
 
 export const useImpersonateUser = (opts: Options = {}) => {
   const authClient = useAuthClient();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (args: Args) => {
@@ -32,7 +34,8 @@ export const useImpersonateUser = (opts: Options = {}) => {
       console.error(error);
       opts.onError?.(error);
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: LIST_USER_SESSIONS_KEY });
       opts.onSuccess?.(data);
     },
   });

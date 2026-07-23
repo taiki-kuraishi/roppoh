@@ -29,3 +29,6 @@ lockfile = true
 
 [tasks.format]
 run = "bun run oxfmt"
+
+[tasks.react-doctor]
+run = "bunx react-doctor@latest"

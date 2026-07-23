@@ -11,7 +11,7 @@ import { authClient } from "@/client/libs/better-auth";
 import { ConsentBtns } from "./components/consent-buttons";
 import { consentPageParams } from "./params";
 
-export default function () {
+export default function ConsentPage() {
   const navigate = useNavigate();
   const [params] = useQueryStates(consentPageParams);
 
@@ -19,7 +19,7 @@ export default function () {
     if (!params.client_id || !params.redirect_uri || !params.scope) {
       void navigate("/sign-in");
     }
-  }, [params]);
+  }, [params, navigate]);
 
   const { data: session } = authClient.useSession();
   const { data: client } = useOidcClient({ client_id: params.client_id });
@@ -27,7 +27,7 @@ export default function () {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6 text-center">Authorize Application</h1>
-      <div className="min-h-screen bg-black text-white flex flex-col">
+      <div className="min-h-dvh bg-black text-white flex flex-col">
         <div className="flex flex-col items-center justify-center max-w-2xl mx-auto px-4">
           <div className="flex items-center gap-8 mb-8">
             <div className="w-16 h-16 border rounded-full flex items-center justify-center">

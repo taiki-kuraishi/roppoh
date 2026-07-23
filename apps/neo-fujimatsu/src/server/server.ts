@@ -1,9 +1,10 @@
 import { Hono } from "hono";
 
 import { betterAuthCorsMiddleware, injectDependenciesMiddleware } from "./middlewares";
-import { betterAuthRoute, health } from "./routes";
 import { oauthAuthorizationServerRoute } from "./routes/.well-known/oauth-authorization-server";
 import { openidConfigurationRoute } from "./routes/.well-known/openid-configuration";
+import { betterAuthRoute } from "./routes/better-auth";
+import { health } from "./routes/health";
 
 export const app = new Hono()
   .get("/", (c) => c.redirect("/sign-in"))

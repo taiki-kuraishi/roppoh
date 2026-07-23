@@ -72,9 +72,9 @@ function User() {
           {isPending ? (
             <Skeleton className="h-16 w-full" />
           ) : (
-            data?.pages
-              .flatMap((page) => page.users)
-              .map((user) => <UserItem key={user.id} user={user} />)
+            data?.pages.flatMap((page) =>
+              page.users.map((user) => <UserItem key={user.id} user={user} />),
+            )
           )}
         </ItemGroup>
 

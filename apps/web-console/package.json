@@ -56,5 +56,10 @@
   },
   "peerDependencies": {
     "typescript": "catalog:"
+  },
+  "knip": {
+    "entry": [
+      "app/client.tsx"
+    ]
   }
 }

@@ -13,7 +13,9 @@ export default {
   ignoreDependencies: [],
   project: [],
   workspaces: {
-    ".": { ignoreDependencies: ["turbo"] },
+    // `doctor.config.ts` is read directly by the react-doctor CLI, not
+    // Imported by any app code.
+    ".": { ignoreDependencies: ["turbo"], entry: ["doctor.config.ts"] },
     "apps/emdash": {
       astro: {
         config: ["astro.config.mts"],

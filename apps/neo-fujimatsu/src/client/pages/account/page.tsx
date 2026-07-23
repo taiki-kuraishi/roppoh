@@ -23,7 +23,7 @@ const DeletePasskeyDialog = lazy(async () =>
   import("./components/delete-passkey-dialog").then((m) => ({ default: m.DeletePasskeyDialog })),
 );
 
-export default function () {
+export default function AccountPage() {
   const { data, isPending } = useUserPasskeys();
   const [{ dialog, passkey_id }, setParams] = useQueryStates(dialogSearchParams);
 
