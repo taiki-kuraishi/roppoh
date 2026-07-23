@@ -35,7 +35,7 @@ model: sonnet
      | 変更されたもの | 突き合わせるドキュメント |
      | --- | --- |
      | `apps/<app>/**` | `.claude/rules/<app>/directory-structure.md`, `.claude/rules/apps.md`, `apps/<app>/{README,CLAUDE,AGENTS}.md` |
-     | `packages/**` | `.claude/rules/packages.md`, `workspace-packages.md`, 該当パッケージ固有ルール(`better-auth.md`, `shadcn.md` 等) |
+     | `packages/**` | `.claude/rules/packages.md`, `workspace-packages.md`, 該当パッケージ固有ルール(`better-auth/better-auth.md`, `shadcn/shadcn.md` 等) |
      | `mise.toml`, `.mise-tasks/**` | `.claude/rules/mise-tasks.md`, `conventions.md`, `README.md` |
      | `turbo.json`, `*/turbo.json` | `.claude/rules/turbo.md` |
      | `.github/workflows/**` | `.claude/rules/github-actions.md` |

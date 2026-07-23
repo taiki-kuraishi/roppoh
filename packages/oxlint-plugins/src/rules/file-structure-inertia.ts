@@ -33,17 +33,27 @@ const reportPageDirViolations = (context: Context, segments: string[], basename:
   }
 };
 
+/**
+ * ディレクトリ構造規約(PascalCase / Inertia pages)
+ *
+ * 内容: pages/ 配下のディレクトリ名が PascalCase であること、および
+ * pages/<PascalName>/Index.tsx という構造になっていることを検査する。
+ *
+ * 目的: roppoh / web-console が採用する Inertia のページ解決規約
+ * (ページディレクトリ名 PascalCase、エントリファイルは Index.tsx 固定)を
+ * 機械的に強制し、命名・配置のばらつきを防ぐ。
+ */
 const rule = {
   meta: {
     type: "problem",
     docs: {
       description:
-        "Inertia のページ解決規約に合わせて pages/<PascalName>/Index.tsx のディレクトリ構造を強制する",
+        "Enforce the pages/<PascalName>/Index.tsx directory structure to match Inertia's page resolution convention",
     },
     messages: {
-      pageDirCase: "pages/ 直下のディレクトリ名 '{{segment}}' は PascalCase にしてください。",
-      pageRootEntryName: "pages/ 直下に置ける .tsx は Index.tsx のみです。",
-      pageEntryName: "pages/<Name>/ 直下の .tsx ファイルは Index.tsx のみ許可されています。",
+      pageDirCase: "Directory name '{{segment}}' directly under pages/ must be PascalCase.",
+      pageRootEntryName: "Only Index.tsx is allowed as a .tsx file directly under pages/.",
+      pageEntryName: "Only Index.tsx is allowed as a .tsx file directly under pages/<Name>/.",
     },
   },
   create(context) {

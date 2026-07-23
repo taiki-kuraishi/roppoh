@@ -30,8 +30,9 @@
 - `.claude/rules/terraform.md` — `infra/**`
 - `.claude/rules/k8s.md` — `k8s/**`
 - `.claude/rules/packages.md` — `packages/**`
-- `.claude/rules/better-auth.md` — `packages/better-auth/**`
-- `.claude/rules/shadcn.md` — `packages/shadcn/**`
+- `.claude/rules/better-auth/better-auth.md` — `packages/better-auth/**`
+- `.claude/rules/shadcn/shadcn.md` — `packages/shadcn/**`
+- `.claude/rules/oxlint-plugins/oxlint-plugins.md` — `packages/oxlint-plugins/src/rules/**/*.ts`
 - `.claude/rules/skills.md` — `.claude/skills/**`, `.agents/skills/**`
 
 ## コード修正後

@@ -32,18 +32,27 @@ const checkSource = (context: Context, specifier: string, node: Reportable): voi
   }
 };
 
+/**
+ * 境界越え相対 import の禁止
+ *
+ * 内容: import specifier が相対パス(`./` `../`)で src/ の外、または
+ * 自分の属するページ/レイアウト境界の外を参照している場合に検知する。
+ *
+ * 目的: 相対パスによる深い import ("../../../...") や境界を無視した
+ * 参照を排除し、@/ エイリアス経由の一貫した import 経路を強制する。
+ */
 const rule = {
   meta: {
     type: "problem",
     docs: {
       description:
-        "自分のページ/レイアウト境界の外を相対パスで import することを禁止し、@/ エイリアスを強制する",
+        "Disallow relative imports that reach outside a page's or layout's own boundary, and require the @/ alias instead",
     },
     messages: {
       escapeSrc:
-        "'{{specifier}}' は src/ の外を相対パスで参照しています。@/ エイリアスやパッケージ参照を使ってください。",
+        "'{{specifier}}' uses a relative path that reaches outside src/. Use the @/ alias or a package reference instead.",
       escapeBoundary:
-        "'{{specifier}}' は自分のページ/レイアウト境界の外を相対パスで参照しています。@/ エイリアスを使ってください。",
+        "'{{specifier}}' uses a relative path that reaches outside its own page/layout boundary. Use the @/ alias instead.",
     },
   },
   create(context) {
