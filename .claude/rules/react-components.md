@@ -105,7 +105,7 @@ import { useAuth } from "@/root/components/auth-provider";
 
 ## Related Documentation
 
-- `.claude/rules/neo-fujimatsu/directory-structure.md` - neo-fujimatsu のディレクトリ構造
-- `.claude/rules/roppoh/directory-structure.md` - roppoh のディレクトリ構造
-- `.claude/rules/web-console/directory-structure.md` - web-console のディレクトリ構造
+- `.claude/rules/apps/neo-fujimatsu/directory-structure.md` - neo-fujimatsu のディレクトリ構造
+- `.claude/rules/apps/roppoh/directory-structure.md` - roppoh のディレクトリ構造
+- `.claude/rules/apps/web-console/directory-structure.md` - web-console のディレクトリ構造
 - `packages/oxlint-plugins/` - カスタムリントルールの実装
