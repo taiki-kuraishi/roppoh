@@ -35,6 +35,7 @@
 - `.claude/rules/packages/shadcn/shadcn.md` — `packages/shadcn/**`
 - `.claude/rules/packages/oxlint-plugins/oxlint-plugins.md` — `packages/oxlint-plugins/src/rules/**/*.ts`
 - `.claude/rules/skills.md` — `.claude/skills/**`, `.agents/skills/**`
+- `.claude/rules/rules.md` — `.claude/rules/**`(rule ファイルの置き場ルール)
 
 ## コード修正後
 
