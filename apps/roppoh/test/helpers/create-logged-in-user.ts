@@ -7,28 +7,17 @@ import { oidcUserStorageKey, serializeOidcUser } from "@roppoh/oidc-client/testi
 const ISSUER = "https://neo-fujimatsu.tsar-bmb.org/api";
 const CLIENT_ID = "ZagxZfQuBthqZGMZZNPzSMKSmAfTVAXy";
 
-interface User {
-  email: string;
-  name: string;
-}
-
 interface Args {
   context: BrowserContext;
-  user?: User;
 }
 
 // Seeds a logged-in user into oidc-client-ts storage so react-oidc-context's
 // UseAuth().isAuthenticated is true (the only auth layer roppoh's AuthGuard
 // Checks). Must be called before page.goto() — addInitScript only affects
 // Future navigations.
-export async function createLoggedInUser({
-  context,
-  user = { email: "user@example.com", name: "Regular User" },
-}: Args) {
+export async function createLoggedInUser({ context }: Args) {
   const key = oidcUserStorageKey(ISSUER, CLIENT_ID);
-  const value = serializeOidcUser(user);
+  const value = serializeOidcUser({ email: "user@example.com", name: "Regular User" });
 
   await context.addInitScript(([k, v]) => localStorage.setItem(k, v), [key, value] as const);
-
-  return { user };
 }
