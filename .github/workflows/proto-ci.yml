@@ -1,0 +1,20 @@
+name: proto-ci
+
+on:
+  pull_request:
+    paths:
+      - "proto/**"
+      - "buf.yaml"
+      - ".github/workflows/proto-ci.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  proto:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: bufbuild/buf-action@v1

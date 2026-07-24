@@ -7,7 +7,13 @@ export default defineConfig({
    * (.github/workflows/dashboard-drift-ci.yml) が生出力とそのまま比較する
    * ため、フォーマッタで整形すると常に差分が出てしまう。除外する
    */
-  ignorePatterns: ["worker-configuration.d.ts", "k8s/monitoring/dashboards/*.json"],
+  ignorePatterns: [
+    "worker-configuration.d.ts",
+    "k8s/monitoring/dashboards/*.json",
+    // Packages/event-schemas/src/gen.ts の生成物。drift check
+    // (mise run proto:gen && git diff --exit-code)が生出力と直接比較するため除外。
+    "packages/event-schemas/src/**/*.gen.json",
+  ],
   printWidth: 100,
   semi: true,
   singleQuote: false,

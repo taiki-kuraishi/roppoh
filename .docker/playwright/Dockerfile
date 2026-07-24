@@ -16,6 +16,7 @@ COPY apps/roppoh/package.json        ./apps/roppoh/
 COPY apps/web-console/package.json   ./apps/web-console/
 
 COPY packages/domain/package.json            ./packages/domain/
+COPY packages/event-schemas/package.json     ./packages/event-schemas/
 COPY packages/shadcn/package.json            ./packages/shadcn/
 COPY packages/better-auth/package.json       ./packages/better-auth/
 COPY packages/better-auth-query/package.json ./packages/better-auth-query/

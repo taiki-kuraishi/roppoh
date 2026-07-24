@@ -1,0 +1,178 @@
+[
+  {
+    "stream": "presence_update",
+    "table": "presence_update_events",
+    "namespace": "discord",
+    "fields": [
+      {
+        "name": "received_at",
+        "type": "timestamp",
+        "required": true
+      },
+      {
+        "name": "guild_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "client_desktop",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "client_mobile",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "client_web",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "activity_name",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "activity_type",
+        "type": "int64",
+        "required": false
+      },
+      {
+        "name": "activity_state",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "activity_details",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  {
+    "stream": "guild_presence_snapshot",
+    "table": "guild_presence_snapshot_events",
+    "namespace": "discord",
+    "fields": [
+      {
+        "name": "received_at",
+        "type": "timestamp",
+        "required": true
+      },
+      {
+        "name": "guild_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "status",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "client_desktop",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "client_mobile",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "client_web",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "activity_name",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "activity_type",
+        "type": "int64",
+        "required": false
+      },
+      {
+        "name": "activity_state",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "activity_details",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  {
+    "stream": "voice_state_update",
+    "table": "voice_state_update_events",
+    "namespace": "discord",
+    "fields": [
+      {
+        "name": "received_at",
+        "type": "timestamp",
+        "required": true
+      },
+      {
+        "name": "guild_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "user_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "name": "channel_id",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "session_id",
+        "type": "string",
+        "required": false
+      },
+      {
+        "name": "self_mute",
+        "type": "bool",
+        "required": false
+      },
+      {
+        "name": "self_deaf",
+        "type": "bool",
+        "required": false
+      },
+      {
+        "name": "mute",
+        "type": "bool",
+        "required": false
+      },
+      {
+        "name": "deaf",
+        "type": "bool",
+        "required": false
+      }
+    ]
+  }
+]

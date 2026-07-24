@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "extends": "../../tsconfig.json",
+  "include": ["src/**/*.ts"]
+}

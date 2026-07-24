@@ -5,6 +5,9 @@ node = "24"
 # Keep this version in sync with the go directive in go.mod
 go = "1.26.5"
 golangci-lint = "2.12.2"
+# proto schema tooling (lint / breaking-change detection). Source of truth for
+# packages/event-schemas codegen.
+buf = "1.72.0"
 kube-linter = "0.8.3"
 kubeconform = "0.8.0"
 lefthook = "2.1.10"

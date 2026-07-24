@@ -1,0 +1,206 @@
+[
+  {
+    "table": "presence_update_events",
+    "namespace": "discord",
+    "fields": [
+      {
+        "id": 1,
+        "name": "received_at",
+        "type": "timestamp",
+        "required": true
+      },
+      {
+        "id": 2,
+        "name": "guild_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 3,
+        "name": "user_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 4,
+        "name": "status",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 5,
+        "name": "client_desktop",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 6,
+        "name": "client_mobile",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 7,
+        "name": "client_web",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 8,
+        "name": "activity_name",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 9,
+        "name": "activity_type",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": 10,
+        "name": "activity_state",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 11,
+        "name": "activity_details",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  {
+    "table": "guild_presence_snapshot_events",
+    "namespace": "discord",
+    "fields": [
+      {
+        "id": 1,
+        "name": "received_at",
+        "type": "timestamp",
+        "required": true
+      },
+      {
+        "id": 2,
+        "name": "guild_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 3,
+        "name": "user_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 4,
+        "name": "status",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 5,
+        "name": "client_desktop",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 6,
+        "name": "client_mobile",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 7,
+        "name": "client_web",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 8,
+        "name": "activity_name",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 9,
+        "name": "activity_type",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": 10,
+        "name": "activity_state",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 11,
+        "name": "activity_details",
+        "type": "string",
+        "required": false
+      }
+    ]
+  },
+  {
+    "table": "voice_state_update_events",
+    "namespace": "discord",
+    "fields": [
+      {
+        "id": 1,
+        "name": "received_at",
+        "type": "timestamp",
+        "required": true
+      },
+      {
+        "id": 2,
+        "name": "guild_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 3,
+        "name": "user_id",
+        "type": "string",
+        "required": true
+      },
+      {
+        "id": 4,
+        "name": "channel_id",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 5,
+        "name": "session_id",
+        "type": "string",
+        "required": false
+      },
+      {
+        "id": 6,
+        "name": "self_mute",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "id": 7,
+        "name": "self_deaf",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "id": 8,
+        "name": "mute",
+        "type": "boolean",
+        "required": false
+      },
+      {
+        "id": 9,
+        "name": "deaf",
+        "type": "boolean",
+        "required": false
+      }
+    ]
+  }
+]

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+#MISE description="Regenerate event-schemas from proto (buf build -> gen.ts)"
+
+set -euo pipefail
+
+# buf.yaml lives at the repo root; mise tasks run from config_root.
+buf build -o packages/event-schemas/descriptorset.binpb
+bun run packages/event-schemas/src/gen.ts
