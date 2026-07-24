@@ -21,7 +21,7 @@
     "@roppoh/shadcn": "workspace:*",
     "hono": "4.12.31",
     "jotai": "2.20.0",
-    "lucide-react": "1.25.0",
+    "lucide-react": "1.26.0",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sonner": "catalog:",
