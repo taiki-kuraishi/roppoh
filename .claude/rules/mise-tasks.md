@@ -26,18 +26,18 @@ its children.
 
 ## Top-Level Tasks
 
-| Task            | Kind   | Description                                      |
-| --------------- | ------ | ------------------------------------------------ |
-| `install`       | group  | Setup project environment (bun / go / terraform) |
-| `clean-install` | group  | `clear-cache` → `install` (hard reset)           |
-| `clear-cache`   | file   | Remove build/cache/`node_modules` directories    |
-| `dev`           | group  | Run development servers                          |
-| `format`        | inline | Format code with `oxfmt`                         |
-| `lint`          | group  | Full quality check (bun / go / k8s / terraform)  |
-| `test`          | group  | Run all tests (e2e / unit / vrt)                 |
-| `env-decrypt`   | group  | Decrypt sops-encrypted env files                 |
-| `env-encrypt`   | group  | Encrypt env files with sops                      |
-| `proto:gen`     | file   | Regenerate `event-schemas` codegen from proto    |
+| Task            | Kind   | Description                                            |
+| --------------- | ------ | ------------------------------------------------------ |
+| `install`       | group  | Setup project environment (bun / go / terraform)       |
+| `clean-install` | group  | `clear-cache` → `install` (hard reset)                 |
+| `clear-cache`   | file   | Remove build/cache/`node_modules` directories          |
+| `dev`           | group  | Run development servers                                |
+| `format`        | inline | Format code with `oxfmt`                               |
+| `lint`          | group  | Full quality check (bun / go / k8s / terraform)        |
+| `test`          | group  | Run all tests (e2e / unit / vrt)                       |
+| `env-decrypt`   | group  | Decrypt sops-encrypted env files                       |
+| `env-encrypt`   | group  | Encrypt env files with sops                            |
+| `proto:gen`     | file   | Regenerate `discord-events-schemas` codegen from proto |
 
 ---
 
@@ -111,16 +111,16 @@ Run before committing (Lefthook runs a similar check automatically).
 
 ### `proto:gen`
 
-**What it does**: `buf build -o packages/event-schemas/descriptorset.binpb` then
-`bun run packages/event-schemas/src/gen.ts`. Regenerates the committed schema codegen
+**What it does**: `buf build -o packages/discord-events-schemas/descriptorset.binpb` then
+`bun run packages/discord-events-schemas/src/gen.ts`. Regenerates the committed schema codegen
 (`pipelines.tf.gen.json` / `iceberg-schema.gen.json` / `records.gen.go`) from the `.proto`
-SoT (`proto/roppoh/events/v1/`). Standalone file task under `.mise-tasks/proto/gen`.
+SoT (`proto/roppoh/discord/v1/`). Standalone file task under `.mise-tasks/proto/gen`.
 
 ```bash
 mise run proto:gen
 ```
 
-Run after editing `proto/roppoh/events/v1/*.proto`. `proto-ci.yml` re-runs this and fails on
+Run after editing `proto/roppoh/discord/v1/*.proto`. `proto-ci.yml` re-runs this and fails on
 uncommitted drift (`git diff --exit-code`), like `dashboard-drift-ci` does for Grafana JSON.
 
 ---

@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package roppoh.events.v1;
+package roppoh.discord.v1;
 
-import "roppoh/events/v1/options.proto";
+import "roppoh/discord/v1/options.proto";
 
 // Field number = Iceberg field ID. Once assigned it is immutable; deletions are
 // sealed with `reserved` so the number is never reused. `buf breaking` enforces

@@ -73,7 +73,7 @@ turbo build
 > `@roppoh/oidc-client`, `@roppoh/shadcn`) have no `build` script; they are consumed as source via workspace
 > `paths`/exports and only run `type-check`.
 >
-> `@roppoh/event-schemas` also runs only `type-check` (no `build`), but it is a **codegen** package:
+> `@roppoh/discord-events-schemas` also runs only `type-check` (no `build`), but it is a **codegen** package:
 > its `*.gen.*` outputs are produced by `mise run proto:gen` (not `turbo build`) and committed. It is
 > not yet imported as a TS module (Phase 1); its outputs are consumed as files (Terraform / Go).
 

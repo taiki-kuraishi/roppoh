@@ -192,6 +192,13 @@
         "typescript": "catalog:",
       },
     },
+    "packages/discord-events-schemas": {
+      "name": "@roppoh/discord-events-schemas",
+      "version": "0.0.0",
+      "dependencies": {
+        "@bufbuild/protobuf": "catalog:",
+      },
+    },
     "packages/domain": {
       "name": "@roppoh/domain",
       "dependencies": {
@@ -199,13 +206,6 @@
       },
       "peerDependencies": {
         "typescript": "catalog:",
-      },
-    },
-    "packages/event-schemas": {
-      "name": "@roppoh/event-schemas",
-      "version": "0.0.0",
-      "dependencies": {
-        "@bufbuild/protobuf": "catalog:",
       },
     },
     "packages/grafana-dashboards": {
@@ -1088,11 +1088,11 @@
 
     "@roppoh/better-auth-query": ["@roppoh/better-auth-query@workspace:packages/better-auth-query"],
 
+    "@roppoh/discord-events-schemas": ["@roppoh/discord-events-schemas@workspace:packages/discord-events-schemas"],
+
     "@roppoh/domain": ["@roppoh/domain@workspace:packages/domain"],
 
     "@roppoh/emdash": ["@roppoh/emdash@workspace:apps/emdash"],
-
-    "@roppoh/event-schemas": ["@roppoh/event-schemas@workspace:packages/event-schemas"],
 
     "@roppoh/grafana-dashboards": ["@roppoh/grafana-dashboards@workspace:packages/grafana-dashboards"],
 

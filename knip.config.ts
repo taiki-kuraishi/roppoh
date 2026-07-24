@@ -39,6 +39,6 @@ export default {
     "packages/better-auth": {},
     // Gen.ts is run as a standalone bun script by the `proto:gen` mise task,
     // Not imported anywhere, so knip needs it named explicitly as an entry.
-    "packages/event-schemas": { entry: ["src/gen.ts"] },
+    "packages/discord-events-schemas": { entry: ["src/gen.ts"] },
   },
 } satisfies KnipConfig;

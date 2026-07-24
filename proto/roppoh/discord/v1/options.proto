@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package roppoh.events.v1;
+package roppoh.discord.v1;
 
 import "google/protobuf/descriptor.proto";
 
@@ -9,6 +9,10 @@ extend google.protobuf.MessageOptions {
   // Format: "<table>:<stream>" (e.g. "presence_update_events:presence_update").
   repeated string table = 50101;
   // Iceberg / Pipelines namespace all tables of this message live in.
+  // ponytail: per-message option is redundant now that this package is
+  // discord-only (every message sets "discord"); collapse to a package-level
+  // constant if it stays single-namespace. Kept per-message until a second
+  // namespace appears.
   string namespace = 50102;
 }
 

@@ -10,9 +10,9 @@ export default defineConfig({
   ignorePatterns: [
     "worker-configuration.d.ts",
     "k8s/monitoring/dashboards/*.json",
-    // Packages/event-schemas/src/gen.ts の生成物。drift check
+    // Packages/discord-events-schemas/src/gen.ts の生成物。drift check
     // (mise run proto:gen && git diff --exit-code)が生出力と直接比較するため除外。
-    "packages/event-schemas/src/**/*.gen.json",
+    "packages/discord-events-schemas/src/**/*.gen.json",
   ],
   printWidth: 100,
   semi: true,

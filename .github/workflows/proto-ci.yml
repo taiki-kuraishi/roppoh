@@ -5,7 +5,7 @@ on:
     paths:
       - "proto/**"
       - "buf.yaml"
-      - "packages/event-schemas/**"
+      - "packages/discord-events-schemas/**"
       - ".mise-tasks/proto/**"
       - "mise.toml"
       - ".github/workflows/proto-ci.yml"

@@ -7,16 +7,16 @@ paths:
 # Proto スキーマ SoT ルール(`proto/**`)
 
 R2 Data Catalog / Cloudflare Pipelines のイベントスキーマは `.proto` を**唯一の真実の源 (SoT)**
-とする。人間が編集するのは `proto/roppoh/events/v1/*.proto` だけで、そこから
-`packages/event-schemas`(→ `packages.md`)の生成器が Terraform / Go / Iceberg 各ターゲットを生成する。
+とする。人間が編集するのは `proto/roppoh/discord/v1/*.proto` だけで、そこから
+`packages/discord-events-schemas`(→ `packages.md`)の生成器が Terraform / Go / Iceberg 各ターゲットを生成する。
 
 ## 原則
 
 - **フィールド番号 = Iceberg フィールド ID**。採番後は不変・使い回し禁止。削除は `reserved` で封印する。
-- スキーマ変更は `.proto` だけで行う。生成物(`packages/event-schemas/src/roppoh/events/v1/*.gen.*`)は
+- スキーマ変更は `.proto` だけで行う。生成物(`packages/discord-events-schemas/src/roppoh/discord/v1/*.gen.*`)は
   **自動生成・コミット対象・手編集禁止**。
 - Cloudflare 固有のマッピングはカスタムオプションで表現する
-  (`table` / `namespace` / `logical_type` / `pipelines_required` — `proto/roppoh/events/v1/options.proto`)。
+  (`table` / `namespace` / `logical_type` / `pipelines_required` — `proto/roppoh/discord/v1/options.proto`)。
 
 ## 変更したら
 
