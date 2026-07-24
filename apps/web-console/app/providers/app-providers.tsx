@@ -1,11 +1,11 @@
 import { BetterAuthQueryProvider } from "@roppoh/better-auth-query";
+import { OidcAuthProvider } from "@roppoh/oidc-client";
 import { Toaster } from "@roppoh/shadcn/components/ui/sonner";
 import { QueryClientProvider } from "@tanstack/react-query";
 
 import { auth } from "@/libs/better-auth";
 import { NuqsAdapter } from "@/libs/nuqs-adapter";
 
-import { AuthProvider } from "./auth-provider/provider";
 import { queryClient } from "./query-client";
 import { useTheme, useThemeProvider } from "./theme-provider";
 
@@ -27,12 +27,12 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <BetterAuthQueryProvider authClient={auth}>
             <div style={{ minHeight: "100dvh", position: "relative" }}>
-              <AuthProvider
+              <OidcAuthProvider
                 issuer={import.meta.env.VITE_OIDC_ISSUER}
                 clientId={import.meta.env.VITE_OIDC_CLIENT_ID}
               >
                 {children}
-              </AuthProvider>
+              </OidcAuthProvider>
             </div>
           </BetterAuthQueryProvider>
         </QueryClientProvider>

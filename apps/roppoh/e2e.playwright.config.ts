@@ -15,7 +15,7 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 
   use: {
-    baseURL: "http://127.0.0.1:51733",
+    baseURL: "http://127.0.0.1:51730",
     screenshot: "only-on-failure",
     trace: "on-first-retry",
     video: "retain-on-failure",
@@ -26,6 +26,6 @@ export default defineConfig({
     command: "bun run dev -- --host 127.0.0.1",
     reuseExistingServer: false,
     timeout: 120 * 1000,
-    url: "http://127.0.0.1:51733",
+    url: "http://127.0.0.1:51730",
   },
 });

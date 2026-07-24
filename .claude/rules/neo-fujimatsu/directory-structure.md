@@ -13,13 +13,15 @@ paths:
 ```text
 apps/neo-fujimatsu/
 ├── src
-│   ├── client/                  # React SPA(構造は roppoh の src/ と同じ)
+│   ├── client/                  # React SPA
 │   │   ├── main.tsx             # クライアントエントリ
 │   │   ├── router.ts            # react-router(createBrowserRouter)
 │   │   ├── global.css           # Tailwind エントリ
 │   │   ├── root/                # プロバイダ + エラーバウンダリ
+│   │   │   ├── index.tsx
+│   │   │   └── components/      # アプリ全体プロバイダ(theme-provider など)
 │   │   ├── pages/<name>/page.tsx# ページ(page.tsx 固定 + components/)
-│   │   ├── layouts/             # レイアウト
+│   │   ├── layouts/             # レイアウト(authenticated-layout.tsx など)
 │   │   └── libs/                # 外部ライブラリ setup(better-auth など)
 │   │
 │   └── server/                  # Hono サーバ
@@ -40,7 +42,7 @@ apps/neo-fujimatsu/
 ## ルール
 
 - **`src/client/` は roppoh 系のコンポーネント規約(oxlint)対象**
-  (`neo-fujimatsu/react-components.md`。`@/client/...` エイリアスで境界外を import)。
+  (`react-components.md`。`@/client/...` エイリアスで境界外を import)。
 - `src/server/` は Hono の慣例に従う。`routes/` は `index.ts` で集約、`middlewares/` も同様。
 - クライアント/サーバ間で共有したい型・ロジックは、どちらかに寄せるか workspace パッケージへ。
 

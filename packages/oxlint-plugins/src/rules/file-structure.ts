@@ -20,18 +20,27 @@ const reportPagesViolations = (context: Context, segments: string[], basename: s
   }
 };
 
+/**
+ * ディレクトリ構造規約(kebab-case / pages)
+ *
+ * 内容: ディレクトリ名が kebab-case であること、および pages/ 配下が
+ * pages/<name>/page.tsx という構造になっていることを検査する。
+ *
+ * 目的: neo-fujimatsu のページ解決規約(ページディレクトリ名 kebab-case、
+ * エントリファイルは page.tsx 固定)を機械的に強制し、命名・配置のばらつきを防ぐ。
+ */
 const rule = {
   meta: {
     type: "problem",
     docs: {
       description:
-        "ディレクトリ名の kebab-case と pages/<name>/page.tsx のディレクトリ構造を強制する",
+        "Enforce kebab-case directory names and the pages/<name>/page.tsx directory structure",
     },
     messages: {
-      dirCase: "ディレクトリ名 '{{segment}}' は kebab-case にしてください。",
+      dirCase: "Directory name '{{segment}}' must be kebab-case.",
       fileInPagesRoot:
-        "pages/ 直下にファイルを置けません。pages/<name>/ ディレクトリを作成してください。",
-      pageEntryName: "pages/<name>/ 直下の .tsx ファイルは page.tsx のみ許可されています。",
+        "Files are not allowed directly under pages/. Create a pages/<name>/ directory instead.",
+      pageEntryName: "Only page.tsx is allowed as a .tsx file directly under pages/<name>/.",
     },
   },
   create(context) {

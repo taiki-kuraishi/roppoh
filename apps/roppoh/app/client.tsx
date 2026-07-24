@@ -1,6 +1,8 @@
 import { createInertiaApp, type ResolvedComponent } from "@inertiajs/react";
 import { createRoot } from "react-dom/client";
 
+import { AppProviders } from "./providers/app-providers";
+import { ErrorBoundary } from "./providers/error-boundary";
 import "./global.css";
 
 void createInertiaApp({
@@ -18,6 +20,12 @@ void createInertiaApp({
     if (!el) {
       throw new Error("Inertia mount element (#app) not found");
     }
-    createRoot(el).render(<App {...props} />);
+    createRoot(el).render(
+      <ErrorBoundary>
+        <AppProviders>
+          <App {...props} />
+        </AppProviders>
+      </ErrorBoundary>,
+    );
   },
 });

@@ -44,6 +44,15 @@ export default defineConfig({
       },
     },
     {
+      files: ["apps/roppoh/app/**", "apps/web-console/app/**"],
+      rules: {
+        "roppoh/file-structure-inertia": "error",
+        "roppoh/no-cross-feature-import": "error",
+        "roppoh/one-function-per-tsx": "error",
+        "roppoh/prefer-alias-import": "error",
+      },
+    },
+    {
       // Foundation SDK の DashboardBuilder/VariableBuilder は配列ではなく
       // 独自の .sort() を持つため、Array 前提の unicorn/no-array-sort は誤検知する
       files: ["packages/grafana-dashboards/**"],

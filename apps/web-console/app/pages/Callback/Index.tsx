@@ -1,7 +1,6 @@
 import { router } from "@inertiajs/react";
+import { useAuth } from "@roppoh/oidc-client";
 import { useEffect } from "react";
-
-import { useAuth } from "@/providers/auth-provider";
 
 // Public page — no .layout. Ported from apps/ura-roppoh/src/pages/callback/page.tsx;
 // React-router's useNavigate() -> Inertia's router.visit().

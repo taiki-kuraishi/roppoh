@@ -15,9 +15,8 @@ paths:
 | `roppoh`        | Vite + Inertia + CF Worker      | `app/`(Inertia, PascalCase pages) | `roppoh/directory-structure.md`        |
 | `emdash`        | Astro + CF Worker               | `src/`(Astro ファイルベース)      | `emdash/directory-structure.md`        |
 
-- `neo-fujimatsu` の `src/client` のコンポーネント規約は
-  `neo-fujimatsu/react-components.md`(oxlint で強制)。
-- `web-console` / `roppoh`(Inertia/PascalCase)と `emdash`(Astro)はその規約の対象外。
+- `neo-fujimatsu`(`src/client`)・`web-console`・`roppoh`(`app/`)の React コンポーネント
+  規約は `react-components.md`(oxlint で強制)。`emdash`(Astro)のみ対象外。
 
 ## 新しいアプリを追加するとき
 

@@ -12,7 +12,7 @@ import { useQueryStates } from "nuqs";
 import { Suspense, lazy } from "react";
 
 import { SiteHeader } from "@/components/site-header";
-import { adminLayout } from "@/layouts/compose";
+import { adminLayout } from "@/layouts/admin-layout";
 
 import { UserItem } from "./components/user";
 import { dialogSearchParams } from "./params";

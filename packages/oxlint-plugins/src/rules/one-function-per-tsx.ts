@@ -71,15 +71,25 @@ const collectFunctionNodes = (declaration: DeclarationLike, out: AstNode[]): voi
   }
 };
 
+/**
+ * .tsx ファイル 1 関数ルール
+ *
+ * 内容: .tsx ファイルのトップレベルに 2 つ以上の関数定義(関数宣言 /
+ * 関数式で初期化された変数)がある場合に検知する。トップレベルの定数は対象外。
+ *
+ * 目的: 1 ファイル 1 コンポーネントを強制し、コンポーネントの責務が
+ * 肥大化・混在するのを防ぐ。
+ */
 const rule = {
   meta: {
     type: "problem",
     docs: {
-      description: ".tsx ファイルのトップレベル関数定義を1つまでに制限する(定数は許可)",
+      description:
+        "Limit .tsx files to at most one top-level function declaration (constants are allowed)",
     },
     messages: {
       multipleFunctions:
-        ".tsx ファイルに定義できるトップレベル関数は1つまでです。2つ目以降の関数は別ファイルへ移動してください(定数は許可)。",
+        "Only one top-level function may be defined in a .tsx file. Move any additional functions to a separate file (constants are allowed).",
     },
   },
   create(context) {

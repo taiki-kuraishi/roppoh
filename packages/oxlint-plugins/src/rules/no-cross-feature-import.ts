@@ -7,8 +7,9 @@ interface Reportable {
 }
 
 /**
- * 解決済みパスの `components` セグメントから境界オーナー(`pages/<name>` / `layouts/<name>`)を
+ * 解決済みパスの `components` セグメントから境界オーナー(`<name>/components/` の `<name>`)を
  * 計算し、importer がその外にいる場合に srcRoot 相対のオーナーパスを返す。
+ * トップレベル直下の `components/`(共有コンポーネント置き場)は対象外。
  */
 const findViolatedOwner = (importer: string, srcRoot: string, resolved: string): string | null => {
   const segments = resolved.slice(srcRoot.length + 1).split("/");
@@ -16,7 +17,7 @@ const findViolatedOwner = (importer: string, srcRoot: string, resolved: string):
     const upper = segments.slice(0, i);
     if (
       segments[i] === "components" &&
-      (upper.includes("pages") || upper.includes("layouts")) &&
+      upper.length > 0 &&
       !importer.startsWith(`${srcRoot}/${upper.join("/")}/`)
     ) {
       return upper.join("/");
@@ -38,16 +39,26 @@ const checkSource = (context: Context, specifier: string, node: Reportable): voi
   }
 };
 
+/**
+ * コロケーション境界の import 制限
+ *
+ * 内容: ページ/レイアウトディレクトリ配下の components/ を、その境界の
+ * 外側(他のページ/レイアウトや共有領域)から import している場合に検知する。
+ *
+ * 目的: ページ/レイアウトごとにコロケーションされた components/ を
+ * 「そのページ専用」の実装として閉じ込め、意図しない機能間の結合を防ぐ。
+ * 共有が必要な場合は src/components/ への昇格を促す。
+ */
 const rule = {
   meta: {
     type: "problem",
     docs: {
       description:
-        "ページ/レイアウトの components/ 配下を、その境界の外から import することを禁止する",
+        "Disallow importing a page's or layout's components/ directory from outside its boundary",
     },
     messages: {
       crossFeature:
-        "'{{owner}}' の components/ 配下はそのページ/レイアウト専用です。共有する場合は src/components/ へ昇格してください。",
+        "The components/ directory under '{{owner}}' is private to that page/layout. Promote it to src/components/ if you need to share it.",
     },
   },
   create(context) {
