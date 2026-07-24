@@ -30,7 +30,9 @@ mise run proto:gen   # buf build → gen.ts で生成物を再生成
 ## ガバナンス(`buf`)
 
 - `buf.yaml`(リポジトリルート): `lint: STANDARD` / `breaking: FILE`。
-- `proto-ci.yml` が PR で `buf lint` / `buf format` / `buf breaking`(ベースブランチ比較)を実行し、
-  番号再利用・型変更・required 化などの破壊的変更をマージ前に落とす。
+- `proto-ci.yml` の `proto` ジョブは `bufbuild/buf-action` を呼ぶだけ。この action は PR で
+  `build` / `lint` / `format` / `breaking`(PR のベースブランチ比較)を既定で実行し、結果を PR に
+  summary コメントする。これで番号再利用・型変更・required 化などの破壊的変更をマージ前に落とす
+  (`permissions: pull-requests: write` はこのコメント投稿のため)。
 - buf は mise 管理(`mise.toml` の `buf`)。CI(`bufbuild/buf-action`)の `version` も同じ値に固定する
   (片方だけ上げるとローカルと CI が食い違う)。
