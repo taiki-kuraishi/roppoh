@@ -44,11 +44,11 @@ pages/account/
 
 ```
 このコンポーネントは 2 つ以上の場所で使う?
-  ├─ YES → src/components/ へ昇格する
+  ├─ YES → トップレベルの共有 components/ へ昇格する
   └─ NO  → 使う場所の components/ に置く
 ```
 
-- `src/components/`(neo-fujimatsu)/ `app/components/`(roppoh, web-console) — 複数ページ/レイアウト/root で共有するコンポーネント(唯一の共有場所)
+- `src/client/components/`(neo-fujimatsu)/ `app/components/`(roppoh, web-console) — 複数ページ/レイアウト/root で共有するコンポーネント(唯一の共有場所)
 
 ## Import 規約
 

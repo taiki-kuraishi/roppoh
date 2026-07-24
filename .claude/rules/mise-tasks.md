@@ -140,8 +140,8 @@ subtasks (`lint:go` など) when you only need one category.
 
 ```bash
 mise run test          # everything
-mise run test:unit     # oxlint-plugins + dev-pod bats
-mise run test:e2e      # neo-fujimatsu + web-console
+mise run test:unit     # oxlint-plugins + dev-pod bats + roppoh
+mise run test:e2e      # neo-fujimatsu + roppoh + web-console
 mise run test:vrt      # visual regression (all apps)
 ```
 
@@ -149,12 +149,13 @@ mise run test:vrt      # visual regression (all apps)
 
 - `test:unit:oxlint-plugins` — `bun run test` in `packages/oxlint-plugins`
 - `test:unit:dev-pod` — `bats test` for dev-pod bin scripts
+- `test:unit:roppoh` — `bun run test:unit` in `apps/roppoh`
 
-**E2E** (`test:e2e`): `test:e2e:neo-fujimatsu`, `test:e2e:web-console` (Playwright).
+**E2E** (`test:e2e`): `test:e2e:neo-fujimatsu`, `test:e2e:roppoh`, `test:e2e:web-console` (Playwright).
 
 **VRT** (`test:vrt`): builds a Playwright Docker container (`test:vrt:build-container`,
 image `roppoh-playwright:latest`) then runs per-app visual regression:
-`test:vrt:neo-fujimatsu`, `test:vrt:web-console`.
+`test:vrt:neo-fujimatsu`, `test:vrt:roppoh`, `test:vrt:web-console`.
 
 Each per-app VRT task accepts `-u/--update-snapshots`:
 

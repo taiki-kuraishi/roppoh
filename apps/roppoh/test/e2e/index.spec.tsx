@@ -9,6 +9,7 @@ test.describe("e2e / (auth guard)", () => {
     await page.goto("/");
 
     // Assert
+    // /login で終わる URL にマッチ
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByText("Welcome back")).toBeVisible();
   });

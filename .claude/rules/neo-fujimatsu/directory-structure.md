@@ -42,7 +42,7 @@ apps/neo-fujimatsu/
 ## ルール
 
 - **`src/client/` は roppoh 系のコンポーネント規約(oxlint)対象**
-  (`react-components.md`。`@/...` エイリアスで境界外を import)。
+  (`react-components.md`。`@/client/...` エイリアスで境界外を import)。
 - `src/server/` は Hono の慣例に従う。`routes/` は `index.ts` で集約、`middlewares/` も同様。
 - クライアント/サーバ間で共有したい型・ロジックは、どちらかに寄せるか workspace パッケージへ。
 
