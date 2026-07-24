@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package roppoh.discord.v1;
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.MessageOptions {
+  // Bind one message shape to one or more physical tables.
+  // Format: "<table>:<stream>" (e.g. "presence_update_events:presence_update").
+  repeated string table = 50101;
+  // Iceberg / Pipelines namespace all tables of this message live in.
+  // ponytail: per-message option is redundant now that this package is
+  // discord-only (every message sets "discord"); collapse to a package-level
+  // constant if it stays single-namespace. Kept per-message until a second
+  // namespace appears.
+  string namespace = 50102;
+}
+
+extend google.protobuf.FieldOptions {
+  // Logical type when the proto scalar is ambiguous. Unset => derived from the
+  // proto scalar. Values: "timestamp" | "string" | "long" | "boolean".
+  string logical_type = 50201;
+  // Override the derived Pipelines stream `required` flag. Use for fields that
+  // are non-optional in Go (non-pointer, always serialized) yet must not be
+  // required at ingest.
+  optional bool pipelines_required = 50202;
+}

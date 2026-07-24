@@ -34,6 +34,7 @@
 - `.claude/rules/packages/better-auth/better-auth.md` — `packages/better-auth/**`
 - `.claude/rules/packages/shadcn/shadcn.md` — `packages/shadcn/**`
 - `.claude/rules/packages/oxlint-plugins/oxlint-plugins.md` — `packages/oxlint-plugins/src/rules/**/*.ts`
+- `.claude/rules/proto.md` — `proto/**`, `buf.yaml`
 - `.claude/rules/skills.md` — `.claude/skills/**`, `.agents/skills/**`
 - `.claude/rules/rules.md` — `.claude/rules/**`(rule ファイルの置き場ルール)
 

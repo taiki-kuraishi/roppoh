@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package roppoh.discord.v1;
+
+import "roppoh/discord/v1/options.proto";
+
+// Field number = Iceberg field ID. Once assigned it is immutable; deletions are
+// sealed with `reserved` so the number is never reused. `buf breaking` enforces
+// this across PRs.
+
+// PresenceRecord is one flat row for presence_update_events and
+// guild_presence_snapshot_events (same shape, two tables).
+message PresenceRecord {
+  option (namespace) = "discord";
+  option (table) = "presence_update_events:presence_update";
+  option (table) = "guild_presence_snapshot_events:guild_presence_snapshot";
+
+  string received_at = 1 [(logical_type) = "timestamp"];
+  string guild_id = 2;
+  string user_id = 3;
+  // Non-pointer strings: always serialized, but not required at ingest.
+  string status = 4 [(pipelines_required) = false];
+  string client_desktop = 5 [(pipelines_required) = false];
+  string client_mobile = 6 [(pipelines_required) = false];
+  string client_web = 7 [(pipelines_required) = false];
+  // Activity* are nullable: ActivityType==0 is valid (discordgo.ActivityTypeGame),
+  // so NULL must be distinguishable from the zero value => optional => pointer.
+  optional string activity_name = 8;
+  optional int64 activity_type = 9;
+  optional string activity_state = 10;
+  optional string activity_details = 11;
+}
+
+// VoiceRecord is one row for voice_state_update_events.
+message VoiceRecord {
+  option (namespace) = "discord";
+  option (table) = "voice_state_update_events:voice_state_update";
+
+  string received_at = 1 [(logical_type) = "timestamp"];
+  string guild_id = 2;
+  string user_id = 3;
+  string channel_id = 4 [(pipelines_required) = false];
+  string session_id = 5 [(pipelines_required) = false];
+  bool self_mute = 6 [(pipelines_required) = false];
+  bool self_deaf = 7 [(pipelines_required) = false];
+  bool mute = 8 [(pipelines_required) = false];
+  bool deaf = 9 [(pipelines_required) = false];
+}
