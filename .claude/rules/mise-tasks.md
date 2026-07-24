@@ -37,6 +37,7 @@ its children.
 | `test`          | group  | Run all tests (e2e / unit / vrt)                 |
 | `env-decrypt`   | group  | Decrypt sops-encrypted env files                 |
 | `env-encrypt`   | group  | Encrypt env files with sops                      |
+| `proto:gen`     | file   | Regenerate `event-schemas` codegen from proto    |
 
 ---
 
@@ -105,6 +106,22 @@ mise run format
 ```
 
 Run before committing (Lefthook runs a similar check automatically).
+
+---
+
+### `proto:gen`
+
+**What it does**: `buf build -o packages/event-schemas/descriptorset.binpb` then
+`bun run packages/event-schemas/src/gen.ts`. Regenerates the committed schema codegen
+(`pipelines.tf.gen.json` / `iceberg-schema.gen.json` / `records.gen.go`) from the `.proto`
+SoT (`proto/roppoh/events/v1/`). Standalone file task under `.mise-tasks/proto/gen`.
+
+```bash
+mise run proto:gen
+```
+
+Run after editing `proto/roppoh/events/v1/*.proto`. `proto-ci.yml` re-runs this and fails on
+uncommitted drift (`git diff --exit-code`), like `dashboard-drift-ci` does for Grafana JSON.
 
 ---
 

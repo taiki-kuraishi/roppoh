@@ -10,7 +10,7 @@ paths:
 ## 1. CI 分割の粒度は user に相談する
 
 ドメイン別に workflow を分けている(`bun-ci` / `go-ci` / `k8s-ci` / `terraform-ci` /
-`dev-pod-ci` / `dashboard-drift-ci` / `deploy-cloudflare` + 全体の `ci.yml`)。
+`dev-pod-ci` / `dashboard-drift-ci` / `proto-ci` / `deploy-cloudflare` + 全体の `ci.yml`)。
 
 - **workflow を新設・統合・分割するときは、粒度を勝手に決めず必ず user に相談する。**
 - 各 workflow は `pull_request.paths:` フィルタで、関係するファイルが変わったときだけ走る。

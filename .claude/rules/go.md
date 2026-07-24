@@ -31,6 +31,11 @@ internal/                     # repo 全体で共有する internal パッケー
   (Go の `internal/` 可視性ルールで外部からの import が禁止される)。
 - **複数バイナリで共有**するコードは repo root の `internal/<pkg>/` に置く。
 - import パスは module 名基準: `github.com/tsar-org/roppoh/internal/telemetry` など。
+- **proto 由来の生成 Go** も単一 `go.mod` に含まれる:
+  `packages/event-schemas/src/roppoh/events/v1/records.gen.go`(`package pipeline`、`mise run proto:gen`
+  が生成、`// Code generated ... DO NOT EDIT.` ヘッダで golangci の generated 除外対象)。Phase 1 では
+  生成・検証のみで未使用。Phase 2 で `cmd/discord-gateway-proxy/internal/pipeline` の struct を置き換える予定
+  (→ `proto.md`)。
 
 ## テストはコロケーション(Go の標準)
 

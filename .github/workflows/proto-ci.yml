@@ -5,6 +5,9 @@ on:
     paths:
       - "proto/**"
       - "buf.yaml"
+      - "packages/event-schemas/**"
+      - ".mise-tasks/proto/**"
+      - "mise.toml"
       - ".github/workflows/proto-ci.yml"
 
 permissions:
@@ -12,9 +15,26 @@ permissions:
   pull-requests: write
 
 jobs:
+  # buf lint / format / breaking. version is pinned to mise.toml's buf (all
+  # tooling is mise-managed); bump both together.
   proto:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
       - uses: bufbuild/buf-action@v1
+        with:
+          version: "1.72.0"
+
+  # Regenerate the committed codegen and fail on drift from the proto SoT — same
+  # "generate -> commit -> verify" pattern as dashboard-drift-ci. Uses mise so
+  # buf/bun/go (gofmt) match the pinned local versions.
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v4
+      - run: bun install --frozen-lockfile
+      - run: mise run proto:gen
+      - run: git diff --exit-code
